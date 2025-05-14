@@ -1,0 +1,16 @@
+.list-view {
+-fx-text-fill: white;
+-fx-background-color: #3c3c3c;
+}
+
+.list-view .list-cell:even {
+-fx-control-inner-background: #1e1e1e;
+}
+
+.list-view .list-cell:odd {
+    -fx-control-inner-background: #2c2c2c; /* Fundo das linhas ímpares */
+}
+
+.list-view .list-cell:hover {
+    -fx-control-inner-background: #3c3c3c; /* Fundo ao passar o mouse */
+}

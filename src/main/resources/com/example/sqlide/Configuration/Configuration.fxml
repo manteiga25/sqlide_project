@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="576.0" prefWidth="808.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Configuration.DatabaseConf">
+   <children>
+      <TreeView fx:id="TreeViewContainer" prefHeight="576.0" prefWidth="139.0" />
+      <AnchorPane fx:id="MenuContainer" layoutX="140.0" prefHeight="576.0" prefWidth="669.0" />
+   </children>
+</AnchorPane>

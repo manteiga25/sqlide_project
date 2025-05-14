@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import de.jensd.fx.glyphs.fontawesome.*?>
+<?import java.lang.*?>
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane fx:id="ContainerSize" prefHeight="445.0" prefWidth="730.0" style="-fx-background-color: #3C3C3C;" stylesheets="@../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.SQLiteController">
+   <children>
+      <Label alignment="CENTER" contentDisplay="CENTER" layoutY="20.0" prefHeight="58.0" prefWidth="730.0" text="Create SQLite DB" textAlignment="CENTER" textFill="WHITE">
+         <font>
+            <Font name="Arial" size="24.0" />
+         </font></Label>
+      <GridPane layoutX="15.0" layoutY="107.0" prefHeight="75.0" prefWidth="564.0">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="156.0" minWidth="10.0" prefWidth="59.0" />
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="397.0" minWidth="10.0" prefWidth="232.0" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="395.0" minWidth="10.0" prefWidth="278.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+         <children>
+            <Label alignment="CENTER" text="DB Name:" textAlignment="CENTER" textFill="WHITE" />
+            <JFXTextField fx:id="TextDBName" prefHeight="24.0" prefWidth="123.0" promptText="Name...." style="-fx-prompt-text-fill: #aaaaaa; -fx-text-fill: white;" GridPane.columnIndex="1" />
+            <Label alignment="CENTER" text="Save path" textAlignment="CENTER" textFill="WHITE" GridPane.rowIndex="1" />
+            <JFXTextField fx:id="SaveDBPath" promptText="Save file path..." style="-fx-prompt-text-fill: #aaaaaa; -fx-text-fill: white;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <JFXButton mnemonicParsing="false" onAction="#selectDir" textFill="WHITE" GridPane.columnIndex="2" GridPane.rowIndex="1">
+             <graphic>
+                 <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
+             </graphic>
+            </JFXButton>
+         </children>
+      </GridPane>
+      <GridPane alignment="TOP_CENTER" layoutX="15.0" layoutY="207.0" prefHeight="182.0" prefWidth="321.0">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="291.0" minWidth="10.0" prefWidth="101.0" />
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="232.0" minWidth="1.0" prefWidth="232.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints maxHeight="42.0" minHeight="10.0" prefHeight="19.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="66.0" minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="65.0" minHeight="10.0" prefHeight="33.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="61.0" minHeight="10.0" prefHeight="43.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="54.0" minHeight="5.0" prefHeight="34.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="54.0" minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+         <children>
+            <Label contentDisplay="CENTER" text="Advances options:" textAlignment="CENTER" textFill="WHITE" GridPane.columnSpan="2">
+               <font>
+                  <Font name="Arial Bold" size="14.0" />
+               </font></Label>
+            <Label text="Character format" textFill="WHITE" GridPane.rowIndex="1">
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font>
+            </Label>
+            <ChoiceBox fx:id="CharMode" prefWidth="150.0" stylesheets="@../../../css/ChoiceBoxModern.css" value="UTF-8" GridPane.columnIndex="1" GridPane.rowIndex="1">
+             <items>
+                 <FXCollections fx:factory="observableArrayList">
+                     <String fx:value="UTF-8" />
+                     <String fx:value="UTF-16" />
+                     <String fx:value="UTF-16le" />
+                     <String fx:value="UTF-16be" />
+                 </FXCollections>
+             </items>
+            </ChoiceBox>
+            <Label text="Journal mode" textFill="WHITE" GridPane.rowIndex="2">
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font></Label>
+            <ChoiceBox fx:id="JournalMode" prefHeight="19.0" prefWidth="150.0" stylesheets="@../../../css/ChoiceBoxModern.css" value="DELETE" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                <items>
+                    <FXCollections fx:factory="observableArrayList">
+                        <String fx:value="DELETE" />
+                        <String fx:value="TRUNCATE" />
+                        <String fx:value="PERSIST" />
+                        <String fx:value="MEMORY" />
+                        <String fx:value="WAL" />
+                        <String fx:value="OFF" />
+                    </FXCollections>
+                </items>
+            </ChoiceBox>
+            <Label text="Execute script" textFill="WHITE" GridPane.rowIndex="3" />
+            <HBox prefHeight="100.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+               <children>
+                  <JFXTextField fx:id="ScriptPath" alignment="TOP_LEFT" prefHeight="25.0" prefWidth="303.0">
+                     <HBox.margin>
+                        <Insets top="10.0" />
+                     </HBox.margin></JFXTextField>
+                  <JFXButton mnemonicParsing="false" onAction="#openFile" prefHeight="25.0" prefWidth="128.0" text="Button">
+                     <HBox.margin>
+                        <Insets top="10.0" />
+                     </HBox.margin>
+                      <graphic>
+                          <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
+                      </graphic></JFXButton>
+               </children>
+            </HBox>
+            <Label text="Synchronous:" textFill="WHITE" GridPane.rowIndex="4" />
+            <Label text="Lock mode:" textFill="WHITE" GridPane.rowIndex="5" />
+            <ChoiceBox fx:id="syncBox" prefWidth="150.0" stylesheets="@../../../css/ChoiceBoxModern.css" value="NORMAL" GridPane.columnIndex="1" GridPane.rowIndex="4">
+             <items>
+                 <FXCollections fx:factory="observableArrayList">
+                     <String fx:value="OFF" />
+                     <String fx:value="NORMAL" />
+                     <String fx:value="FULL" />
+                     <String fx:value="EXTRA" />
+                 </FXCollections>
+             </items>
+             </ChoiceBox>
+            <HBox prefHeight="100.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="5">
+               <children>
+                  <JFXRadioButton fx:id="normalMode" mnemonicParsing="false" onAction="#switchRadioSyncNormal" selected="true" text="Normal" textFill="WHITE">
+                     <HBox.margin>
+                        <Insets top="5.0" />
+                     </HBox.margin>
+                     <selectedColor>
+                        <Color red="0.2078431397676468" green="0.45490196347236633" blue="0.9411764740943909" />
+                     </selectedColor>
+                  </JFXRadioButton>
+                  <JFXRadioButton fx:id="ExclusiveMode" mnemonicParsing="false" onAction="#switchRadioSyncExclusive" prefHeight="17.0" prefWidth="98.0" text="Exclusive" textFill="WHITE">
+                     <HBox.margin>
+                        <Insets left="10.0" top="5.0" />
+                     </HBox.margin>
+                     <selectedColor>
+                        <Color red="0.2078431397676468" green="0.45490196347236633" blue="0.9411764740943909" />
+                     </selectedColor>
+                  </JFXRadioButton>
+               </children>
+            </HBox>
+         </children>
+      </GridPane>
+      <GridPane alignment="CENTER_LEFT" layoutX="409.0" layoutY="213.0" prefHeight="142.0" prefWidth="321.0">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="175.0" minWidth="10.0" />
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints maxHeight="21.0" minHeight="10.0" prefHeight="20.0" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="32.0" minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+         <children>
+            <Label text="Cache options:" textFill="WHITE">
+               <font>
+                  <Font name="Arial Bold" size="14.0" />
+               </font></Label>
+            <Label text="Cache mode" textFill="WHITE" GridPane.rowIndex="1" />
+            <HBox alignment="CENTER_LEFT" spacing="30.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+               <children>
+                  <JFXRadioButton fx:id="sharedMode" mnemonicParsing="false" onAction="#switchRadioShared" selected="true" text="shared" textFill="WHITE">
+                     <selectedColor>
+                        <Color red="0.2078431397676468" green="0.45490196347236633" blue="0.9411764740943909" />
+                     </selectedColor>
+                  </JFXRadioButton>
+                  <JFXRadioButton fx:id="privateMode" mnemonicParsing="false" onAction="#switchRadioPrivate" text="Private" textFill="WHITE">
+                     <selectedColor>
+                        <Color red="0.2078431397676468" green="0.45490196347236633" blue="0.9411764740943909" />
+                     </selectedColor>
+                  </JFXRadioButton>
+               </children>
+            </HBox>
+            <Label text="Cache size" textFill="WHITE" GridPane.rowIndex="2" />
+            <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="2">
+               <children>
+                  <Spinner fx:id="cacheSize" editable="true" initialValue="4096" stylesheets="@../../../css/SpinnerStyle.css" />
+                  <Label text="MB" textFill="WHITE" />
+               </children>
+            </HBox>
+            <Label text="Page size" textFill="WHITE" GridPane.rowIndex="3" />
+            <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="3">
+               <children>
+                  <Spinner fx:id="Pagesize" editable="true" initialValue="4096" stylesheets="@../../../css/SpinnerStyle.css" />
+                  <Label text="Kb" textFill="WHITE">
+                     <HBox.margin>
+                        <Insets />
+                     </HBox.margin>
+                  </Label>
+               </children>
+            </HBox>
+            <Label text="Map size:" textFill="WHITE" GridPane.rowIndex="4" />
+            <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="4">
+               <children>
+                  <Spinner fx:id="mapSpinner" stylesheets="@../../../css/SpinnerStyle.css">
+                     <HBox.margin>
+                        <Insets />
+                     </HBox.margin>
+                  </Spinner>
+                  <Label text="Bytes" textFill="WHITE">
+                     <HBox.margin>
+                        <Insets />
+                     </HBox.margin>
+                  </Label>
+               </children>
+            </HBox>
+         </children>
+      </GridPane>
+      <JFXButton fx:id="Submit" layoutX="663.0" layoutY="407.0" mnemonicParsing="false" style="-fx-background-color: #3574F0;" text="Create" textFill="WHITE">
+         <font>
+            <Font name="Arial" size="12.0" />
+         </font>
+      </JFXButton>
+   </children>
+</AnchorPane>

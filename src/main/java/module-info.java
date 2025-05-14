@@ -1,0 +1,64 @@
+module com.example.sqlide {
+    requires javafx.fxml;
+    requires  javafx.controls;
+
+    requires org.controlsfx.controls;
+    requires com.dlsc.formsfx;
+    requires org.kordamp.bootstrapfx.core;
+    requires eu.hansolo.tilesfx;
+    requires com.almasb.fxgl.all;
+    requires annotations;
+    requires org.apache.commons.csv;
+    requires com.fasterxml.jackson.databind;
+    requires java.sql;
+    requires org.apache.poi.ooxml;
+    requires com.jfoenix;
+    requires org.json;
+    requires atlantafx.base;
+    requires mysql.connector.j;
+    requires commons.math3;
+    requires java.net.http;
+    requires java.desktop;
+    requires de.jensd.fx.glyphs.fontawesome;
+
+    opens com.example.sqlide to javafx.fxml;
+    opens com.example.sqlide.exporter.Excel to javafx.fxml;
+    opens com.example.sqlide.exporter.CSV to javafx.fxml;
+    opens com.example.sqlide.exporter.XML to javafx.fxml;
+    opens com.example.sqlide.exporter.JSON to javafx.fxml;
+    opens com.example.sqlide.ScriptLayout to javafx.fxml;
+    opens com.example.sqlide.EventLayout to javafx.fxml;
+    opens com.example.sqlide.TriggerLayout to javafx.fxml;
+    opens com.example.sqlide.DatabaseInterface to javafx.fxml;
+    opens com.example.sqlide.Configuration to javafx.fxml;
+    opens com.example.sqlide.Container.Geometry.Box to javafx.fxml;
+    opens com.example.sqlide.Container.Geometry.Circle to javafx.fxml;
+    opens com.example.sqlide.Container.Geometry.Point to javafx.fxml;
+    opens com.example.sqlide.Container.Column.Circle to javafx.fxml;
+    opens com.example.sqlide.Container.Column.Point to javafx.fxml;
+    opens com.example.sqlide.DatabaseInterface.TableInterface to javafx.fxml;
+    opens com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater to javafx.fxml;
+    opens com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface to javafx.fxml;
+    opens com.example.sqlide.Container.loading to javafx.fxml;
+
+    exports com.example.sqlide;
+    exports com.example.sqlide.exporter.Excel;
+    exports com.example.sqlide.exporter.CSV;
+    exports com.example.sqlide.exporter.XML;
+    exports com.example.sqlide.exporter.JSON;
+    exports com.example.sqlide.DatabaseInterface;
+    exports com.example.sqlide.ScriptLayout;
+    exports com.example.sqlide.TriggerLayout;
+    exports com.example.sqlide.EventLayout;
+    exports com.example.sqlide.Configuration;
+    exports com.example.sqlide.Container.Geometry.Box;
+    exports com.example.sqlide.Container.Geometry.Circle;
+    exports com.example.sqlide.Container.Column.Circle;
+    exports com.example.sqlide.Container.Geometry.Point;
+    exports com.example.sqlide.Container.Column.Point;
+    exports com.example.sqlide.DatabaseInterface.TableInterface;
+    exports com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface;
+    exports com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater;
+    exports com.example.sqlide.Container.loading;
+
+}

@@ -1,0 +1,31 @@
+.assistant-box-code {
+    -fx-background-radius: 15;
+    -fx-background-color: #393939;
+}
+
+.message-text-area {
+    -fx-control-inner-background: #393939;
+    -fx-border-color: #393939;
+    -fx-text-fill: white;
+}
+
+.code-text-area {
+    -fx-control-inner-background: #1A1A1A;
+    -fx-text-fill: #FFFFFF;
+}
+
+.code-toolbar {
+    -fx-background-color: #1A1A1A;
+    -fx-padding: 5;
+}
+
+.copy-button {
+    -fx-background-color: #2C2C2C;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-radius: 3;
+    -fx-cursor: hand;
+}
+
+.copy-button:hover {
+    -fx-background-color: #3C3C3C;
+}

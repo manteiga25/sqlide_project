@@ -1,0 +1,16 @@
+/* Remove a barra de divisão do SplitPane */
+.split-pane-divider {
+    -fx-background-color: black;
+    -fx-padding: 0;
+}
+
+/* Para SplitPane horizontal (divisão vertical) */
+.split-pane:horizontal > .split-pane-divider {
+    -fx-pref-width: 0; /* Largura da barra vertical */
+}
+
+/* Para SplitPane vertical (divisão horizontal) */
+.split-pane:vertical > .split-pane-divider {
+    -fx-background-color: black;
+    -fx-pref-height: 0; /* Altura da barra horizontal */
+}

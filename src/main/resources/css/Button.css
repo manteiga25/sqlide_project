@@ -1,0 +1,20 @@
+.button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-weight: 500;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-border-color: rgba(255, 255, 255, 1);
+    -fx-border-width: 2px;
+    -fx-position: relative;
+    -fx-overflow: hidden;
+}
+
+.button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.5), 10, 0, 0, 0);
+}
+
+.button:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.3);
+}

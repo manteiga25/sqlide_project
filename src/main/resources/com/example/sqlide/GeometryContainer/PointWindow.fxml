@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Container.Geometry.Point.PointWindowController">
+   <children>
+      <HBox prefHeight="36.0" prefWidth="600.0" spacing="5.0">
+         <children>
+            <Label text="Color">
+               <HBox.margin>
+                  <Insets top="10.0" />
+               </HBox.margin>
+            </Label>
+            <ColorPicker fx:id="colorPicker">
+               <HBox.margin>
+                  <Insets top="5.0" />
+               </HBox.margin></ColorPicker>
+            <Label text="X">
+               <HBox.margin>
+                  <Insets top="10.0" />
+               </HBox.margin>
+            </Label>
+            <TextField fx:id="XText" onInputMethodTextChanged="#defineX" onKeyPressed="#defineX" prefHeight="25.0" prefWidth="66.0">
+               <HBox.margin>
+                  <Insets top="5.0" />
+               </HBox.margin>
+            </TextField>
+            <Label text="Y">
+               <HBox.margin>
+                  <Insets top="10.0" />
+               </HBox.margin>
+            </Label>
+            <TextField fx:id="YText" onInputMethodTextChanged="#defineY" onKeyPressed="#defineY" prefHeight="25.0" prefWidth="70.0">
+               <HBox.margin>
+                  <Insets top="5.0" />
+               </HBox.margin>
+            </TextField>
+         </children>
+      </HBox>
+      <ScrollPane layoutY="36.0">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="363.0" prefWidth="598.0">
+               <children>
+                  <Circle fx:id="point" fill="DODGERBLUE" layoutX="100.0" layoutY="100.0" radius="3.0" stroke="BLACK" strokeType="INSIDE" />
+               </children></AnchorPane>
+        </content>
+      </ScrollPane>
+   </children>
+</AnchorPane>

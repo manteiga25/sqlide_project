@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="TOP_RIGHT" maxHeight="-Infinity" prefHeight="393.0" style="-fx-background-color: #3C3C3C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.EditSetController">
+   <children>
+      <JFXListView fx:id="ListView" editable="true" prefHeight="364.0" prefWidth="200.0" stylesheets="@../../../css/ListViewStyle.css" />
+      <JFXButton layoutX="146.0" layoutY="367.0" mnemonicParsing="false" onAction="#deleteData" style="-fx-background-color: #3574F0;" text="Delete" textFill="WHITE">
+         <VBox.margin>
+            <Insets right="5.0" />
+         </VBox.margin></JFXButton>
+   </children>
+</VBox>

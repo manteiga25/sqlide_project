@@ -1,0 +1,42 @@
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+/* Estilo da barra vertical */
+.scroll-pane .scroll-bar:vertical {
+    -fx-pref-width: 7px; /* Largura da barra vertical (ajuste para mais fino) */
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .scroll-bar:horizontal {
+    -fx-pref-height: 7px; /* Altura da barra horizontal (ajuste para mais fina) */
+    -fx-background-color: transparent;
+}
+
+/* Estilo do "thumb" (a parte móvel da barra) */
+.scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: #666666; /* Cor do thumb */
+    -fx-background-radius: 2px; /* Bordas arredondadas */
+}
+
+.scroll-pane .scroll-bar:horizontal .thumb {
+    -fx-background-color: #666666;
+    -fx-background-radius: 2px;
+}
+
+/* Remover botões de incremento/decremento (setas) */
+.scroll-pane .scroll-bar .increment-button,
+.scroll-pane .scroll-bar .decrement-button {
+    -fx-padding: 0;
+    -fx-opacity: 0;
+    -fx-background-color: transparent;
+}
+
+/* Estilo da trilha (track) da barra */
+.scroll-pane .scroll-bar:vertical .track,
+.scroll-pane .scroll-bar:horizontal .track {
+    -fx-background-color: transparent; /* Cor da trilha */
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+}

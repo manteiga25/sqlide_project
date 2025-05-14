@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import de.jensd.fx.glyphs.fontawesome.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<BorderPane fx:id="BorderContainer" prefHeight="1280.0" prefWidth="1920.0" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.mainController">
+         <top>
+             <HBox prefHeight="27.0" prefWidth="600.0" style="-fx-background-color: #3C3F41;" BorderPane.alignment="CENTER">
+                 <MenuButton mnemonicParsing="false" text="Database">
+                     <items>
+                         <MenuItem mnemonicParsing="false" onAction="#SQLiteInterface" text="New Database" />
+                         <MenuItem mnemonicParsing="false" onAction="#openDBWindow" text="Open Database" />
+                         <Menu fx:id="backupMenu" disable="true" mnemonicParsing="false" text="Backup/Export">
+                             <MenuItem mnemonicParsing="false" onAction="#initExcelWindow" text="Excel" />
+                             <MenuItem mnemonicParsing="false" onAction="#initCSVWindow" text="CSV" />
+                             <MenuItem mnemonicParsing="false" onAction="#initXMLWindow" text="XML" />
+                             <MenuItem mnemonicParsing="false" text="SQLITE" />
+                             <MenuItem mnemonicParsing="false" onAction="#initJSONWindow" text="JSON" />
+                         </Menu>
+                         <MenuItem mnemonicParsing="false" onAction="#OpenAtributesWin" text="Database Atributes" />
+                         <Menu mnemonicParsing="false" text="Fetch size">
+                             <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="100" />
+                             <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="250" />
+                             <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="500" />
+                             <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="1000" />
+                         </Menu>
+                     </items>
+                 </MenuButton>
+                 <MenuButton fx:id="queryMenu" disable="true" mnemonicParsing="false" text="Script">
+                     <items>
+                         <MenuItem fx:id="allStats" mnemonicParsing="false" onAction="#initScriptWindow" text="Execute all statement" />
+                         <MenuItem mnemonicParsing="false" onAction="#initScriptWindow" text="Execute this statement" />
+                         <MenuItem mnemonicParsing="false" onAction="#initTriggerWindow" text="Add Triger" />
+                         <MenuItem mnemonicParsing="false" onAction="#initEditTriggerWindow" text="Edit Trigger" />
+                         <MenuItem mnemonicParsing="false" onAction="#initEventWindow" text="Add Event" />
+                         <MenuItem mnemonicParsing="false" onAction="#initEditEventWindow" text="Edit Event" />
+                     </items>
+                     <opaqueInsets>
+                         <Insets />
+                     </opaqueInsets>
+                 </MenuButton>
+         <Button fx:id="openScript" disable="true" mnemonicParsing="false" onAction="#setOpenScript" text="Open Script" />
+         <Button fx:id="createScript" disable="true" mnemonicParsing="false" onAction="#createScript" text="Create Script" />
+             </HBox>
+         </top>
+         <left>
+             <VBox prefHeight="1195.0" prefWidth="73.0" style="-fx-background-color: #2A2A2A;" BorderPane.alignment="CENTER">
+                 <Button mnemonicParsing="false" onAction="#SwitchToDB" prefHeight="25.0" prefWidth="75.0" text="Database" />
+                 <Button mnemonicParsing="false" onAction="#SwitchToEditor" text="SQL Editor" />
+             </VBox>
+         </left>
+         <center>
+             <SplitPane dividerPositions="0.8" orientation="VERTICAL" style="-fx-background-color: black;" stylesheets="@../../../css/SplitDivider.css">
+          <!--  <Label fx:id="LabelDB" prefHeight="52.0" prefWidth="246.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true" BorderPane.alignment="CENTER"> -->
+             <SplitPane fx:id="CenterContainer" dividerPositions="0.7" prefWidth="1793.0" style="-fx-background-color: #2A2A2A;">
+                 <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" prefWidth="1832.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true">
+            <font>
+               <Font size="36.0" />
+            </font></Label>
+         <VBox fx:id="AssistentContainer" style="-fx-base: BLACK;">
+            <children>
+               <ScrollPane fitToWidth="true" prefHeight="1124.0" prefWidth="526.0" stylesheets="@../../../css/ScrollHbarStyle.css" VBox.vgrow="SOMETIMES">
+                 <content>
+                   <AnchorPane style="-fx-background-color: #2A2A2A;">
+                        <children>
+                           <VBox fx:id="MessagesBox" spacing="10.0" style="-fx-background-color: #262626;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+                              <padding>
+                                 <Insets left="15.0" right="15.0" />
+                              </padding>
+                              <children>
+                                 <Pane fx:id="con" style="-fx-background-radius: 15; -fx-background-color: #393939;" VBox.vgrow="ALWAYS">
+                                    <opaqueInsets>
+                                       <Insets />
+                                    </opaqueInsets>
+                                    <VBox.margin>
+                                       <Insets right="60.0" />
+                                    </VBox.margin>
+                                 </Pane>
+                              </children></VBox>
+                        </children></AnchorPane>
+                 </content>
+               </ScrollPane>
+               <HBox alignment="CENTER" prefHeight="130.0" spacing="5.0" style="-fx-base: BLACK; -fx-background-color: #262626;">
+                  <children>
+                      <TextArea fx:id="MessageBox" promptText="Talk to Assistant" style="-fx-background-radius: 20px; -fx-border-radius: 20px; -fx-border-color: #3A3A3A; -fx-border-width: 5; -fx-background-color: #3A3A3A; -fx-control-inner-background: #3A3A3A;" wrapText="true" VBox.vgrow="NEVER">
+                   <!--  <TextField fx:id="MessageBox" alignment="TOP_LEFT" prefHeight="68.0" prefWidth="492.0" promptText="Ask to ai..." style="-fx-background-color: #3A3A3A; -fx-background-radius: 15px; -fx-text-fill: white;" HBox.hgrow="NEVER"> -->
+                        <HBox.margin>
+                           <Insets bottom="10.0" top="10.0" />
+                        </HBox.margin></TextArea>
+                     <JFXButton mnemonicParsing="false" onAction="#SendMessage" style="-fx-background-color: #3574F0; -fx-background-radius: 30px;" textAlignment="CENTER" textFill="WHITE">
+                        <graphic>
+                           <FontAwesomeIconView glyphName="ARROW_CIRCLE_RIGHT" size="18.0" text="" />
+                        </graphic>
+                     </JFXButton>
+                  </children>
+                  <opaqueInsets>
+                     <Insets />
+                  </opaqueInsets>
+               </HBox>
+            </children>
+         </VBox>
+             </SplitPane>
+         <VBox style="-fx-background-color: #2A2A2A;">
+            <children>
+               <ToolBar style="-fx-background-color: #2C2C2C;">
+                 <items>
+                     <Label text="Terminal:" textFill="#f2f2f2">
+                        <font>
+                           <Font size="16.0" />
+                        </font>
+                     </Label>
+                     <ChoiceBox prefWidth="150.0" style="-fx-background-color: #2C2C2C;" stylesheets="@../../../css/ChoiceBoxModern.css" />
+                   <JFXButton mnemonicParsing="false" style="-fx-background-color: #3574F0; -fx-background-radius: 5px;" text="Export" textFill="WHITESMOKE" />
+                     <JFXButton mnemonicParsing="false" style="-fx-background-color: #D21209; -fx-background-radius: 5px;" text="Delete" textFill="WHITESMOKE" />
+                 </items>
+               </ToolBar>
+                <Separator style="-fx-base: black;" />
+            </children>
+         </VBox>
+             </SplitPane>
+
+         </center>
+   <right>
+      <VBox alignment="TOP_CENTER" prefHeight="1195.0" prefWidth="0.0" spacing="10" style="-fx-background-color: #3A3A3A;" BorderPane.alignment="CENTER">
+         <children>
+            <JFXButton fx:id="AssistantButton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#OpenAssistent" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" prefHeight="25.0" prefWidth="81.0" stylesheets="@../../../css/BarButtonStyle.css" textAlignment="CENTER" textFill="WHITE" VBox.vgrow="ALWAYS">
+               <graphic>
+                  <FontAwesomeIconView fx:id="glowingIcon" fill="#e8e1e1" glyphName="MAGIC" size="26.0" />
+               </graphic>
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin></JFXButton>
+             <JFXButton fx:id="NotificationButton" alignment="CENTER" mnemonicParsing="false" onAction="#OpenNotifications" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" stylesheets="@../../../css/BarButtonStyle.css" textFill="white" viewOrder="1.0" VBox.vgrow="ALWAYS">
+               <graphic>
+                  <FontAwesomeIconView fill="#e8e1e1" glyphName="BELL_ALT" size="26.0" />
+               </graphic>
+             </JFXButton>
+         </children></VBox>
+   </right></BorderPane>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefHeight="116.0" prefWidth="290.0" style="-fx-background-color: #3C3C3C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Container.loading.loadingController">
+   <children>
+      <ProgressBar fx:id="Progress" layoutX="19.0" layoutY="62.0" prefHeight="18.0" prefWidth="210.0" progress="0.0" stylesheets="@../../../../css/ProgressBarStyle.css" />
+      <JFXButton layoutX="243.0" layoutY="92.0" mnemonicParsing="false" onAction="#cancel" style="-fx-background-color: #3574f0;" text="Cancel" textFill="WHITE">
+         <font>
+            <Font size="10.0" />
+         </font>
+      </JFXButton>
+      <Label fx:id="ProgressLabel" layoutX="238.0" layoutY="63.0" text="0%" textFill="WHITE" />
+      <Label fx:id="ContextLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="-1.0" layoutY="14.0" prefHeight="17.0" prefWidth="290.0" text="Label" textAlignment="CENTER" textFill="WHITE">
+         <font>
+            <Font name="Arial" size="14.0" />
+         </font></Label>
+   </children>
+</AnchorPane>

@@ -1,0 +1,8 @@
+.button {
+    -fx-background-image: url("/imagens/exemplo.png");
+    -fx-background-size: cover; /* Ajusta a imagem para cobrir todo o botão */
+    -fx-background-repeat: no-repeat; /* Não repete a imagem */
+    -fx-pref-width: 100px; /* Define a largura preferida do botão */
+    -fx-pref-height: 100px; /* Define a altura preferida do botão */
+    -fx-text-fill: white; /* Cor do texto do botão */
+}

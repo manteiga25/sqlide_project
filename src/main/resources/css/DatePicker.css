@@ -1,0 +1,89 @@
+.date-picker {
+    -fx-background-color: #3C3C3C;
+    -fx-text-fill: white;
+    -fx-font-family: 'Nunito Sans', sans-serif;
+    -fx-background-radius: 5px; /* Adicionar borda arredondada ao campo principal */
+}
+
+/* Células do calendário (dias) */
+.date-picker .cell {
+    -fx-background-color: #1B2431;
+    -fx-border-color: #1B2431;
+    -fx-background-radius: 5px;  /* Arredondar todas as células */
+    -fx-border-radius: 5px;      /* Arredondar bordas */
+    -fx-border-width: 1px;
+    -fx-background-insets: 0;    /* Remove espaçamento interno indesejado */
+    -fx-padding: 5px;
+}
+
+.date-picker .text-field {
+    -fx-background-color: #3C3C3C;
+    -fx-text-fill: white;
+}
+
+.date-picker:editable .arrow-button {
+    -fx-background-color: #3574F0;
+}
+
+.date-picker:editable .arrow-button .arrow {
+    -fx-background-color: black;
+}
+
+.date-picker .cell {
+	-fx-background-color: #1B2431;
+/*	-fx-border-color: #283D57; */
+-fx-border-color: #1B2431;
+	-fx-text-fill: white;
+}
+.date-picker .cell:hover {
+	-fx-background-color: #283D57;
+	-fx-background-radius: 5px;
+    	-fx-border-color: transparent;
+}
+.date-picker .cell:focused {
+	-fx-background-color: #283D57;
+	-fx-background-radius: 5px;
+	-fx-border-color: #283D57;
+}
+.date-picker .selected {
+	-fx-background-color: #283D57;
+	-fx-text-fill: white;
+}
+.date-picker .selected:focused {
+	-fx-background-color: #283D57;
+	-fx-text-fill: white;
+}
+.date-picker-popup  {
+	-fx-border-color: transparent;
+	-fx-background-color: #1B2431;
+}
+/* Cabeçalho do calendário (mês/ano) */
+.date-picker-popup .month-year-pane {
+    -fx-background-color: #283D57;
+    -fx-background-radius: 5px 5px 0 0; /* Arredondar apenas o topo */
+    -fx-padding: 8px;
+}
+
+/* Botões de navegação (setas) */
+.date-picker-popup .spinner .button {
+    -fx-background-color: #3574F0;
+    -fx-background-radius: 5px;
+    -fx-padding: 5px;
+}
+
+/* Ajuste fino nas células para evitar sobreposição */
+.date-picker-popup .calendar-grid {
+    -fx-padding: 5px;
+    -fx-hgap: 2px;
+    -fx-vgap: 2px;
+}
+.date-picker-popup .month-year-pane .label {
+	-fx-text-fill: white;
+}
+.date-picker-popup .week-number-cell {
+	-fx-text-fill: #283D57;
+}
+.date-picker-popup .spinner .button .left-arrow,
+.date-picker-popup .spinner .button .right-arrow {
+	-fx-background-color: white;
+}

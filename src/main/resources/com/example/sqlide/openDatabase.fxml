@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox spacing="10.0" style="-fx-background-color: #3C3C3C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.OpenDatabaseController">
+   <children>
+      <Label alignment="CENTER" contentDisplay="CENTER" layoutY="14.0" text="Open Database&#10;Select Database" textAlignment="CENTER" textFill="#e1d8d8">
+         <font>
+            <Font name="Microsoft Tai Le Bold" size="24.0" />
+         </font></Label>
+      <ScrollPane fitToHeight="true" fitToWidth="true" layoutY="142.0" style="-fx-background-color: -fx-text-fill;" stylesheets="@../../../css/ScrollHbarStyle.css">
+         <content>
+             <GridPane fx:id="container" alignment="CENTER" style="-fx-background-color: #3C3C3C;">
+                 <columnConstraints>
+                     <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" maxWidth="285.3333180745443" minWidth="10.0" />
+                     <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" maxWidth="380.0" minWidth="0.0" />
+                     <ColumnConstraints halignment="CENTER" />
+                 </columnConstraints>
+                 <rowConstraints>
+                     <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                     <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                     <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                     <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                 </rowConstraints>
+                 <VBox alignment="CENTER">
+                     <ImageView fx:id="sqliteImage" cache="true" fitHeight="150.0" fitWidth="240.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@images/sqlite.jpg" />
+                     </image>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </ImageView>
+                     <Label alignment="CENTER" text="SQLite" textFill="WHITE">
+                         <font>
+                             <Font size="18.0" />
+                         </font>
+                     </Label>
+                 </VBox>
+                 <VBox alignment="CENTER" GridPane.columnIndex="1">
+                     <ImageView blendMode="ADD" cache="true" fitHeight="150.0" fitWidth="271.0" pickOnBounds="true" preserveRatio="true" VBox.vgrow="ALWAYS">
+                     <image>
+                        <Image url="@images/mysql.jpg" />
+                     </image>
+                     <VBox.margin>
+                        <Insets left="30.0" />
+                     </VBox.margin>
+                  </ImageView>
+                     <Label alignment="CENTER" text="MySQL" textFill="WHITE">
+                         <font>
+                             <Font size="18.0" />
+                         </font>
+                     </Label>
+                 </VBox>
+                 <VBox alignment="CENTER" GridPane.columnIndex="2">
+                     <ImageView fitHeight="150.0" fitWidth="318.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@images/postgre.jpg" />
+                     </image>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </ImageView>
+                     <Label alignment="CENTER" text="PostreSQL" textFill="WHITE">
+                         <font>
+                             <Font size="18.0" />
+                         </font>
+                     </Label>
+                 </VBox>
+             </GridPane>
+         </content></ScrollPane>
+       <HBox alignment="TOP_RIGHT" spacing="5.0">
+           <JFXButton layoutX="835.0" layoutY="614.0" mnemonicParsing="false" onAction="#closeWindow" style="-fx-background-color: #3574F0;" text="Cancel" textFill="WHITE">
+            <font>
+               <Font name="Arial" size="12.0" />
+            </font></JFXButton>
+           <JFXButton layoutX="900.0" layoutY="614.0" mnemonicParsing="false" onAction="#openDBSelected" style="-fx-background-color: #3574F0;" text="Confirm" textFill="WHITE">
+               <font>
+                   <Font name="Arial" size="12.0" />
+               </font></JFXButton>
+         <VBox.margin>
+            <Insets bottom="5.0" right="5.0" />
+         </VBox.margin>
+       </HBox>
+   </children>
+
+</VBox>

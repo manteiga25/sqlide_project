@@ -1,0 +1,8 @@
+.label {
+    -fx-text-fill: black; /* Cor normal do texto */
+}
+
+.label:hover {
+    -fx-text-fill: blue; /* Cor do texto quando o mouse está por cima */
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,255,0.5), 20, 0.6, 0, 0);
+}

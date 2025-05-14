@@ -1,0 +1,23 @@
+.button-64 {
+  -fx-alignment: center;
+  -fx-background-color: linear-gradient(144deg, #0b0113, #5B42F3 50%, #118e97);
+  -fx-border-radius: 8px;
+  -fx-effect: dropshadow(three-pass-box, rgba(32, 4, 63, 0.2), 15, 0.0, 0, 15);
+  -fx-font-family: "Phantomsans", sans-serif;
+  -fx-text-fill: #080808;
+}
+
+.button-64:hover {
+  -fx-cursor: hand;
+}
+
+.button-64 span {
+  -fx-background-color: rgb(5, 6, 45);
+  -fx-border-radius: 6px;
+  -fx-transition: 300ms;
+}
+
+.button-64:hover span {
+  -fx-background-color: transparent;
+}
+

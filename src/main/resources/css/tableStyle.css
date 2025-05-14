@@ -1,0 +1,72 @@
+.table-view {
+    -fx-background-color: #1e1e1e; /* Fundo da tabela */
+    -fx-text-fill: #ffffff; /* Cor do texto */
+    -fx-border-color: transparent;
+}
+
+.table-view .column-header {
+    -fx-background-color: #333333; /* Fundo do cabeçalho */
+    -fx-border-color: #444444; /* Borda do cabeçalho */
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #ffffff; /* Cor do texto no cabeçalho */
+    -fx-font-weight: bold; /* Negrito */
+}
+
+.table-view .cell {
+    -fx-background-color: #1e1e1e; /* Fundo das células */
+    -fx-border-color: #444444; /* Separação entre células */
+    -fx-text-fill: #f0f0f0; /* Texto das células */
+}
+
+.table-view .cell:selected {
+    -fx-background-color: #3c3c3c; /* Fundo da célula selecionada */
+    -fx-text-fill: #f0f0f0; /* Cor do texto da célula selecionada */
+}
+
+.table-view .cell:hover {
+    -fx-background-color: #000000;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: #2c2c2c; /* Fundo das linhas ímpares */
+}
+
+.table-view .table-row-cell:hover {
+    -fx-background-color: #3c3c3c; /* Fundo ao passar o mouse */
+}
+
+.table-view .column-header-background {
+    -fx-border-color: #444444; /* Destaque no cabeçalho */
+    -fx-border-width: 0 0 2px 0;
+    -fx-text-fill: ffffff;
+}
+
+.table-view .scroll-bar:horizontal {
+    -fx-background-color: #2B2D30; /* Cor de fundo da barra de rolagem horizontal */
+}
+
+.table-view .scroll-bar:vertical {
+    -fx-background-color: #2B2D30; /* Cor de fundo da barra de rolagem vertical */
+}
+
+/* Estilo do polegar (thumb), que é a parte arrastável */
+.table-view .scroll-bar .thumb {
+   /* -fx-background-color: #4D4DFF; /* Cor do polegar */
+    -fx-background-color: #3574f0;
+    -fx-background-radius: 4px;   /* Bordas arredondadas do polegar */
+}
+
+.table-view .scroll-bar .thumb:hover,
+ .table-view .scroll-bar .thumb:focused {
+   /* -fx-background-color: #4D4DFF; /* Cor do polegar */
+    -fx-background-color: #3574f0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,255, 1.0), 50, 0, 0, 0);
+   /* -fx-background-radius: 4px;   /* Bordas arredondadas do polegar */
+}
+
+.table-row-cell:selected .table-cell {
+    -fx-background-color: #000000;
+    -fx-border-color: #2A82DA;
+}

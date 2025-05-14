@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Container.Geometry.Box.BoxWindowController">
+
+    <children>
+        <ScrollPane layoutY="28.0" prefHeight="557.0" prefWidth="763.0">
+            <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0">
+               <children>
+                  <Rectangle fx:id="box" arcHeight="5.0" arcWidth="5.0" fill="#1f93ff" height="282.0" layoutX="-1.0" layoutY="6.0" stroke="BLACK" strokeType="INSIDE" width="556.0" />
+               </children></AnchorPane>
+            </content>
+        </ScrollPane>
+        <HBox layoutX="-1.0" layoutY="-1.0" prefHeight="30.0" prefWidth="763.0" spacing="10.0">
+            <children>
+                <Label text="Color">
+                    <padding>
+                        <Insets top="5.0" />
+                    </padding></Label>
+                <ColorPicker fx:id="colorPicker" prefHeight="25.0" prefWidth="89.0">
+                    <HBox.margin>
+                        <Insets top="2.0" />
+                    </HBox.margin></ColorPicker>
+                <Label text="X1">
+                    <HBox.margin>
+                        <Insets top="5.0" />
+                    </HBox.margin></Label>
+                <TextField fx:id="X1Text" onInputMethodTextChanged="#defineX1" onKeyPressed="#defineX1" prefHeight="25.0" prefWidth="81.0">
+                    <HBox.margin>
+                        <Insets top="2.0" />
+                    </HBox.margin></TextField>
+                <Label text="Y1">
+                    <HBox.margin>
+                        <Insets top="5.0" />
+                    </HBox.margin>
+                </Label>
+                <TextField fx:id="Y1Text" onInputMethodTextChanged="#defineY1" onKeyPressed="#defineY1" prefHeight="25.0" prefWidth="55.0">
+                    <HBox.margin>
+                        <Insets top="2.0" />
+                    </HBox.margin>
+                </TextField>
+                <Label text="X2">
+                    <HBox.margin>
+                        <Insets top="5.0" />
+                    </HBox.margin>
+                </Label>
+                <TextField fx:id="X2Text" onInputMethodTextChanged="#defineX2" onKeyPressed="#defineX2" prefHeight="25.0" prefWidth="59.0">
+                    <HBox.margin>
+                        <Insets top="2.0" />
+                    </HBox.margin>
+                </TextField>
+            <Label text="Y2">
+               <HBox.margin>
+                  <Insets top="5.0" />
+               </HBox.margin>
+            </Label>
+            <TextField fx:id="Y2Text" onInputMethodTextChanged="#defineY2" prefHeight="25.0" prefWidth="82.0">
+               <HBox.margin>
+                  <Insets top="2.0" />
+               </HBox.margin>
+            </TextField>
+            </children>
+        </HBox>
+    </children>
+
+</AnchorPane>

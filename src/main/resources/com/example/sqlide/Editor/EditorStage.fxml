@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" style="-fx-background-color: #2A2A2A;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <ToolBar nodeOrientation="RIGHT_TO_LEFT" style="-fx-background-color: #2A2A2A;">
+        <items>
+          <Button fx:id="TaskButton" mnemonicParsing="false" text="Button" />
+            <ChoiceBox fx:id="StatementBox" prefWidth="150.0" style="-fx-background-color: #2A2A2A;" stylesheets="@../../../../css/ChoiceBoxModern.css" />
+            <Label text="Database:" textFill="#f2f2f2">
+               <font>
+                  <Font name="Arial" size="18.0" />
+               </font>
+            </Label>
+        </items>
+      </ToolBar>
+      <TabPane stylesheets="@../../../../css/TabPane.css" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <tabs>
+          <Tab closable="false" disable="true" style="-fx-background-color: transparent;">
+              <TilePane/>
+          </Tab>
+            <Tab>
+            </Tab>
+        </tabs>
+      </TabPane>
+   </children>
+</VBox>

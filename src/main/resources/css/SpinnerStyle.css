@@ -1,0 +1,26 @@
+.spinner {
+    -fx-background-color: #3C3C3C;
+        -fx-border-color: #3574F0;
+        -fx-border-radius: 5px;
+}
+
+.spinner:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,255,0.5), 10, 0, 0, 0);
+}
+
+.spinner .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.increment-arrow-button,
+.decrement-arrow-button {
+    -fx-background-color: #3574F0;
+    -fx-text-fill: white;
+    -fx-border-radius: 3px;
+}
+
+.spinner .increment-arrow-button .increment-arrow,
+.spinner .decrement-arrow-button .decrement-arrow {
+	-fx-background-color: white;
+}

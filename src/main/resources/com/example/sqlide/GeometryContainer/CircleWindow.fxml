@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Container.Geometry.Circle.CircleWindowController">
+   <children>
+      <ScrollPane layoutY="28.0" prefHeight="557.0" prefWidth="763.0">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0">
+               <children>
+                  <Circle fx:id="circle" fill="#ee4545" layoutX="381.0" layoutY="277.0" radius="80.0" stroke="BLACK" strokeType="INSIDE" />
+               </children>
+            </AnchorPane>
+        </content>
+      </ScrollPane>
+      <HBox layoutX="-1.0" layoutY="-1.0" prefHeight="30.0" prefWidth="600.0" spacing="10.0">
+         <children>
+            <Label text="Color">
+               <padding>
+                  <Insets top="5.0" />
+               </padding></Label>
+            <ColorPicker fx:id="colorPicker" prefHeight="25.0" prefWidth="89.0">
+               <HBox.margin>
+                  <Insets top="2.0" />
+               </HBox.margin></ColorPicker>
+            <Label text="Radius">
+               <HBox.margin>
+                  <Insets top="5.0" />
+               </HBox.margin></Label>
+            <TextField fx:id="radText" onInputMethodTextChanged="#defineRadius" onKeyPressed="#defineRadius" prefHeight="25.0" prefWidth="81.0">
+               <HBox.margin>
+                  <Insets top="2.0" />
+               </HBox.margin></TextField>
+            <Label text="X">
+               <HBox.margin>
+                  <Insets top="5.0" />
+               </HBox.margin>
+            </Label>
+            <TextField onInputMethodTextChanged="#defineX" onKeyPressed="#defineX" prefHeight="25.0" prefWidth="55.0" fx:id="xText">
+               <HBox.margin>
+                  <Insets top="2.0" />
+               </HBox.margin>
+            </TextField>
+            <Label text="Y">
+               <HBox.margin>
+                  <Insets top="5.0" />
+               </HBox.margin>
+            </Label>
+            <TextField fx:id="yText" onInputMethodTextChanged="#defineY" onKeyPressed="#defineY" prefHeight="25.0" prefWidth="59.0">
+               <HBox.margin>
+                  <Insets top="2.0" />
+               </HBox.margin>
+            </TextField>
+         </children>
+      </HBox>
+   </children>
+</AnchorPane>

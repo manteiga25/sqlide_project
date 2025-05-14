@@ -1,0 +1,27 @@
+.combo-box .list-cell {
+    -fx-text-fill: -fx-my-menu-font-color-highlighted;
+}
+.combo-box-popup .list-view{
+    -fx-background-color: -fx-my-menu-color;
+}
+
+.combo-box-popup .list-view .list-cell{
+    -fx-text-fill: #ff0000;
+    -fx-padding: 4 0 4 5;
+    -fx-background-color: -fx-my-menu-color;
+}
+
+.combo-box-popup .list-view .list-cell:filled:selected, .combo-box-popup .list-view .list-cell:filled:selected:hover{
+    -fx-background-color: -fx-my-menu-color-highlighted;
+    -fx-text-fill: -fx-my-menu-font-color-highlighted;
+}
+
+.combo-box-popup .list-view .list-cell:filled:hover{
+    -fx-background-color: -fx-my-menu-color-highlighted;
+    -fx-text-fill: -fx-my-menu-font-color-highlighted;
+}
+
+.combo-box-base{
+    -fx-background-color: -fx-my-menu-color;
+    -fx-padding: 0;
+}

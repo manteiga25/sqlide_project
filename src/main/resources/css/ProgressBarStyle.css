@@ -1,0 +1,10 @@
+.root { -fx-background-color: #3C3C3C; }
+
+.progress-bar {
+    -fx-accent: #3574F0; /* Cor principal do progresso */
+    -fx-background-color: #3C3C3C; /* Cor de fundo */
+    -fx-border-color: #3574F0; /* Cor da borda */
+    -fx-border-radius: 5px; /* Arredondamento da borda */
+    -fx-background-radius: 5px;
+    -fx-padding: 2;
+}

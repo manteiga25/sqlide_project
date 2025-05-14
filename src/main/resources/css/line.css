@@ -1,0 +1,8 @@
+.line-number {
+    -fx-font-size: 12px;
+    -fx-padding: 3px 5px 0px 5px; /* Coincide com o padding do TextArea */
+    -fx-background-color: #2c2c2c;
+    -fx-text-fill: white;
+    -fx-pref-height: 20px; /* Altura fixa para cada Label */
+    -fx-alignment: center-right;
+}

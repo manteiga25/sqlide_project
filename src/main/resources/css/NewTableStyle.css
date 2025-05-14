@@ -1,0 +1,60 @@
+/* new-table.css */
+.root {
+    -fx-background-color: #2C2C2C;
+}
+
+.label {
+    -fx-text-fill: white;
+    -fx-font-family: 'JetBrains Mono ExtraBold';
+    -fx-font-size: 14px;
+}
+
+.label-header {
+    -fx-font-size: 14px;
+    -fx-alignment: center;
+}
+
+.text-input {
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #999;
+}
+
+.button-primary {
+    -fx-background-color: #3574F0;
+    -fx-text-fill: white;
+    -fx-font-family: Arial;
+    -fx-font-size: 12px;
+}
+
+.button-secondary {
+    -fx-background-color: transparent;
+    -fx-border-color: #8A8C8D;
+    -fx-border-radius: 999px;
+    -fx-background-radius: 999px;
+    -fx-text-fill: #f2f2f2;
+}
+
+.check-box {
+    -fx-text-fill: white;
+}
+
+.check-box:selected > .box {
+    -fx-background-color: #3574f0;
+}
+
+.error-label {
+    -fx-text-fill: RED;
+    -fx-font-family: 'JetBrains Mono Regular';
+    -fx-font-size: 12px;
+}
+
+.table-view {
+    -fx-background-color: #3C3C3C;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-column {
+    -fx-background-color: #454545;
+    -fx-text-fill: white;
+    -fx-border-color: #555;
+}

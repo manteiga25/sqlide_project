@@ -1,0 +1,75 @@
+/* Estilo base da ComboBox */
+.combo-box {
+    -fx-background-color: #2B2D30;
+    -fx-border-color: #3574F0;
+    -fx-border-radius: 15px;
+}
+
+/* Texto do item selecionado */
+.combo-box .list-cell {
+    -fx-text-fill: white;
+    -fx-font-family: "Arial";
+}
+
+/* Estilo do menu dropdown */
+.combo-box-popup .list-view {
+    -fx-background-color: #2B2D30;
+    -fx-border-color: #3574F0;
+}
+
+/* Itens da lista */
+.combo-box-popup .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: #2B2D30;
+}
+
+/* Efeito hover nos itens */
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #3574F0;
+    -fx-text-fill: black;
+}
+
+/* Seta do dropdown */
+.combo-box .arrow {
+    -fx-background-color: white;
+}
+
+/* Efeito de foco */
+.combo-box:focused {
+    -fx-border-color: #3574F0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,255,0.5), 10, 0, 0, 0);
+}
+
+/* Estilo geral da barra de rolagem */
+.scroll-bar:horizontal,
+.scroll-bar:vertical {
+    -fx-background-color: #2B2D30;
+}
+
+/* Polegar (parte móvel) */
+.scroll-bar:horizontal .thumb,
+.scroll-bar:vertical .thumb {
+    -fx-background-color: #3574F0;
+}
+
+/* Botões de seta */
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+}
+
+/* Seta */
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: white;
+}
+
+/* Texto do prompt */
+.combo-box .prompt-text {
+    -fx-fill: #888888;
+}
+
+/* Desabilitado */
+.combo-box:disabled {
+    -fx-opacity: 0.7;
+}

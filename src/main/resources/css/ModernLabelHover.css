@@ -1,0 +1,7 @@
+.label {
+    -fx-text-fill: white; /* Cor normal do texto */
+}
+
+.label:hover {
+    -fx-text-fill: blue; /* Cor do texto quando o mouse está por cima */
+}

@@ -1,0 +1,13 @@
+.text-area {
+    -fx-control-inner-background: #1e1f22;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+}
+
+.text-area .content {
+    -fx-padding: 3px 0; /* Ajuste para controlar a altura da linha */
+}
+
+.text-area:focused {
+    -fx-background-color: #1E1F22;
+}

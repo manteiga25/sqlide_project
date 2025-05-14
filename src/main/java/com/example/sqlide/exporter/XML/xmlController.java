@@ -1,0 +1,426 @@
+package com.example.sqlide.exporter.XML;
+
+import com.example.sqlide.Container.loading.loadingController;
+import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.popupWindow.Notification;
+import com.jfoenix.controls.JFXButton;
+import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import org.controlsfx.control.action.Action;
+
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.concurrent.Semaphore;
+
+import static com.example.sqlide.popupWindow.handleWindow.*;
+
+public class xmlController {
+
+    @FXML
+    private JFXButton folderButton;
+
+    @FXML
+    ComboBox<String> DatabaseBox;
+
+    @FXML
+    TextField PathBox, FileName;
+
+    @FXML
+    CheckBox Mult, RowBox;
+
+    Stage stage;
+
+    private Stage loadingStage;
+
+    HashMap<String, DataBase> db;
+
+    private SqlToXml xml = new SqlToXml();
+
+    private final DoubleProperty progress = new SimpleDoubleProperty(0);
+
+    private final BooleanProperty TaskState = new SimpleBooleanProperty(true);
+
+    private Thread main;
+
+    private ArrayList<ArrayList<Object>> data = new ArrayList<>();
+
+    private final Semaphore fetcherSem = new Semaphore(1);
+    private final Semaphore writeSem = new Semaphore(1);
+
+    private Thread writer, fetcher;
+
+    @FXML
+    public void initialize() {
+        final String imagePath = getClass().getResource("/com/example/sqlide/images/folder.png").getPath();
+
+        // Cria um objeto File a partir do caminho
+        File imageFile = new File(imagePath);
+
+        // Converte o caminho do arquivo para uma URL
+        String imageUrl = imageFile.toURI().toString();
+
+        ImageView view = new ImageView(imageUrl);
+        view.setFitHeight(17);
+        view.setPreserveRatio(true);
+        folderButton.setPadding(Insets.EMPTY);
+        folderButton.setGraphic(view);
+    }
+
+    @FXML
+    public void openWindow() {
+        DirectoryChooser selectFolderWindow = new DirectoryChooser();
+
+        final File selectedDir = selectFolderWindow.showDialog(stage);
+        if (selectedDir != null) {
+            PathBox.setText(selectedDir.getAbsolutePath());
+        }
+    }
+
+    public void initXmlController(final HashMap<String, DataBase> db, final Stage stage) throws InterruptedException {
+        this.db = db;
+        this.stage = stage;
+        TaskState.addListener((observable -> cancelTask()));
+        for (final String dbName : db.keySet()) {
+            DatabaseBox.getItems().add(dbName);
+        }
+        writeSem.acquire();
+    }
+
+    @FXML
+    private void createBackup() throws Exception {
+
+        final String dbSelected = DatabaseBox.getValue();
+
+        if (dbSelected == null) {
+            ShowError("No selected", "You need to select Database to make a backup.");
+            DatabaseBox.setStyle("-fx-border-color: red; -fx-border-width: 2px; border-radius: 25px;");
+            return;
+        }
+
+        String path = PathBox.getText();
+        String name = FileName.getText();
+
+        if (path == null || path.isBlank()) {
+            ShowError("No selected", "You need to select path for backup.");
+            PathBox.setStyle("-fx-border-color: red; -fx-border-width: 2px; border-radius: 25px;");
+            PathBox.requestFocus();
+            return;
+        } else if (name == null || name.isBlank()) {
+            ShowError("No selected", "You need to add name of file.");
+            FileName.setStyle("-fx-border-color: red; -fx-border-width: 2px; border-radius: 25px;");
+            FileName.requestFocus();
+            return;
+        }
+        path += "\\" + name;
+        if (new File(path + ".xml").exists() || new File(path).exists()) {
+            if (!ShowConfirmation("File exists", "The file " + path + " exists\n" + "Are you sure to continue?")) {
+                return;
+            }
+        }
+
+        closeWindow();
+
+        path = removeDot(path);
+
+        final DataBase cursor = db.get(dbSelected);
+
+        xml = new SqlToXml();
+
+        String finalPath = path;
+        main = new Thread(()->{
+            boolean state = false;
+            try {
+
+                Platform.runLater(this::setLoadingStage);
+
+                final ArrayList<String> tables = cursor.getTables();
+
+                if (Mult.isSelected()) {
+                    prepareWorkMultiple(dbSelected, cursor, tables, finalPath);
+                } else {
+                    prepareWorkSingle(dbSelected, cursor, tables, finalPath);
+                }
+                state = true;
+                ShowSucess("Exporting xml", "Success to export database to XML.");
+            } catch (Exception e) {
+             //   throw new  RuntimeException();
+                if (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        xml.abort();
+                    } catch (Exception _) {
+                    }
+                    ShowError("XML", "Error to create XML.\n " + e.getMessage());
+                }
+            }
+            finally {
+                final boolean finalState = state;
+                Platform.runLater(()->{
+                    loadingStage.close();
+                    createNot(finalState);
+                });
+            }
+        });
+        main.start();
+    }
+
+    private void prepareWorkSingle(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
+        final double interact = (double) (100 / tables.size()) / 100;
+        xml.createXML(removeDot(dbSelected), path, cursor.getCharset());
+        for (final String sheetName : tables) {
+            xml.createTableChild(sheetName);
+            final ArrayList<String> columns = cursor.getColumnsName(sheetName);
+            xml.setStructure(columns);
+            final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
+            if (RowBox.isSelected() && !hasPrimeKey) {
+                xml.setRow(true);
+                columns.addFirst(cursor.getRowId());
+            }
+
+            writer = new Thread(() -> writer(xml));
+
+            fetcher = new Thread(() -> {
+                try {
+                    fetcher(cursor, columns, sheetName, writer);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            fetcher.start();
+            writer.start();
+
+            fetcher.join();
+            writer.join();
+
+            Platform.runLater(()->progress.set(progress.get()+interact));
+
+            System.out.println("acabou");
+
+        }
+        xml.close();
+        //xml.flush(path);
+    }
+
+    private void prepareWorkMultiple(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
+        final double interact = (100.0 / tables.size()) / 100.0;
+        final SqlToXml xml = new SqlToXml();
+        for (final String sheetName : tables) {
+            xml.createXML(removeDot(dbSelected), path + "-" + sheetName, cursor.getCharset());
+            xml.createTableChild(sheetName);
+            final ArrayList<String> columns = cursor.getColumnsName(sheetName);
+            final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
+            xml.setStructure(columns);
+            if (RowBox.isSelected() && !hasPrimeKey) {
+                xml.setRow(true);
+                columns.addFirst(cursor.getRowId());
+            }
+
+            writer = new Thread(() -> writer(xml));
+
+            fetcher = new Thread(() -> {
+                try {
+                    fetcher(cursor, columns, sheetName, writer);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            fetcher.start();
+            writer.start();
+
+            System.out.println(sheetName + " " + 6);
+
+            fetcher.join();
+            writer.join();
+
+            System.out.println("foi");
+
+            xml.close();
+
+           // throw new RuntimeException();
+
+            Platform.runLater(()->progress.set(progress.get()+interact));
+
+            System.out.println("acabou");
+
+          //  xml.flushIntermediate(path + "-" + sheetName);
+
+        }
+    }
+
+    private void writer(final SqlToXml xml) {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                writeSem.acquire();
+            } catch (InterruptedException e) {
+                try {
+                    xml.addData(data);
+                } catch (Exception _) {
+                }
+                data = null;
+                fetcherSem.release();
+                break;
+            }
+            try {
+                xml.addData(data);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            data = null;
+            fetcherSem.release();
+        }
+    }
+
+    private void fetcher(final DataBase cursor, final ArrayList<String> columns, final String sheetName, final Thread writer) throws Exception {
+        long offset = 0;
+        final long buffer = cursor.buffer * 10L;
+        while (true) {
+            final ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(sheetName, columns, buffer, offset);
+            if (dataCopy == null) {
+                throw new Exception(cursor.GetException());
+            }
+                    if (dataCopy.isEmpty()) {
+                        break;
+                    }
+            final ArrayList<ArrayList<Object>> copy = (ArrayList<ArrayList<Object>>) dataCopy.clone();
+            try {
+                fetcherSem.acquire();
+                data = copy;
+            } catch (InterruptedException _) {
+                break;
+            }
+            writeSem.release();
+            offset += buffer;
+        }
+        writer.interrupt();
+    }
+
+    private void createSingleXML(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
+        SqlToXml xml = new SqlToXml();
+        xml.createXML(removeDot(dbSelected), path, cursor.getCharset());
+
+        for (final String table : tables) {
+            xml.createTableChild(table);
+            addData(table, cursor.getColumnsName(table), xml, cursor);
+        }
+     //   xml.flush(path);
+    }
+
+    private void createNot(final boolean state) {
+
+        Action function = new Action("open", event->{
+            if (Desktop.isDesktopSupported()) {
+                Desktop desktop = Desktop.getDesktop();
+
+                // Verifica se a ação de abrir uma pasta é suportada
+                if (desktop.isSupported(Desktop.Action.OPEN)) {
+                    try {
+                        // Cria um objeto File com o caminho da pasta
+                        File folder = new File(PathBox.getText());
+
+                        // Verifica se o caminho é uma pasta válida
+                        if (folder.exists() && folder.isDirectory()) {
+                            desktop.open(folder); // Abre a pasta no explorador de arquivos
+                        }
+                    } catch (IOException _) {
+                    }
+                }
+            }
+        });
+        function.setStyle("-fx-background-color: #3574f0; -fx-text-fill: white");
+
+        if (state) {
+            Notification.showSuccessNotification("XML Success", "Success to export XML", function);
+        } else {
+            Notification.showErrorNotification("XML Error", "Error to export XML");
+        }
+
+
+    }
+
+    private void createMultipleXML(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
+        SqlToXml xml = new SqlToXml();
+
+        final String dbName = removeDot(dbSelected);
+
+        for (final String table : tables) {
+            xml.createXML(dbName, path, cursor.getCharset());
+            xml.createTableChild(table);
+            addData(table, cursor.getColumnsName(table), xml, cursor);
+        //    xml.flush(path + "-" + table);
+        }
+    }
+
+    private void addData(final String childName, final ArrayList<String> columns, final SqlToXml xml, final DataBase cursor) {
+        long offset = 0;
+        final long buffer = cursor.buffer * 10L;
+        ArrayList<ArrayList<Object>> data = cursor.fetchDataBackupObject(childName, columns, buffer, offset);
+        while (data != null) {
+       //     xml.addData(data, columns);
+            offset += buffer;
+            data = cursor.fetchDataBackupObject(childName, columns, buffer, offset);
+        }
+    }
+
+    private String removeDot(String s) {
+        if (s.contains(".")) {
+            return s.substring(0, s.indexOf("."));
+        }
+        return s;
+    }
+
+    @FXML
+    public void closeWindow() {
+        stage.close();
+    }
+
+    private void setLoadingStage() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/loadingPane/loadingLayout.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            loadingController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("XML");
+            subStage.initOwner(stage);
+            subStage.setResizable(false);
+            subStage.setScene(new Scene(root));
+            secondaryController.setAttr(progress, "Exporting XML", stage, TaskState);
+
+            subStage.initModality(Modality.NONE);
+
+            // Mostrar a subjanela
+            subStage.show();
+            loadingStage = subStage;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void cancelTask() {
+        main.interrupt();
+        fetcher.interrupt();
+        writer.interrupt();
+    }
+}

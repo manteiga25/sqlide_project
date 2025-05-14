@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox prefHeight="400.0" prefWidth="600.0" style="-fx-background-color: #3C3C3C;" stylesheets="@../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewColumn">
+   <children>
+      <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" prefHeight="63.0" prefWidth="608.0" style="-fx-text-fill: white;" textAlignment="CENTER">
+         <font>
+            <Font name="Arial" size="18.0" />
+         </font></Label>
+      <HBox alignment="CENTER" prefHeight="51.0" prefWidth="600.0">
+         <children>
+            <Label alignment="CENTER" prefHeight="103.0" prefWidth="86.0" text="Table Name:" textAlignment="CENTER" textFill="WHITE">
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font></Label>
+            <JFXTextField fx:id="ColumnNameInput" prefHeight="18.0" prefWidth="149.0" promptText="Name...." style="-fx-text-fill: white; -fx-prompt-text-fill: white;">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin></JFXTextField>
+            <Label prefHeight="50.0" prefWidth="100.0" />
+            <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="106.0" prefWidth="58.0" text="Type:" textAlignment="CENTER" textFill="WHITE">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font></Label>
+            <ChoiceBox fx:id="typeBox" prefWidth="150.0" stylesheets="@../../../css/ChoiceBoxModern.css">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin></ChoiceBox>
+         </children></HBox>
+      <HBox prefHeight="45.0" prefWidth="600.0">
+      <Label prefHeight="43.0" prefWidth="600.0" text="Options for Column:" textAlignment="CENTER" textFill="WHITE">
+         <font>
+            <Font name="Arial Black" size="14.0" />
+         </font>
+            <HBox.margin>
+               <Insets left="10.0" />
+            </HBox.margin>
+      </Label>
+         <Label prefHeight="45.0" prefWidth="637.0" text="Size Options:" textFill="WHITE">
+            <font>
+               <Font name="Arial Black" size="14.0" />
+            </font>
+         </Label>
+      </HBox>
+      <HBox fx:id="BoxOp" prefHeight="278.0" prefWidth="600.0">
+      <Pane prefHeight="257.0" prefWidth="602.0" style="-fx-background-color: #3C3C3C;">
+               <children>
+                  <JFXCheckBox fx:id="primaryKeyOption" checkedColor="#3574f0" layoutX="8.0" layoutY="6.0" mnemonicParsing="false" text="Primary Key" textFill="WHITE" />
+                  <JFXCheckBox fx:id="ForeignKeyOption" checkedColor="#3574f0" layoutX="100.0" layoutY="6.0" mnemonicParsing="false" onAction="#AlterForeignBox" text="Foreign Key" textFill="WHITE" />
+                  <JFXCheckBox fx:id="NotNullOption" checkedColor="#3574f0" layoutX="197.0" layoutY="6.0" mnemonicParsing="false" text="Not Null" textFill="WHITE" />
+                  <JFXCheckBox fx:id="UniqueOption" checkedColor="#3574f0" layoutX="124.0" layoutY="34.0" mnemonicParsing="false" text="Unique" textFill="WHITE" />
+                  <JFXCheckBox fx:id="AutoincrementOption" checkedColor="#3574f0" layoutX="8.0" layoutY="34.0" mnemonicParsing="false" text="Autoincrement" textFill="WHITE" />
+                     <JFXCheckBox fx:id="CheckOption" checkedColor="#3574f0" layoutX="194.0" layoutY="34.0" mnemonicParsing="false" text="Check" textFill="WHITE" />
+                     <JFXCheckBox fx:id="DefaultOption" checkedColor="#3574f0" layoutX="8.0" layoutY="61.0" mnemonicParsing="false" onAction="#AlterDefaultText" text="Default" textFill="WHITE" />
+                     <JFXCheckBox fx:id="IndexOption" checkedColor="#3574f0" layoutX="92.0" layoutY="61.0" mnemonicParsing="false" onAction="#AlterIndexState" text="Index" textFill="WHITE" />
+                     <Label layoutX="8.0" layoutY="89.0" prefHeight="25.0" prefWidth="50.0" text="Default:" textFill="WHITE">
+                        <font>
+                           <Font name="Arial" size="12.0" />
+                        </font></Label>
+                     <JFXTextField fx:id="DefaultValueText" layoutX="80.0" layoutY="85.0" style="-fx-text-fill: white;" unFocusColor="WHITE" />
+                     <Label layoutX="5.0" layoutY="121.0" prefHeight="17.0" prefWidth="69.0" text="Foreign Key:" textFill="WHITE">
+                        <font>
+                           <Font name="Arial" size="12.0" />
+                        </font></Label>
+                     <ChoiceBox fx:id="ForeignKeyBox" layoutX="80.0" layoutY="117.0" prefWidth="150.0" stylesheets="@../../../css/ChoiceBoxModern.css" />
+                     <Label layoutX="12.0" layoutY="228.0" text="set/enum:" textFill="WHITE">
+                        <font>
+                           <Font name="Arial" size="12.0" />
+                        </font></Label>
+                     <JFXTextField fx:id="WordBox" disable="true" layoutX="82.0" layoutY="214.0" style="-fx-text-fill: white;" unFocusColor="WHITE" />
+                     <JFXButton fx:id="AddButton" disable="true" layoutX="237.0" layoutY="221.0" mnemonicParsing="false" onAction="#addWord" style="-fx-background-color: #3574F0;" text="Add" textFill="WHITE" />
+                     <JFXCheckBox fx:id="FillOption" checkedColor="#3574f0" disable="true" layoutX="158.0" layoutY="61.0" mnemonicParsing="false" text="Fill Foreign" textFill="WHITE" />
+               <Label layoutX="17.0" layoutY="156.0" text="Index:" textFill="WHITE">
+                  <font>
+                     <Font name="Arial" size="12.0" />
+                  </font>
+               </Label>
+               <JFXTextField fx:id="IndexText" disable="true" layoutX="80.0" layoutY="149.0" style="-fx-text-fill: white;" unFocusColor="WHITE" />
+               <Label layoutX="289.0" layoutY="12.0" text="Character lenght:" textFill="WHITE">
+                  <font>
+                     <Font name="Arial" size="12.0" />
+                  </font>
+               </Label>
+               <Label layoutX="289.0" layoutY="45.0" text="Decimal part1:" textAlignment="CENTER" textFill="WHITE">
+                  <font>
+                     <Font name="Arial" size="12.0" />
+                  </font>
+               </Label>
+               <Label alignment="CENTER" contentDisplay="CENTER" layoutX="289.0" layoutY="78.0" text="Decimal part2:" textAlignment="CENTER" textFill="WHITE">
+                  <font>
+                     <Font name="Arial" size="12.0" />
+                  </font>
+               </Label>
+               <JFXTextField fx:id="text1" disable="true" layoutX="390.0" layoutY="4.0" promptText="Ex:255" style="-fx-text-fill: white; -fx-prompt-text-fill: white;" unFocusColor="WHITE" />
+               <JFXTextField fx:id="text2" disable="true" layoutX="391.0" layoutY="33.0" promptText="Ex:4" style="-fx-text-fill: white; -fx-prompt-text-fill: white;" unFocusColor="WHITE" />
+               <JFXTextField fx:id="text3" disable="true" layoutX="391.0" layoutY="67.0" promptText="Ex:6" style="-fx-text-fill: white; -fx-prompt-text-fill: white;" unFocusColor="WHITE" />
+               <Label layoutX="12.0" layoutY="197.0" text="Index type:" textFill="WHITE">
+                  <font>
+                     <Font name="Arial" size="12.0" />
+                  </font>
+               </Label>
+               <ChoiceBox fx:id="indexBox" disable="true" layoutX="76.0" layoutY="192.0" prefWidth="150.0" stylesheets="@../../../css/ChoiceBoxModern.css" />
+               <JFXButton fx:id="EditList" disable="true" layoutX="279.0" layoutY="221.0" mnemonicParsing="false" onAction="#EditSet" style="-fx-background-color: #3574F0;" text="Edit" textFill="WHITE" />
+               <Label layoutX="328.0" layoutY="227.0" text="Set Name:" textFill="WHITE">
+                  <font>
+                     <Font name="Arial" size="12.0" />
+                  </font>
+               </Label>
+               <JFXTextField fx:id="SetName" disable="true" layoutX="393.0" layoutY="216.0" style="-fx-text-fill: white;" unFocusColor="WHITE" />
+               </children>
+      </Pane>
+      </HBox>
+      <HBox alignment="TOP_RIGHT" prefHeight="33.0" prefWidth="600.0" spacing="5.0">
+         <children>
+            <JFXButton alignment="TOP_LEFT" mnemonicParsing="false" onAction="#closeWindow" style="-fx-background-color: #3574F0;" text="cancel" textFill="WHITE">
+               <HBox.margin>
+                  <Insets bottom="5.0" />
+               </HBox.margin>
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font>
+            </JFXButton>
+            <JFXButton alignment="TOP_LEFT" mnemonicParsing="false" onAction="#createColumn" style="-fx-background-color: #3574F0;" text="create" textFill="WHITE">
+               <HBox.margin>
+                  <Insets right="5.0" />
+               </HBox.margin>
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font>
+            </JFXButton>
+         </children>
+      </HBox>
+   </children>
+</VBox>
