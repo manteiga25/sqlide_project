@@ -4,8 +4,10 @@ import com.example.sqlide.*;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -40,13 +42,15 @@ public class DatabaseInterface {
         createTable();
     }
 
-    public void readTables() throws Exception {
+    public void readTables() {
         final ArrayList<String> Tables = DatabaseSeted.getTables();
         for (final String t : Tables) {
-            TableInterface table = new TableInterface(DatabaseSeted, t, DBTabContainer, this);
-            table.createDatabaseTab();
-            table.readColumns();
-            TableInterfaceList.add(table);
+            Platform.runLater(()->{
+                TableInterface table = new TableInterface(DatabaseSeted, t, DBTabContainer, this);
+                table.createDatabaseTab();
+                table.readColumns();
+                TableInterfaceList.add(table);
+            });
         }
         if (!TableInterfaceList.isEmpty()) {
             TableInterfaceList.getFirst().fetchIfIsPrimeClick(); // faça fetch da primeira tabela
@@ -69,9 +73,10 @@ public class DatabaseInterface {
         Tab DBPane = new Tab(dbName);
         DBPane.setId(dbName);
 
-        VBox DBContainer = new VBox(2);
+        VBox DBContainer = new VBox(5);
 
-        HBox ButtonsLine = new HBox();
+        HBox ButtonsLine = new HBox(5);
+        ButtonsLine.setPadding(new Insets(0,5,0,0));
 
         Button createTab = new Button("create table");
         createTab.setOnAction(e -> createDBTabInterface());

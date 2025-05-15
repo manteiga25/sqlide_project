@@ -96,7 +96,7 @@ public class NewTable {
             Stage subStage = new Stage();
             subStage.setTitle("Create Column");
             subStage.setScene(new Scene(root));
-            secondaryController.NewColumnWin("", "", this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes());
+     //       secondaryController.NewColumnWin("", "", this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes());
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -114,8 +114,8 @@ public class NewTable {
         items.removeAll(item);
     }
 
-    @FXML
-    private void addItem
+   // @FXML
+  //  private void addItem
 
     @FXML
     private void closeWindow() {

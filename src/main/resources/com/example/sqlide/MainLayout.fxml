@@ -9,7 +9,7 @@
 
 <BorderPane fx:id="BorderContainer" prefHeight="1280.0" prefWidth="1920.0" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.mainController">
          <top>
-             <HBox prefHeight="27.0" prefWidth="600.0" style="-fx-background-color: #3C3F41;" BorderPane.alignment="CENTER">
+             <HBox prefHeight="27.0" prefWidth="600.0" style="-fx-background-color: #3C3F41;" stylesheets="@../../../css/MenuStyle.css" BorderPane.alignment="CENTER">
                  <MenuButton mnemonicParsing="false" text="Database">
                      <items>
                          <MenuItem mnemonicParsing="false" onAction="#SQLiteInterface" text="New Database" />
@@ -43,14 +43,26 @@
                          <Insets />
                      </opaqueInsets>
                  </MenuButton>
-         <Button fx:id="openScript" disable="true" mnemonicParsing="false" onAction="#setOpenScript" text="Open Script" />
-         <Button fx:id="createScript" disable="true" mnemonicParsing="false" onAction="#createScript" text="Create Script" />
+         <JFXButton fx:id="openScript" disable="true" mnemonicParsing="false" onAction="#setOpenScript" text="Open Script" />
+         <JFXButton fx:id="createScript" disable="true" mnemonicParsing="false" onAction="#createScript" text="Create Script" />
              </HBox>
          </top>
          <left>
-             <VBox prefHeight="1195.0" prefWidth="73.0" style="-fx-background-color: #2A2A2A;" BorderPane.alignment="CENTER">
-                 <Button mnemonicParsing="false" onAction="#SwitchToDB" prefHeight="25.0" prefWidth="75.0" text="Database" />
-                 <Button mnemonicParsing="false" onAction="#SwitchToEditor" text="SQL Editor" />
+             <VBox spacing="5.0" style="-fx-background-color: #2A2A2A;" BorderPane.alignment="CENTER">
+                 <JFXButton mnemonicParsing="false" onAction="#SwitchToDB" prefWidth="75.0" style="-fx-background-color: #3574F0;" text="Database" textFill="#f2f2f2">
+            <font>
+               <Font name="Arial" size="12.0" />
+            </font></JFXButton>
+                 <JFXButton mnemonicParsing="false" onAction="#SwitchToEditor" style="-fx-background-color: #3574F0;" text="SQL Editor" textFill="#f2f2f2">
+            <font>
+               <Font name="Arial" size="12.0" />
+            </font></JFXButton>
+         <BorderPane.margin>
+            <Insets left="5.0" top="5.0" />
+         </BorderPane.margin>
+         <padding>
+            <Insets right="5.0" />
+         </padding>
              </VBox>
          </left>
          <center>

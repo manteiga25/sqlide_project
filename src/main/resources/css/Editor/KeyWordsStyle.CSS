@@ -1,0 +1,12 @@
+.keyword {
+    -fx-fill: #569CD6; /* Azul para palavras-chave */
+}
+.comment {
+    -fx-fill: #808080; /* Cinza para comentários */
+}
+.number {
+    -fx-fill: #B5CEA8; /* Verde para números */
+}
+.string {
+    -fx-fill: #CE9178; /* Cor laranja para strings */
+}

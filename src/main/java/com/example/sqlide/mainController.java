@@ -11,6 +11,7 @@ import com.example.sqlide.TriggerLayout.EditTriggerController;
 import com.example.sqlide.TriggerLayout.TriggerController;
 import com.example.sqlide.drivers.SQLite.SQLiteDB;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.editor.EditorController;
 import com.example.sqlide.editor.FileEditor;
 import com.example.sqlide.exporter.CSV.CSVController;
 import com.example.sqlide.exporter.Excel.excelController;
@@ -20,7 +21,9 @@ import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -114,6 +117,9 @@ public class mainController {
 
     private final ArrayList<String> ScriptsOpened = new ArrayList<>();
 
+    private final ObservableList<String> DatabasesName = FXCollections.observableArrayList();
+    private final ObservableList<DataBase> DatabasesOpened = FXCollections.observableArrayList();
+
     private String messageAi = "";
 
     @FXML
@@ -126,6 +132,8 @@ public class mainController {
     private Stage primaryStage;
 
     private final BlockingQueue<String> sender = new LinkedBlockingQueue<>();
+
+    private EditorController editorController = null;
 
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
@@ -405,10 +413,9 @@ public class mainController {
         }
     }
 
-    public boolean openDB(final DataBase db, final String URL, final String DBName, final String UserName, final String password) {
+    public void openDB(final DataBase db, final String URL, final String DBName, final String UserName, final String password) {
         if (!db.connect(URL, DBName, UserName, password)) {
             ShowError("Error SQL", "Error to open Database " + URL + "\n" + db.GetException());
-            return false;
         }
         db.setMessager(sender);
         DatabaseOpened.put(DBName, db);
@@ -418,23 +425,29 @@ public class mainController {
 
         DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
 
-        try {
-            openDB.readTables();
-
-            setDividerSpace();
-
-            DBopens.put(DBName, openDB);
-            DBopened.put(DBName, openDB);
-            return true;
-        } catch (Exception e) {
+        final Thread open = new Thread(()->{
             try {
-                openDB.closeInterface();
-                db.disconnect();
-            } catch (SQLException _) {
+
+                openDB.readTables();
+
+                Platform.runLater(this::setDividerSpace);
+
+                DBopens.put(DBName, openDB);
+                DBopened.put(DBName, openDB);
+                DatabasesOpened.add(db);
+                DatabasesName.add(DBName);
+            } catch (Exception e) {
+                try {
+                    openDB.closeInterface();
+                    db.disconnect();
+                } catch (SQLException _) {
+                }
+                ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
             }
-            ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
-            return false;
-        }
+        });
+        open.setDaemon(true);
+        open.start();
+
     }
 
     public void openDB(final String path, final String DBName) throws IOException {
@@ -449,15 +462,19 @@ public class mainController {
 
         DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
 
-        try {
-            openDB.readTables();
-            // openDB.detectPrimaryKeys();
+        final Thread open = new Thread(()->{
+            try {
 
-            setDividerSpace();
+                Platform.runLater(()->{
+                    openDB.readTables();
+                    setDividerSpace();
+                });
 
             DatabaseOpened.put(DBName, db);
             DBopens.put(DBName, openDB);
             DBopened.put(DBName, openDB);
+                DatabasesOpened.add(db);
+                DatabasesName.add(DBName);
         } catch (Exception e) {
             try {
                 openDB.closeInterface();
@@ -466,6 +483,9 @@ public class mainController {
             }
             ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
         }
+        });
+        open.setDaemon(true);
+        open.start();
     }
 
     @FXML
@@ -519,6 +539,8 @@ public class mainController {
         DatabaseOpened.put(DBName, db);
         DBopens.put(DBName, openDB);
         DBopened.put(DBName, openDB);
+        DatabasesOpened.add(db);
+        DatabasesName.add(DBName);
 
     }
 
@@ -1106,13 +1128,30 @@ public class mainController {
             // }
             openScript.setDisable(false);
             createScript.setDisable(false);
-            if (ContainerForEditor == null) {
-                createEditorPane();
+            if (editorController == null) {
+              //  createEditorPane();
+                loadEditor();
             }
             // BorderContainer.setCenter(ContainerForEditor);
-            CenterContainer.getItems().addFirst(ContainerForEditor);
+            CenterContainer.getItems().addFirst(editorController.getContainer());
             setDividerSpace();
             //  BorderContainer.setCenter(new Label("editor"));
+        }
+    }
+
+    private void loadEditor() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("Editor/EditorStage.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            editorController = loader.getController();
+            editorController.setList(DatabasesOpened, DatabasesName);
+
+            // Criar um novo Stage para a subjanela
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -1134,49 +1173,12 @@ public class mainController {
 
     @FXML
     private void setOpenScript() {
-        try {
-            FileChooser selectFileWindow = new FileChooser();
-            selectFileWindow.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("script SQL", "*.sql"));
-
-            final File selectedFile = selectFileWindow.showOpenDialog(primaryStage);
-            if (selectedFile != null) {
-                final String ScriptPath = selectedFile.getAbsolutePath();
-                final String ScriptName = selectedFile.getName();
-                final int indexScript = ScriptsOpened.indexOf(ScriptPath);
-                if (indexScript != -1) {
-                    ContainerForEditor.getSelectionModel().select(indexScript);
-                } else {
-                    createFolderEditor(ScriptPath, ScriptName);
-                    //  ScriptsOpened.add(ScriptPath);
-                }
-            }
-        } catch (Exception e) {
-            ShowError("Script", "Error to open SQL file.\n" + e.getMessage());
-        }
+        editorController.setOpenScript();
     }
 
     @FXML
     private void createScript() {
-        try {
-            FileChooser selectFileWindow = new FileChooser();
-            selectFileWindow.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("script SQL", "*.sql"));
-
-            final File selectedFile = selectFileWindow.showSaveDialog(primaryStage);
-            if (selectedFile != null) {
-                if (selectedFile.exists()) {
-                    if (!selectedFile.delete() || !selectedFile.createNewFile()) {
-                        throw new Exception("");
-                    }
-                } else if (!selectedFile.createNewFile()) {
-                    throw new Exception("");
-                }
-                createFolderEditor(selectedFile.getAbsolutePath(), selectedFile.getName());
-            }
-        } catch (Exception e) {
-            ShowError("Script", "Error to create SQL file.\n" + e.getMessage());
-        }
+        editorController.createScript();
     }
 
     private void createFolderEditor(final String path, final String name) {

@@ -1,0 +1,58 @@
+.code-area {
+    -fx-background-color: #1E1F22;
+}
+
+.code-area .paragraph-box .keyword {
+    -fx-fill: #569CD6 !important; /* Use !important se necessário */
+    -fx-font-weight: bold;
+}
+
+.code-area .caret {
+    -fx-stroke: #F2F2F2;    /* Cor da borda do cursor (Branco) */
+    -fx-stroke-width: 1.5px;
+    -fx-fill: transparent;  /* Preenchimento transparente */
+}
+
+.code-area .text.selection {
+    -fx-background-color: rgba(173, 216, 230, 0.5); /* 50% de opacidade */
+}
+
+.keyword {
+    -fx-fill: #569CD6;
+    -fx-font-weight: bold;
+}
+
+.lineno {
+    -fx-background-color: #1E1F22;    /* Cor de fundo */
+    -fx-border-color: #404040;       /* Cor da borda direita */
+    -fx-border-width: 0 1px 0 0;     /* Borda apenas à direita */
+    -fx-padding: 0 15px 0 0;         /* Padding à direita (espaço entre a borda e o texto) */
+    -fx-spacing: 0;                  /* Espaço entre elementos internos (se houver) */
+}
+
+.code-area:current-line .lineno-label {
+    -fx-text-fill: #FFD700; /* Dourado */
+}
+
+/* Label do número da linha */
+.lineno .lineno-label {
+    -fx-text-fill: #86898F;          /* Cor do texto */
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 12px;
+    -fx-alignment: center-right;     /* Alinha o texto à direita */
+    -fx-padding: 0 5px 0 0;          /* Padding interno do label */
+}
+
+/* Estilo do label do número */
+.lineno-label {
+    -fx-text-fill: #8e8e8e;        /* Cor do texto */
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 12px;
+    -fx-alignment: center-right;   /* Alinhamento à direita */
+}
+
+/* Linha atual (opcional) */
+.code-area:current-line .lineno-label {
+    -fx-text-fill: #569CD6;        /* Cor do número da linha atual */
+    -fx-font-weight: bold;
+}

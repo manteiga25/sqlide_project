@@ -17,11 +17,6 @@ public class MySQLDB extends DataBase {
 
     public TypesModelList typesOfDB;
 
-    public int buffer = 250;
-
-    private Connection connection = null;
-    private Statement statement = null;
-
     private String MsgException;
 
     public MySQLDB() {

@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" style="-fx-background-color: #2A2A2A;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="Container" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0" style="-fx-background-color: #2A2A2A;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.editor.EditorController">
    <children>
-      <ToolBar nodeOrientation="RIGHT_TO_LEFT" style="-fx-background-color: #2A2A2A;">
+      <ToolBar nodeOrientation="RIGHT_TO_LEFT" style="-fx-background-color: #2A2A2A;" stylesheets="@../../../../css/BarButtonStyle.css">
         <items>
-          <Button fx:id="TaskButton" mnemonicParsing="false" text="Button" />
-            <ChoiceBox fx:id="StatementBox" prefWidth="150.0" style="-fx-background-color: #2A2A2A;" stylesheets="@../../../../css/ChoiceBoxModern.css" />
+          <Button fx:id="TaskButton" mnemonicParsing="false" onAction="#RunButton" style="-fx-background-color: #4E8752;">
+               <graphic>
+                  <ImageView fitHeight="15.0" fitWidth="15.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../../../img/play.png" />
+                     </image>
+                  </ImageView>
+               </graphic></Button>
+            <ChoiceBox fx:id="SchemaBox" prefWidth="150.0" style="-fx-background-color: #2A2A2A;" stylesheets="@../../../../css/ChoiceBoxModern.css" />
             <Label text="Database:" textFill="#f2f2f2">
                <font>
                   <Font name="Arial" size="18.0" />
@@ -17,13 +26,35 @@
             </Label>
         </items>
       </ToolBar>
-      <TabPane stylesheets="@../../../../css/TabPane.css" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+      <TabPane fx:id="TabContainer" stylesheets="@../../../../css/TabPane.css" VBox.vgrow="ALWAYS">
         <tabs>
           <Tab closable="false" disable="true" style="-fx-background-color: transparent;">
-              <TilePane/>
+              <TilePane alignment="CENTER" orientation="VERTICAL">
+                  <children>
+                     <Label text="No script opened" textFill="#f2f2f2">
+                        <font>
+                           <Font name="Arial" size="48.0" />
+                        </font>
+                     </Label>
+                     <HBox alignment="TOP_CENTER" spacing="5.0">
+                        <children>
+                           <Hyperlink onAction="#setOpenScript" text="Open Script">
+                              <font>
+                                 <Font name="Arial" size="24.0" />
+                              </font>
+                           </Hyperlink>
+                           <Hyperlink onAction="#createScript" text="Create script">
+                              <font>
+                                 <Font name="Arial" size="24.0" />
+                              </font>
+                           </Hyperlink>
+                        </children>
+                        <TilePane.margin>
+                           <Insets top="10.0" />
+                        </TilePane.margin>
+                     </HBox>
+                  </children></TilePane>
           </Tab>
-            <Tab>
-            </Tab>
         </tabs>
       </TabPane>
    </children>

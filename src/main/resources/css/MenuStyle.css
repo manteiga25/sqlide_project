@@ -1,0 +1,72 @@
+/* Estilo base para MenuButton e Button */
+.menu-button, .button {
+    -fx-background-color: #333; /* Cor de fundo escura */
+    -fx-text-fill: #f5f5f5; /* Texto branco */
+    -fx-border-color: #555; /* Cor da borda */
+    -fx-border-width: 2px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 5px 10px;
+    -fx-font-family: 'Arial';
+    -fx-cursor: hand;
+}
+
+/* Efeito hover para ambos */
+.menu-button:hover, .button:hover {
+    -fx-border-color: #2E436E;
+    -fx-background-color: #404040;
+}
+
+/* Efeito quando pressionado */
+.menu-button:pressed, .button:pressed {
+    -fx-background-color: #2E436E;
+}
+
+/* Dropdown do MenuButton (ContextMenu) */
+.menu-button .context-menu {
+    -fx-background-color: #333; /* Mesma cor do botão principal */
+    -fx-border-color: #555;
+    -fx-border-width: 2px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-pref-width: 150px; /* Largura desejada do menu */
+         -fx-min-width: 150px;
+         -fx-max-width: 150px;
+         -fx-background-insets: 0; /* Remove espaçamento interno */
+    -fx-padding: 5px;
+}
+
+/* Itens do menu */
+.menu-button .menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 5px 10px;
+}
+
+/* Texto dos itens do menu */
+.menu-button .menu-item .label {
+    -fx-text-fill: #f5f5f5;
+}
+
+/* Hover nos itens do menu */
+.menu-button .menu-item:hover {
+    -fx-background-color: #2E436E;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+/* Item do menu quando selecionado */
+.menu-button .menu-item:focused {
+    -fx-background-color: #2E436E;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,255,0.5), 10, 0, 0, 0);
+}
+
+/* Seta do MenuButton */
+.menu-button .arrow {
+    -fx-background-color: #f5f5f5; /* Cor da seta branca */
+}
+
+/* Efeito de foco */
+.menu-button:focused, .button:focused {
+    -fx-border-color: #2E436E;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,255,0.3), 10, 0, 0, 0);
+}

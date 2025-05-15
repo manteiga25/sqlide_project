@@ -1,7 +1,9 @@
 package com.example.sqlide.editor;
 
+import com.example.sqlide.Container.Editor.TextAreaAutocomplete;
 import com.example.sqlide.Container.Editor.TextAreaAutocompleteLines;
 import com.example.sqlide.Container.Editor.Words.SQLWords;
+import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
@@ -11,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,29 +22,41 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class FileEditor {
 
-    private final String path;
+    private String path;
 
-    private final VBox EditorContainer = new VBox();
+    private final VBox EditorContainer = new VBox(5);
 
     private final KeyCombination cntrlS = new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN);
 
-    private final TextAreaAutocompleteLines editorText = new TextAreaAutocompleteLines();
+    private final TextAreaAutocomplete editorText = new TextAreaAutocomplete();
+
+    private Tab tab;
+
+    public String getPath() {
+        return path;
+    }
+
+    public boolean isChanged() {
+        return editorText.isChanged();
+    }
 
     public FileEditor(final String path) {
         this.path = path;
 
         HBox toolsBox = new HBox(10);
-        toolsBox.setPadding(new Insets(0,0,0,10));
+        toolsBox.setPadding(new Insets(0,0,5,10));
 
         Label dialetLabel = new Label("Script dialet");
         dialetLabel.setTextFill(Color.WHITE);
 
         ComboBox<String> selectDialet = new ComboBox<>();
+        selectDialet.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ComboboxModern.css")).toExternalForm());
 
         selectDialet.getItems().addAll("SQLite", "MySQL", "Postgre");
 
@@ -89,12 +104,20 @@ public class FileEditor {
     }
 
     public void putContainer(final Tab tab) {
+        this.tab = tab;
         tab.setContent(EditorContainer);
     }
 
-    private void save() {
+    void save() {
         if (editorText.isChanged()) {
             editorText.setChanged(false);
+
+            if (path == null || path.isEmpty()) {
+                createScript();
+                tab.setText(path.substring(path.lastIndexOf("\\")+1));
+                tab.setId(path);
+            }
+
             try {
                 Path tempFile = Files.write(
                         Paths.get(path + ".bak"),
@@ -111,6 +134,30 @@ public class FileEditor {
             }
         } else {
             System.out.println("not");
+        }
+    }
+
+    @FXML
+    public void createScript() {
+        try {
+            FileChooser selectFileWindow = new FileChooser();
+            selectFileWindow.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("script SQL", "*.sql"));
+
+            final File selectedFile = selectFileWindow.showSaveDialog(EditorContainer.getScene().getWindow());
+            if (selectedFile != null) {
+                if (selectedFile.exists()) {
+                    if (!selectedFile.delete() || !selectedFile.createNewFile()) {
+                        throw new Exception("");
+                    }
+                } else if (!selectedFile.createNewFile()) {
+                    throw new Exception("");
+                }
+                path = selectedFile.getPath();
+              //  createFolderEditor(selectedFile.getAbsolutePath(), selectedFile.getName());
+            }
+        } catch (Exception e) {
+            ShowError("Script", "Error to create SQL file.\n" + e.getMessage());
         }
     }
 

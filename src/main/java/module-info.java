@@ -20,6 +20,7 @@ module com.example.sqlide {
     requires java.net.http;
     requires java.desktop;
     requires de.jensd.fx.glyphs.fontawesome;
+    requires org.fxmisc.richtext;
 
     opens com.example.sqlide to javafx.fxml;
     opens com.example.sqlide.exporter.Excel to javafx.fxml;
@@ -40,6 +41,7 @@ module com.example.sqlide {
     opens com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater to javafx.fxml;
     opens com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface to javafx.fxml;
     opens com.example.sqlide.Container.loading to javafx.fxml;
+    opens com.example.sqlide.editor to javafx.fxml;
 
     exports com.example.sqlide;
     exports com.example.sqlide.exporter.Excel;
@@ -60,5 +62,6 @@ module com.example.sqlide {
     exports com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface;
     exports com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater;
     exports com.example.sqlide.Container.loading;
+    exports com.example.sqlide.editor;
 
 }

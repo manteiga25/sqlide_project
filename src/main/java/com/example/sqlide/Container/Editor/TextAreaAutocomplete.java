@@ -8,16 +8,24 @@ import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Path;
+import javafx.scene.text.Text;
 import javafx.stage.Popup;
+import org.fxmisc.richtext.CodeArea;
+import org.fxmisc.richtext.LineNumberFactory;
+import org.fxmisc.richtext.model.StyleSpans;
+import org.fxmisc.richtext.model.StyleSpansBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-public class TextAreaAutocomplete extends TextArea {
+public class TextAreaAutocomplete extends CodeArea {
 
     protected final Popup entriesPopup = new Popup();
 
@@ -27,22 +35,206 @@ public class TextAreaAutocomplete extends TextArea {
 
     private ArrayList<String> words = new ArrayList<>();
 
+    private boolean changed = false;
+
+    public boolean isChanged() {
+        return changed;
+    }
+
+    public void setChanged(final boolean changed) {
+        this.changed = changed;
+    }
+
+    private static final String COMMENT_REGEX =
+            "(?<COMMENT>" +
+                    "--.*" +
+                    "|" +
+                    "(?s)/\\*.*?\\*/" +        // (?s) ativa DOTALL (captura quebras de linha)
+                    ")";
+
+    private static final String NumberFormat = "(?<NUMBER>[^a-zA-Z0-9])(\\d+(\\.\\d+)?)|(\\d+(\\.\\d+)?)?([^a-zA-Z0-9])";
+
+    private static final String STRING_REGEX =
+            "(?<STRING>\"((?:\\\\\\.|[^\"])*)\")";
+
+    private Pattern SQL_KEYWORDS;
+
     public void setAutoCompleteWords(final ArrayList<String> words) {
         this.words = words;
+        final String regex = words.stream()
+                .map(Pattern::quote) // Escapa caracteres especiais
+                .collect(Collectors.joining(" |"));
+        this.SQL_KEYWORDS = Pattern.compile("(?<KEYWORD>"+regex+")|"+COMMENT_REGEX+"|"+NumberFormat+"|"+STRING_REGEX, Pattern.CASE_INSENSITIVE);
     }
 
     String bufferWord = "";
 
     private boolean newWord = false;
 
+    public void setText(final String text) {
+        replaceText(text);
+    }
+
     public TextAreaAutocomplete() {
         super();
+        getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/Editor/CodeStyle.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/Editor/KeyWordsStyle.css")).toExternalForm());
+        setParagraphGraphicFactory(LineNumberFactory.get(this));
+        setParagraphGraphicFactory(line -> {
+            Label lineNumber = new Label(String.valueOf(line + 1));
+            lineNumber.getStyleClass().add("lineno-label"); // Aplica a classe CSS
+            HBox container = new HBox(lineNumber);
+            container.getStyleClass().add("lineno-container");
+            container.setAlignment(Pos.CENTER_RIGHT);
+            return container;
+        });
+        addContextMenu();
         entriesPopup.setAutoHide(true);
         WordsBox.setPrefHeight(Region.USE_COMPUTED_SIZE);
         initializeHandlers();
-}
+    }
+
+    private StyleSpans<Collection<String>> computeHighlighting(final String text) {
+        StyleSpansBuilder<Collection<String>> spansBuilder = new StyleSpansBuilder<>();
+        Matcher matcher = SQL_KEYWORDS.matcher(text);
+        int lastEnd = 0;
+
+        while (matcher.find()) {
+            spansBuilder.add(Collections.emptyList(), matcher.start() - lastEnd);
+            String styleClass =
+                    matcher.group("COMMENT") != null ? "comment" :
+                            matcher.group("KEYWORD") != null ? "keyword" :
+                                    matcher.group("NUMBER") != null ? "number" :
+                                        matcher.group("STRING") != null ? "string" : null;
+
+            if (styleClass != null) {
+                spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
+                lastEnd = matcher.end();
+            }
+        }
+
+        spansBuilder.add(Collections.emptyList(), text.length() - lastEnd);
+        return spansBuilder.create();
+    }
+
+    private void addContextMenu() {
+
+        getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/Editor/MenuStyle.css")).toExternalForm());
+
+        MenuItem UndoItem = new MenuItem();
+        HBox undoBox = new HBox(
+                new Label("Undo"),
+                new Region(), // Spacer dinâmico
+                new Text("Ctrl+Z")
+        );
+        undoBox.setAlignment(Pos.CENTER_LEFT); // Alinha elementos
+        HBox.setHgrow(undoBox.getChildren().get(1), Priority.ALWAYS); // Spacer ocupa espaço restante
+        undoBox.setPrefWidth(120); // Largura fixa
+        UndoItem.setGraphic(undoBox);
+        UndoItem.setOnAction(_ -> undo());
+
+// Repita o mesmo padrão para os demais itens
+        MenuItem RedoItem = new MenuItem();
+        HBox redoBox = new HBox(
+                new Label("Redo"),
+                new Region(),
+                new Text("Ctrl+Y")
+        );
+        redoBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(redoBox.getChildren().get(1), Priority.ALWAYS);
+        redoBox.setPrefWidth(120);
+        RedoItem.setGraphic(redoBox);
+        RedoItem.setOnAction(_ -> redo());
+
+        MenuItem CutItem = new MenuItem();
+        HBox cutBox = new HBox(
+                new Label("Cut"),
+                new Region(),
+                new Text("Ctrl+X")
+        );
+        cutBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(cutBox.getChildren().get(1), Priority.ALWAYS);
+        cutBox.setPrefWidth(120);
+        CutItem.setGraphic(cutBox);
+        CutItem.setOnAction(_ -> cut());
+
+        MenuItem CopyItem = new MenuItem();
+        HBox copyBox = new HBox(
+                new Label("Copy"),
+                new Region(),
+                new Text("Ctrl+C")
+        );
+        copyBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(copyBox.getChildren().get(1), Priority.ALWAYS);
+        copyBox.setPrefWidth(120);
+        CopyItem.setGraphic(copyBox);
+        CopyItem.setOnAction(_->copy());
+
+        MenuItem PasteItem = new MenuItem();
+        HBox pasteBox = new HBox(
+                new Label("Paste"),
+                new Region(),
+                new Text("Ctrl+V")
+        );
+        pasteBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(pasteBox.getChildren().get(1), Priority.ALWAYS);
+        pasteBox.setPrefWidth(120);
+        PasteItem.setGraphic(pasteBox);
+        PasteItem.setOnAction(_->paste());
+
+        MenuItem DeleteItem = new MenuItem();
+        HBox delBox = new HBox(
+                new Label("Delete"),
+                new Region(),
+                new Text("Del")
+        );
+        delBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(delBox.getChildren().get(1), Priority.ALWAYS);
+        delBox.setPrefWidth(120);
+        DeleteItem.setGraphic(delBox);
+        DeleteItem.setOnAction(_->deleteText(getSelection()));
+
+        MenuItem SelectWord = new MenuItem();
+        HBox selBox = new HBox(
+                new Label("Select word"),
+                new Region()
+        );
+        selBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(selBox.getChildren().get(1), Priority.ALWAYS);
+        selBox.setPrefWidth(120);
+        SelectWord.setGraphic(selBox);
+        SelectWord.setOnAction(_->selectWord());
+
+        MenuItem SelectLine = new MenuItem();
+        HBox selLineBox = new HBox(
+                new Label("Select Line"),
+                new Region()
+        );
+        selLineBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(selLineBox.getChildren().get(1), Priority.ALWAYS);
+        selLineBox.setPrefWidth(120);
+        SelectLine.setGraphic(selLineBox);
+        SelectLine.setOnAction(_->selectLine());
+
+        MenuItem SelectItem = new MenuItem();
+        HBox selAllBox = new HBox(
+                new Label("Select All"),
+                new Region()
+        );
+        selAllBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(selAllBox.getChildren().get(1), Priority.ALWAYS);
+        selAllBox.setPrefWidth(120);
+        SelectItem.setGraphic(selAllBox);
+        SelectItem.setOnAction(_->selectAll());
+
+        setContextMenu(new ContextMenu(UndoItem, RedoItem, new SeparatorMenuItem(), CutItem, CopyItem, PasteItem, new SeparatorMenuItem(), DeleteItem, SelectWord, SelectLine, SelectItem));
+
+    }
 
     private void initializeHandlers() {
+        textProperty().addListener((_, _, text) -> {
+            changed = true;
+            setStyleSpans(0, computeHighlighting(text));
+        });
         WordsBox.setOnKeyPressed(event-> {
             if (event.getCode() == KeyCode.UP) {
                 if (wordIndex > 0) {
@@ -74,8 +266,7 @@ public class TextAreaAutocomplete extends TextArea {
 
                 refreshMenu();
                 if (entriesPopup.getContent() != null) {
-                    Path caret = findCaret(this);
-                    Point2D screenLoc = findScreenLocation(caret);
+                    Point2D screenLoc = findCaret();
                     entriesPopup.show(TextAreaAutocomplete.this, screenLoc.getX(), screenLoc.getY() + 20);
                 }
             }
@@ -89,24 +280,19 @@ public class TextAreaAutocomplete extends TextArea {
         });
     }
 
-    private Path findCaret(Parent parent) {
-        // Warning: this is an ENORMOUS HACK
-        for (Node n : parent.getChildrenUnmodifiable()) {
-            if (n instanceof Path) {
-                return (Path) n;
-            } else if (n instanceof Parent) {
-                Path p = findCaret((Parent) n);
-                if (p != null) {
-                    return p;
-                }
-            }
-        }
-        return null;
-    }
+    private Point2D findCaret() {
+        Optional<Bounds> caretBounds = getCaretBounds();
+        Point2D screenCoords = null;
+        if (caretBounds.isPresent()) {
+            Bounds bounds = caretBounds.get();
+            double x = bounds.getMinX(); // Posição X relativa ao CodeArea
+            double y = bounds.getMinY(); // Posição Y relativa ao CodeArea
 
-    private Point2D findScreenLocation(Node node) {
-        Bounds caretBounds = node.getBoundsInLocal();
-        return node.localToScreen(caretBounds.getMinX(), caretBounds.getMinY());
+            // Converter para coordenadas da tela (opcional)
+            screenCoords = localToScreen(x, y);
+            System.out.println("Posição na tela: X=" + screenCoords.getX() + ", Y=" + screenCoords.getY());
+        }
+        return screenCoords;
     }
 
 // Refresh and show suggestions in the menu

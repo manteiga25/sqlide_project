@@ -56,9 +56,8 @@ public class OpenDatabaseSelectedController {
                 Database = new PostreSQLDB();
                 break;
         }
-        if (context.openDB(Database, URL + "/", DBname, User, pass)) {
+        context.openDB(Database, URL + "/", DBname, User, pass);
             closeWindow();
-        }
     }
 
     @FXML
