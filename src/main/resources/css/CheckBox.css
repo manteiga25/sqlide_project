@@ -1,0 +1,12 @@
+/* Estilo base do JFXCheckBox */
+.jfx-check-box {
+    -jfx-checked-color: #3574F0;       /* Cor quando marcado */
+    -jfx-rippler-fill: rgba(53, 116, 240, 0.2); /* Cor do efeito de clique */
+    -fx-text-fill: white;              /* Cor do texto */
+    -fx-font-size: 14px;               /* Tamanho da fonte */
+}
+
+/* Efeito ao passar o mouse */
+.jfx-check-box:hover {
+    -jfx-checked-color: #2A5FC6;       /* Cor mais escura no hover */
+}

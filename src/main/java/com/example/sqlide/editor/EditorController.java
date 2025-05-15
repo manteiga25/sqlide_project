@@ -79,7 +79,7 @@ public class EditorController {
         if (state.get()) {
             TaskButton.setGraphic(imgPause);
             TaskButton.setStyle("-fx-background-color: " + pauseColor + ";");
-         //   TaskButton.getTooltip().setText(StopCode);
+            TaskButton.getTooltip().setText(StopCode);
 
             work.set(new Thread(() -> {
                 try {
@@ -100,7 +100,7 @@ public class EditorController {
                     Platform.runLater(() -> {
                         TaskButton.setGraphic(imgPlay);
                         TaskButton.setStyle("-fx-background-color: " + playColor + ";");
-                        TaskButton.setText(playTool);
+                        TaskButton.getTooltip().setText(playTool);
                         state.set(false); // Resetar o estado
                     });
                 }
@@ -110,7 +110,7 @@ public class EditorController {
         } else {
             TaskButton.setGraphic(imgPlay);
             TaskButton.setStyle("-fx-background-color: " + playColor + ";");
-         //   TaskButton.getTooltip().setText(playTool);
+            TaskButton.getTooltip().setText(playTool);
             work.get().interrupt();
         }
     }
@@ -119,7 +119,7 @@ public class EditorController {
     private void initialize() {
         SchemaBox.setItems(SchemasName);
         TaskButton.setUserData(new SimpleBooleanProperty(false));
-     //   TaskButton.setTooltip(new Tooltip(playTool));
+        TaskButton.setTooltip(new Tooltip(playTool));
         final Tab newTab = new Tab("");
         FileEditor editor = new FileEditor(null);
         TabContainer.getTabs().add(newTab);

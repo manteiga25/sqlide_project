@@ -15,6 +15,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTCol;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -67,6 +68,15 @@ public class DatabaseInterface {
             }
         }
         return KeysList;
+    }
+
+    public HashMap<String, ArrayList<String>> getColumnsNames() {
+        final HashMap<String, ArrayList<String>> ColumnsList = new HashMap<>();
+
+        for (final TableInterface table : TableInterfaceList) {
+                ColumnsList.put(table.TableName.get(), table.getColumnsMetadataName());
+        }
+        return ColumnsList;
     }
 
     private void createTable() {

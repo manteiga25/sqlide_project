@@ -13,6 +13,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Path;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Popup;
 import org.fxmisc.richtext.CodeArea;
@@ -35,6 +36,10 @@ public class TextAreaAutocomplete extends CodeArea {
 
     private ArrayList<String> words = new ArrayList<>();
 
+    Font customFont = Font.loadFont(
+            getClass().getResourceAsStream("/Fonts/JetBrains.ttf"), 18
+    );
+
     private boolean changed = false;
 
     public boolean isChanged() {
@@ -47,12 +52,14 @@ public class TextAreaAutocomplete extends CodeArea {
 
     private static final String COMMENT_REGEX =
             "(?<COMMENT>" +
-                    "--.*" +
+                    "--[^\\n]*" +
                     "|" +
-                    "(?s)/\\*.*?\\*/" +        // (?s) ativa DOTALL (captura quebras de linha)
+                    "/\\*(?>[^*]+|\\*+[^*/])*\\*+/" + // Comentários fechados
+                    "|" +
+                    "(?s)/\\*.*" + // Comentários não fechados
                     ")";
 
-    private static final String NumberFormat = "(?<NUMBER>[^a-zA-Z0-9])(\\d+(\\.\\d+)?)|(\\d+(\\.\\d+)?)?([^a-zA-Z0-9])";
+    private static final String NumberFormat = "(?<NUMBER>\\b\\d+(\\.\\d+)?\\b)";
 
     private static final String STRING_REGEX =
             "(?<STRING>\"((?:\\\\\\.|[^\"])*)\")";
@@ -87,6 +94,7 @@ public class TextAreaAutocomplete extends CodeArea {
             container.setAlignment(Pos.CENTER_RIGHT);
             return container;
         });
+
         addContextMenu();
         entriesPopup.setAutoHide(true);
         WordsBox.setPrefHeight(Region.USE_COMPUTED_SIZE);

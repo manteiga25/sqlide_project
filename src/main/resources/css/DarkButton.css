@@ -1,0 +1,33 @@
+.button {
+    /* Cor de fundo escura com opacidade (70% de opacidade) */
+    -fx-background-color: rgba(40, 40, 40, 1);
+
+    /* Bordas mais escuras baseadas em #2A82DA */
+    -fx-border-color: #1E62BA; /* Versão mais escura de #2A82DA */
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+
+    /* Texto branco para contraste */
+    -fx-text-fill: white;
+
+    /* Efeito de suavização na cor de fundo */
+    -fx-background-radius: 999px;
+
+    transition:     -fx-scale-x 0.5s ease,
+                    -fx-scale-y 0.5s ease;
+}
+
+/* Efeito ao passar o mouse */
+.button:hover {
+    -fx-background-color: rgba(60, 60, 60, 0.8); /* Fundo um pouco mais claro */
+    -fx-border-color: #2A82DA; /* Cor original no hover */
+    -fx-cursor: hand;
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+
+/* Efeito ao clicar */
+.button:pressed {
+    -fx-background-color: rgba(30, 30, 30, 0.7); /* Fundo mais escuro */
+    -fx-border-color: #134A8E; /* Borda ainda mais escura */
+}

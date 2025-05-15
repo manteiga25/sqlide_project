@@ -17,6 +17,8 @@
 }
 .tab:selected {
     -fx-background-color: #21477A;
+    -fx-border-width: 0 0 5px 0;    /* Linha mais grossa no foco */
+    -fx-border-color: black;
 }
 .tab:hover {
     -fx-background-color: #3C3C3C;

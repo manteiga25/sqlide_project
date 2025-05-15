@@ -1,6 +1,7 @@
 package com.example.sqlide.DatabaseInterface.TableInterface;
 
 import com.example.sqlide.*;
+import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.ColumnInterface;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.drivers.model.DataBase;
@@ -100,11 +101,20 @@ public class TableInterface {
         return context.getColumnPrimaryKey(TableName.get());
     }
 
-    private LinkedHashMap<String, ColumnMetadata> getColumnsMetadata() {
+    public LinkedHashMap<String, ColumnMetadata> getColumnsMetadata() {
         LinkedHashMap<String, ColumnMetadata> MetaDataList = new LinkedHashMap<>();
         for (final ColumnInterface column : columnsInterfaceList) {
             final ColumnMetadata meta = column.getMetadata();
             MetaDataList.put(meta.Name, meta);
+        }
+        return MetaDataList;
+    }
+
+    public ArrayList<String> getColumnsMetadataName() {
+        ArrayList<String> MetaDataList = new ArrayList<>();
+        for (final ColumnInterface column : columnsInterfaceList) {
+            final ColumnMetadata meta = column.getMetadata();
+            MetaDataList.add(meta.Name);
         }
         return MetaDataList;
     }
@@ -464,7 +474,7 @@ public class TableInterface {
     private void loadAdvancedWin() {
         try {
             // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedSearchStage.fxml"));
             //    VBox miniWindow = loader.load();
             Parent root = loader.load();
 
@@ -474,7 +484,10 @@ public class TableInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Create Column");
             subStage.setScene(new Scene(root));
-            secondaryController.initWin(ColumnsNames, subStage, this);
+            secondaryController.setCode("SELECT");
+            secondaryController.setTable(TableName.get());
+            secondaryController.setColumns(context.getColumnsNames());
+          //  secondaryController.initWin(ColumnsNames, subStage, this);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
