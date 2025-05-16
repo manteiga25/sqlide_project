@@ -21,6 +21,7 @@ public class ColumnMetadata {
     public ArrayList<String> items;
     public String indexType = null;
     public String aliasType = null;
+    public Foreign foreign;
 
     public ColumnMetadata(final boolean NOT_NULL, final boolean IsPrimaryKey, final String[] ForeignKey, final boolean isForeign, final String defaultValue, final int size, final String Type, final String Name, boolean isUnique, int integerDigits, int decimalDigits, final String index) {
         this.NOT_NULL = NOT_NULL;
@@ -36,4 +37,10 @@ public class ColumnMetadata {
         this.integerDigits = integerDigits;
         this.decimalDigits = decimalDigits;
     }
+
+    public static class Foreign {
+        public boolean isForeign = false;
+        public String onUpdate = "", onEliminate = "";
+    }
+
 }

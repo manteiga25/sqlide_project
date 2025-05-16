@@ -1,0 +1,84 @@
+.choice-box {
+    -fx-background-color: #2C2C2C;
+    -fx-border-color: #3574F0;
+    -fx-border-radius: 15px;
+    -fx-text-fill: white
+}
+
+/* Texto do item selecionado */
+.choice-box .list-cell {
+    -fx-text-fill: white;
+    -fx-font-family: "Arial";
+}
+
+.choice-box > .label { -fx-text-fill: white; }
+
+.choice-box .context-menu {
+    -fx-background-color: #2C2C2C;
+    -fx-border-color: #3574F0;
+}
+
+/* Estilo do menu dropdown */
+.choice-box-popup .list-view {
+    -fx-background-color: #2C2C2C;
+    -fx-border-color: #3574F0;
+}
+
+/* Itens da lista */
+.choice-box .menu-item > .label {
+    -fx-text-fill: white;
+    -fx-background-color: #2C2C2C;
+}
+
+/* Efeito hover nos itens */
+.choice-box .menu-item:focused {
+    -fx-background-color: #3574F0;
+    -fx-text-fill: black;
+}
+
+.choice-box .menu-item:focused > .label { -fx-text-fill: black; -fx-background-color: #3574F0; }
+
+/* Seta do dropdown */
+.choice-box .arrow {
+    -fx-background-color: white;
+}
+
+/* Efeito de foco */
+.choice-box:focused {
+    -fx-border-color: #3574F0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,255,0.5), 10, 0, 0, 0);
+}
+
+/* Estilo geral da barra de rolagem */
+.scroll-bar:horizontal,
+.scroll-bar:vertical {
+    -fx-background-color: #2B2D30;
+}
+
+/* Polegar (parte móvel) */
+.scroll-bar:horizontal .thumb,
+.scroll-bar:vertical .thumb {
+    -fx-background-color: #3574F0;
+}
+
+/* Botões de seta */
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+}
+
+/* Seta */
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: white;
+}
+
+/* Texto do prompt */
+.choice-box .prompt-text {
+    -fx-fill: #888888;
+}
+
+/* Desabilitado */
+.choice-box:disabled {
+    -fx-opacity: 0.7;
+}

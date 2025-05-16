@@ -4,6 +4,7 @@ import com.example.sqlide.*;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
+import com.jfoenix.controls.JFXButton;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,6 +13,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -34,6 +36,15 @@ public class DatabaseInterface {
     private TabPane DBTabContainer;
 
     private boolean removing = false;
+
+    public HashMap<String, ArrayList<String>> getColumnPrimaryKeyName(final String tableToIgnore) {
+        final HashMap<String, ArrayList<String>> list = new HashMap<>();
+        for (final TableInterface table : TableInterfaceList) {
+            if (table.getTableName().get().equals(tableToIgnore)) continue;
+            list.put(table.TableName.get(), table.getPrimaryKeys());
+        }
+        return list;
+    }
 
     public DatabaseInterface(final DataBase GenericDB, final TabPane Container, final String dbName, final mainController ref) {
         DatabaseSeted = GenericDB;
@@ -83,36 +94,36 @@ public class DatabaseInterface {
         Tab DBPane = new Tab(dbName);
         DBPane.setId(dbName);
 
-        VBox DBContainer = new VBox(5);
+        VBox DBContainer = new VBox();
+
+        DBContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/DarkButton.css")).toExternalForm());
 
         HBox ButtonsLine = new HBox(5);
-        ButtonsLine.setPadding(new Insets(0,5,0,0));
+        ButtonsLine.setPadding(new Insets(5,5,5,0));
 
-        Button createTab = new Button("create table");
+        JFXButton createTab = new JFXButton("create table");
         createTab.setOnAction(e -> createDBTabInterface());
-        createTab.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ButtonsModel.css")).toExternalForm());
-        createTab.getStyleClass().add("button-64");
 
-        Button deleteTab = new Button("Delete table");
+        JFXButton deleteTab = new JFXButton("Delete table");
         deleteTab.setOnAction(e -> deleteDBTab());
 
-        ButtonsLine.getChildren().add(createTab);
-        ButtonsLine.getChildren().add(deleteTab);
+        ButtonsLine.getChildren().addAll(createTab, deleteTab);
 
         DBTabContainer = new TabPane();
+        VBox.setVgrow(DBTabContainer, Priority.ALWAYS);
         DBTabContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/TabPane.css")).toExternalForm());
-        // DBTabContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
-        DBTabContainer.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> {
+        DBTabContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
+        DBTabContainer.getSelectionModel().selectedIndexProperty().addListener((_, _, newValue) -> {
             if (!TableInterfaceList.isEmpty() && !removing) {
                 TableInterfaceList.get(newValue.intValue()).fetchIfIsPrimeClick();
             }
         });
-        DBContainer.getChildren().add(ButtonsLine);
-        DBContainer.getChildren().add(DBTabContainer);
+        DBContainer.getChildren().addAll(ButtonsLine, DBTabContainer);
 
         DBPane.setContent(DBContainer);
 
         Container.getTabs().add(DBPane);
+        Container.getSelectionModel().select(DBPane);
     }
 
     private void createDBTabInterface() {
@@ -129,7 +140,7 @@ public class DatabaseInterface {
             subStage.setTitle("Create Table");
             subStage.setResizable(false);
             subStage.setScene(new Scene(root));
-            secondaryController.NewTableWin(dbName, this, subStage);
+            secondaryController.NewTableWin(dbName, this, DatabaseSeted,subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);

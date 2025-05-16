@@ -1,6 +1,7 @@
 package com.example.sqlide;
 
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
+import com.example.sqlide.drivers.model.DataBase;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -34,6 +35,7 @@ public class NewTable {
     private final ArrayList<ColumnMetadata> columnsMetadata = new ArrayList<>();
     private DatabaseInterface ref;
     private Stage window;
+    private DataBase context;
 
     @FXML
     private Label DataBaseLabel, Error;
@@ -61,9 +63,10 @@ public class NewTable {
         TableColumns.setItems(items);
     }
 
-    public void NewTableWin(final String DBName, final DatabaseInterface ref, final Stage subStage) {
+    public void NewTableWin(final String DBName, final DatabaseInterface ref, final DataBase context, final Stage subStage) {
         DataBaseLabel.setText(DBName);
         this.ref = ref;
+        this.context = context;
         window = subStage;
     }
 
@@ -116,6 +119,42 @@ public class NewTable {
 
    // @FXML
   //  private void addItem
+
+    @FXML
+    private void createDBColInterface() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NewColumn.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            NewColumn secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Create Column");
+            subStage.setScene(new Scene(root));
+            //  subStage.setMaxWidth(620);
+            //subStage.setMaxHeight(420);
+        //    secondaryController.NewColumnWin(context.getDatabaseName(), TableNameInput.getText(), this, subStage, ref.getColumnPrimaryKeyName(""), context.types, context.getList(), context.getListChars(), context.getIndexModes(), context.getSQLType(), context.getForeignModes());
+            secondaryController.NewColumnWin(context.getDatabaseName(), TableNameInput.getText(), this, subStage, ref.getColumnPrimaryKeyName(""), context.types, context.getList(), context.getListChars(), context.getIndexModes());
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            subStage.show();
+
+        } catch (Exception e) {
+            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+        }
+    }
+
+    public void PutColumnCallback(final ColumnMetadata metadata) {
+        columnsMetadata.add(metadata);
+        //  columnTable.getItems().add(new TableItems(metadata.Type, metadata.Name, metadata.IsPrimaryKey ? "PRIMARY KEY" : metadata.foreign.isForeign ? "FOREIGN KEY" : "NO KEY", metadata.NOT_NULL));
+        items.add(new TableColumnMeta(metadata.Type, metadata.Name, metadata.IsPrimaryKey ? "PRIMARY KEY" : metadata.foreign.isForeign ? "FOREIGN KEY" : "NO KEY", metadata.NOT_NULL));
+    }
 
     @FXML
     private void closeWindow() {

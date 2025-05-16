@@ -7,6 +7,7 @@ import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.DeleteColumn;
 import com.example.sqlide.misc.ClipBoard;
+import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXTextField;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
@@ -23,6 +24,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -128,6 +130,10 @@ public class TableInterface {
         return types;
     }
 
+    public StringProperty getTableName() {
+        return TableName;
+    }
+
     public TableInterface(final DataBase DB, final String TableName, final TabPane DBTabContainer, final DatabaseInterface context) {
         this.Database = DB;
         this.TableName = new SimpleStringProperty(TableName);
@@ -162,109 +168,102 @@ public class TableInterface {
     }
 
     public void createDatabaseTab() {
-            Tab newTab = new Tab(TableName.get());
-            newTab.setId(TableName.get());
-            newTab.setClosable(false);
-            createMenu(newTab);
-            DBTabContainer.getTabs().add(newTab);
+        Tab newTab = new Tab(TableName.get());
+        newTab.setId(TableName.get());
+        newTab.setClosable(false);
+        createMenu(newTab);
+        DBTabContainer.getTabs().add(newTab);
 
-            VBox DBContainer = new VBox(10);
-          //  DBContainer.setPadding(new Insets(10, 10, 10, 10));
+        VBox DBContainer = new VBox(10);
+        DBContainer.setPadding(new Insets(10, 10, 10, 10));
 
-            HBox ButtonsLine = new HBox(8);
+        HBox ButtonsLine = new HBox(8);
+        // searchBox.setStyle("-fx-border-color: black; -fx-border-radius: 50;");
 
-            HBox searchBox = new HBox(createCodeField(), createButtonCode());
-           // searchBox.setStyle("-fx-border-color: black; -fx-border-radius: 50;");
+        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvButton(), createCleanButton(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode());
 
-            ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvButton(), createCleanButton(), createLabelPage(), createPageField(), createLabelCode(), searchBox);
+        ScrollPane buttonsScroll = new ScrollPane();
+        buttonsScroll.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm());
+        //  buttonsScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        buttonsScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        buttonsScroll.setContent(ButtonsLine);
 
-            ScrollPane buttonsScroll = new ScrollPane();
-            buttonsScroll.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm());
-          //  buttonsScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
-            buttonsScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-            buttonsScroll.setContent(ButtonsLine);
+        tableContainer = new TableView<DataForDB>();
+        tableContainer.setId(TableName.get());
+        VBox.setVgrow(tableContainer, Priority.ALWAYS);
+        //  tableContainer.setPrefHeight(1280);
+        tableContainer.setEditable(true);
+        tableContainer.getSelectionModel().setCellSelectionEnabled(true);
+        final KeyCombination cntrlC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+        tableContainer.setOnKeyPressed(e->{
+            if (cntrlC.match(e)) {
+                new Thread(()->{
+                    StringBuilder copy = new StringBuilder();
+                    for (final TablePosition tablePosition : tableContainer.getSelectionModel().getSelectedCells()) {
+                        copy.append(tablePosition.getTableColumn().getCellObservableValue(tablePosition.getRow()).getValue().toString()).append("\n");
+                    }
+                    ClipBoard.CopyToBoard(copy.toString());
+                }).start();
+            }
+        });
+        tableContainer.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        tableContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/tableStyle.css")).toExternalForm());
+        newTab.setContent(tableContainer);
 
-            tableContainer = new TableView<DataForDB>();
-            tableContainer.setId(TableName.get());
-            tableContainer.setPrefHeight(1280);
-            tableContainer.setEditable(true);
-            tableContainer.getSelectionModel().setCellSelectionEnabled(true);
-            final KeyCombination cntrlC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
-            tableContainer.setOnKeyPressed(e->{
-                if (cntrlC.match(e)) {
-                    new Thread(()->{
-                        StringBuilder copy = new StringBuilder();
-                        for (final TablePosition tablePosition : tableContainer.getSelectionModel().getSelectedCells()) {
-                            copy.append(tablePosition.getTableColumn().getCellObservableValue(tablePosition.getRow()).getValue().toString()).append("\n");
-                        }
-                        ClipBoard.CopyToBoard(copy.toString());
-                    }).start();
-                }
-            });
-            tableContainer.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            tableContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/tableStyle.css")).toExternalForm());
-            newTab.setContent(tableContainer);
+        HBox ContainerPrev = new HBox(10);
+         ContainerPrev.setPrefHeight(20);
+        ContainerPrev.setAlignment(Pos.CENTER);
+        VBox.setVgrow(ContainerPrev, Priority.NEVER);
 
-            HBox ContainerPrev = new HBox(10);
-           // ContainerPrev.setPrefHeight(60);
-            ContainerPrev.setAlignment(Pos.CENTER);
-
-            final Font courierNewFontBold36 = Font.font("Arial", FontWeight.NORMAL, 16);
+        final Font courierNewFontBold36 = Font.font("Arial", FontWeight.NORMAL, 16);
 
         //    ContainerPrev.getChildren().addAll(anchorSpace1, createPreviou(courierNewFontBold36), anchorSpace2, createNext(courierNewFontBold36), anchorSpace3);
-            ContainerPrev.getChildren().addAll(createPreviou(courierNewFontBold36), createLabelPageInfo(), createNext(courierNewFontBold36));
+        ContainerPrev.getChildren().addAll(createPreviou(courierNewFontBold36), createLabelPageInfo(), createNext(courierNewFontBold36));
 
-            DBContainer.getChildren().addAll(buttonsScroll, tableContainer, ContainerPrev);
-            newTab.setContent(DBContainer);
+        DBContainer.getChildren().addAll(buttonsScroll, tableContainer, ContainerPrev);
+        newTab.setContent(DBContainer);
 
-            tableContainer.setItems(dataList);
+        tableContainer.setItems(dataList);
     }
 
-    private Button createReloadButton() {
-        Button Reload = new Button("Reload");
-        Reload.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Button.css")).toExternalForm());
+    private JFXButton createReloadButton() {
+        JFXButton Reload = new JFXButton("Reload");
         Reload.setOnAction(e->prepareFetch());
         return Reload;
     }
 
-    private Button createColumnButton() {
-        Button createColumn = new Button("create column");
-        createColumn.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Button.css")).toExternalForm());
+    private JFXButton createColumnButton() {
+        JFXButton createColumn = new JFXButton("create column");
         createColumn.setOnAction(e-> createDBColInterface());
         return createColumn;
     }
 
-    private Button createDeleteButton() {
-        Button deleteCol = new Button("Delete column");
-        deleteCol.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Button.css")).toExternalForm());
+    private JFXButton createDeleteButton() {
+        JFXButton deleteCol = new JFXButton("Delete column");
         deleteCol.setOnAction(e-> DeleteColumnInterface());
         return deleteCol;
     }
 
-    private Button createAddButton() {
-        Button AddData = new Button("Insert data");
-        AddData.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Button.css")).toExternalForm());
+    private JFXButton createAddButton() {
+        JFXButton AddData = new JFXButton("Insert data");
         AddData.setOnAction(e-> NewRowInterface());
         return AddData;
     }
 
-    private Button createDelButton() {
-        Button DelData = new Button("Delete data");
-        DelData.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Button.css")).toExternalForm());
+    private JFXButton createDelButton() {
+        JFXButton DelData = new JFXButton("Delete data");
         DelData.setOnAction(e-> removeItem());
         return DelData;
     }
 
-    private Button createAdvButton() {
-        Button AdvancedSearch = new Button("Advanced Search");
-        AdvancedSearch.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Button.css")).toExternalForm());
+    private JFXButton createAdvButton() {
+        JFXButton AdvancedSearch = new JFXButton("Advanced Search");
         AdvancedSearch.setOnAction(e->loadAdvancedWin());
         return AdvancedSearch;
     }
 
-    private Button createCleanButton() {
-        Button CleanAdvancedSearch = new Button("Clean Advanced Search");
-        CleanAdvancedSearch.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Button.css")).toExternalForm());
+    private JFXButton createCleanButton() {
+        JFXButton CleanAdvancedSearch = new JFXButton("Clean Advanced Search");
         CleanAdvancedSearch.setOnAction(e-> resetAdvancedSearch());
         return CleanAdvancedSearch;
     }
@@ -487,7 +486,15 @@ public class TableInterface {
             secondaryController.setCode("SELECT");
             secondaryController.setTable(TableName.get());
             secondaryController.setColumns(context.getColumnsNames());
+            secondaryController.setStage(subStage);
           //  secondaryController.initWin(ColumnsNames, subStage, this);
+
+            subStage.showingProperty().addListener(_->{
+                if (secondaryController.isClosedByUser()) {
+                    codeField.setText(secondaryController.getQuery());
+                    AdvancedSearchButton.fire();
+                }
+            });
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);

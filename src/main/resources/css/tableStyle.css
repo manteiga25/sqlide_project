@@ -1,17 +1,24 @@
 .table-view {
     -fx-background-color: #1e1e1e; /* Fundo da tabela */
     -fx-text-fill: #ffffff; /* Cor do texto */
-    -fx-border-color: transparent;
+    -fx-border-color: black;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0, 1, 1);
 }
 
 .table-view .column-header {
     -fx-background-color: #333333; /* Fundo do cabeçalho */
-    -fx-border-color: #444444; /* Borda do cabeçalho */
+    -fx-border-color: #444444;    /* Borda do cabeçalho */
+    -fx-padding: 8px 5px 8px 5px; /* AUMENTA O HEADER: (superior  direita  inferior  esquerda) - ajuste os valores conforme necessário */
+    /* Pode também experimentar com -fx-pref-height se o padding não der o efeito desejado: */
+    -fx-pref-height: 30px; /* Exemplo de altura preferida */
 }
 
 .table-view .column-header .label {
     -fx-text-fill: #ffffff; /* Cor do texto no cabeçalho */
     -fx-font-weight: bold; /* Negrito */
+    -fx-font-size: 14px;
 }
 
 .table-view .cell {
@@ -41,6 +48,10 @@
     -fx-border-color: #444444; /* Destaque no cabeçalho */
     -fx-border-width: 0 0 2px 0;
     -fx-text-fill: ffffff;
+}
+
+.table-view .column-header-background .filler {
+    -fx-background-color: #1e1e1e;
 }
 
 .table-view .scroll-bar:horizontal {

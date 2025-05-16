@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" spacing="10.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.AdvancedSearch.TableAdvancedSearchController">
+   <children>
+      <Label text="Advanced Search" textFill="#f2f2f2">
+         <font>
+            <Font name="JetBrains Mono Medium" size="24.0" />
+         </font>
+         <padding>
+            <Insets top="5.0" />
+         </padding>
+      </Label>
+      <TabPane fx:id="TabContainer" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+         <stylesheets>
+            <URL value="@../../../../css/TabPane.css" />
+            <URL value="@../../../../css/CheckBox.css" />
+         </stylesheets>
+      </TabPane>
+      <HBox alignment="CENTER_RIGHT" spacing="5.0">
+         <children>
+            <Button mnemonicParsing="false" style="-fx-background-color: #3574F0;" text="Cancel" textFill="#f2f2f2" />
+            <Button mnemonicParsing="false" onAction="#close" style="-fx-background-color: #3574F0;" text="Confirm" textFill="#f2f2f2" />
+         </children>
+         <VBox.margin>
+            <Insets bottom="5.0" right="5.0" />
+         </VBox.margin>
+      </HBox>
+   </children>
+</VBox>

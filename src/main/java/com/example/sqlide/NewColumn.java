@@ -143,6 +143,23 @@ public class NewColumn {
 
     }
 
+    public void NewColumnWin(final String DBName, final String TableName, final NewTable ref, final Stage subStage, final HashMap<String, ArrayList<String>> KeysForForeign, final SQLiteTypes types, final String[] list, final String[] charList, final String[] modes) {
+        LabelDB.setText("Database " + DBName + "\nTable " + TableName);
+        this.TableName = TableName;
+        this.DBName = DBName;
+        //this.ref = ref;
+        this.KeysForForeign = KeysForForeign;
+        this.types = types;
+        this.charList = charList;
+        typeBox.getItems().addAll(list);
+        window = subStage;
+        initBox();
+        if (modes != null) {
+            indexBox.getItems().addAll(modes);
+        }
+
+    }
+
     private void initBox() {
         for (final String key : KeysForForeign.keySet()) {
             final ArrayList<String> ListIDs = KeysForForeign.get(key);

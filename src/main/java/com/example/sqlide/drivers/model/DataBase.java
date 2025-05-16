@@ -25,8 +25,10 @@ public abstract class DataBase {
     public int buffer = 250;
     protected String idType;
     protected BlockingQueue<String> sender = new LinkedBlockingQueue<>();
+    protected SQLTypes SQLType;
 
     protected String[] indexModes;
+    protected ArrayList<String> foreignModes;
 
     private BufferedReader cursorScript;
     private String saveNext = "";
@@ -48,6 +50,14 @@ public abstract class DataBase {
 
     public String getRowId() {
         return idType;
+    }
+
+    public SQLTypes getSQLType() {
+        return SQLType;
+    }
+
+    public ArrayList<String> getForeignModes() {
+        return foreignModes;
     }
 
     public String getCharset() throws SQLException {

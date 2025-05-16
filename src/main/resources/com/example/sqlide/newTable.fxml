@@ -15,11 +15,11 @@
       </Label>
       <Label layoutX="40.0" layoutY="75.0" prefHeight="25.0" prefWidth="99.0" text="Table Name:" textFill="WHITE" />
       <JFXTextField fx:id="TableNameInput" layoutX="139.0" layoutY="72.0" prefHeight="25.0" prefWidth="281.0" promptText="Name...." style="-fx-text-fill: white;" styleClass="text-input" />
-      <JFXButton layoutX="427.0" layoutY="450.0" mnemonicParsing="false" onAction="#TableName" style="-fx-background-color: #3574F0;" text="Create" textFill="WHITE">
+      <JFXButton layoutX="427.0" layoutY="450.0" mnemonicParsing="false" onAction="#TableName" style="-fx-background-color: #3574F0; -fx-background-radius: 5px; -fx-border-radius: 5px;" text="Create" textFill="WHITE">
          <font>
             <Font name="Arial" size="12.0" />
          </font></JFXButton>
-      <JFXButton layoutX="368.0" layoutY="450.0" mnemonicParsing="false" onAction="#closeWindow" style="-fx-background-color: #3574F0;" text="Cancel" textFill="WHITE">
+      <JFXButton layoutX="363.0" layoutY="450.0" mnemonicParsing="false" onAction="#closeWindow" style="-fx-background-color: #3574F0; -fx-background-radius: 5px; -fx-border-radius: 5px;" text="Cancel" textFill="WHITE">
          <font>
             <Font name="Arial" size="12.0" />
          </font></JFXButton>
@@ -30,16 +30,16 @@
       </Label>
       <JFXCheckBox fx:id="RowIDBox" checkedColor="#3574f0" layoutX="57.0" layoutY="119.0" mnemonicParsing="false" selected="true" text="ROW ID" textFill="WHITE" />
       <JFXCheckBox fx:id="TempBox" checkedColor="#3574f0" layoutX="130.0" layoutY="119.0" mnemonicParsing="false" text="Temporary" textFill="WHITE" />
-      <JFXButton layoutX="243.0" layoutY="116.0" mnemonicParsing="false" style="-fx-background-radius: 999px; -fx-border-radius: 999px; -fx-border-color: #8A8C8D;" styleClass="button-primary" text="create" textFill="#f2f2f2">
+      <JFXButton layoutX="243.0" layoutY="116.0" mnemonicParsing="false" text="create" textFill="#f2f2f2">
          <font>
             <Font name="Arial" size="12.0" />
          </font></JFXButton>
-      <JFXButton layoutX="307.0" layoutY="116.0" mnemonicParsing="false" onAction="#RemoveColumn" style="-fx-background-radius: 999px; -fx-border-radius: 999px; -fx-border-color: #8A8C8D;" styleClass="button-secondary" text="delete" textFill="#f2f2f2">
+      <JFXButton layoutX="307.0" layoutY="116.0" mnemonicParsing="false" onAction="#RemoveColumn" styleClass="button-secondary" text="delete" textFill="#f2f2f2">
          <font>
             <Font name="Arial" size="12.0" />
          </font>
       </JFXButton>
-      <JFXButton layoutX="369.0" layoutY="116.0" mnemonicParsing="false" onAction="#EditColumn" style="-fx-background-radius: 999px; -fx-border-radius: 999px; -fx-border-color: #8A8C8D;" text="edit" textFill="#f2f2f2">
+      <JFXButton layoutX="369.0" layoutY="116.0" mnemonicParsing="false" onAction="#EditColumn" text="edit" textFill="#f2f2f2">
          <font>
             <Font name="Arial" size="12.0" />
          </font>

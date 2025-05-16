@@ -3,6 +3,7 @@ package com.example.sqlide.drivers.SQLite;
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
 
 import java.io.*;
@@ -38,6 +39,7 @@ public class SQLiteDB extends DataBase {
         typesOfDB = new SQLiteTypesList();
         super.idType = "ROWID";
         indexModes = null;
+        SQLType = SQLTypes.SQLITE;
     }
 
     @Override

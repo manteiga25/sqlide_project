@@ -86,7 +86,9 @@ public class mainController {
     private Menu backupMenu;
 
     @FXML
-    private VBox AssistentContainer, MessagesBox, NotificationBox = new VBox(5), NotificationContainer = new VBox();
+    private VBox MessagesBox, NotificationBox = new VBox(5), NotificationContainer = new VBox();
+
+    private VBox AssistantContainer;
 
     @FXML
     private SplitPane CenterContainer;
@@ -190,7 +192,7 @@ public class mainController {
             LabelDB.setLayoutY(event.getSceneY() - dragDelta.y);
         });
 
-        CenterContainer.getItems().remove(AssistentContainer);
+       // CenterContainer.getItems().remove(AssistentContainer);
         initializeSock();
         NotificationBox.setPadding(new Insets(10, 10, 10, 10));
         initializeNotification();
@@ -878,8 +880,13 @@ public class mainController {
 
     @FXML
     public void OpenAssistent() {
-        if (AssistentContainer.getParent() == null) {
-            CenterContainer.getItems().add(AssistentContainer);
+
+        if (AssistantContainer == null) {
+            loadAssistant();
+        }
+
+        if (AssistantContainer.getParent() == null) {
+            CenterContainer.getItems().add(AssistantContainer);
             if (NotificationContainer.getParent() != null) {
                 NotificationButton.setStyle("-fx-background-color: transparent;");
                 CenterContainer.getItems().remove(NotificationContainer);
@@ -888,7 +895,20 @@ public class mainController {
             setDividerSpace();
         } else {
             AssistantButton.setStyle("-fx-background-color: transparent;");
-            CenterContainer.getItems().remove(AssistentContainer);
+            CenterContainer.getItems().remove(AssistantContainer);
+        }
+    }
+
+    private void loadAssistant() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("Assistant/AssistantStage.fxml"));
+            //    VBox miniWindow = loader.load();
+            AssistantContainer = loader.load();
+
+            // Criar um novo Stage para a subjanela
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -896,9 +916,9 @@ public class mainController {
     private void OpenNotifications() {
         if (NotificationContainer.getParent() == null) {
             CenterContainer.getItems().add(NotificationContainer);
-            if (AssistentContainer.getParent() != null) {
+            if (AssistantContainer.getParent() != null) {
                 AssistantButton.setStyle("-fx-background-color: transparent;");
-                CenterContainer.getItems().remove(AssistentContainer);
+                CenterContainer.getItems().remove(AssistantContainer);
             }
             NotificationButton.setStyle("-fx-background-color: #3574F0;");
             setDividerSpace();

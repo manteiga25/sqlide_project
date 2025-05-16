@@ -1,4 +1,4 @@
-.button {
+.jfx-button {
     /* Cor de fundo escura com opacidade (70% de opacidade) */
     -fx-background-color: rgba(40, 40, 40, 1);
 
@@ -18,8 +18,9 @@
 }
 
 /* Efeito ao passar o mouse */
-.button:hover {
-    -fx-background-color: rgba(60, 60, 60, 0.8); /* Fundo um pouco mais claro */
+.jfx-button:hover {
+     /* Fundo um pouco mais claro */
+    -fx-background-color: rgba(1, 13, 20, 0.8);
     -fx-border-color: #2A82DA; /* Cor original no hover */
     -fx-cursor: hand;
     -fx-scale-x: 1.1;
@@ -27,7 +28,19 @@
 }
 
 /* Efeito ao clicar */
-.button:pressed {
+.jfx-button:pressed {
     -fx-background-color: rgba(30, 30, 30, 0.7); /* Fundo mais escuro */
     -fx-border-color: #134A8E; /* Borda ainda mais escura */
+}
+
+.jfx-button .jfx-rippler {
+    -jfx-rippler-fill: radial-gradient(
+        focus-angle 45deg,
+        focus-distance 65%,
+        center 54.4199% 50%,
+        radius 30%,
+        reflect,
+        #334038 0%,
+        #4d17d4 100%
+    );
 }

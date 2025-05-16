@@ -11,3 +11,8 @@
 .text-area:focused {
     -fx-background-color: #1E1F22;
 }
+
+.text-area:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}

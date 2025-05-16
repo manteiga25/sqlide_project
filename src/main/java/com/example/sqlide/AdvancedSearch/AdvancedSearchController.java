@@ -1,16 +1,20 @@
 package com.example.sqlide.AdvancedSearch;
 
+import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
+import com.jfoenix.controls.RecursiveTreeItem;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import org.apache.xmlbeans.impl.xb.xsdschema.AllNNI;
 
 import java.awt.event.ActionEvent;
@@ -19,6 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 
 public class AdvancedSearchController {
+
+    @FXML
+    private BorderPane Container;
 
     @FXML
     private VBox ColumnsContainer, ConditionBox;
@@ -39,19 +46,37 @@ public class AdvancedSearchController {
 
     private String statementCode = "";
 
+    private Stage stage;
+
+    private boolean ClosedByUser = false;
+
+    public boolean isClosedByUser() {
+        return ClosedByUser;
+    }
+
+    public void removeBottomContainer() {
+        Container.getChildren().remove(Container.getBottom());
+    }
+
     @FXML
     private void initialize() {
+
+        Container.disableProperty().addListener(_->QueryField.setText(""));
+
         JoinBox.getItems().addAll("", "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN", "CROSS JOIN", "SELF JOIN", "NATURAL JOIN");
-        JoinBox.getSelectionModel().selectedIndexProperty().addListener(_->generateQuery());
-        TableJoinBox.getSelectionModel().selectedItemProperty().addListener(_->{
+        JoinBox.getSelectionModel().selectedIndexProperty().addListener((_, _, text)->{
+            TableJoinBox.setDisable(text.intValue() == 0);
+            generateQuery();
+        });
+        TableJoinBox.getSelectionModel().selectedItemProperty().addListener((_, _, text)->{
             ColumnsContainer.getChildren().removeAll();
             ColumnsContainer.getChildren().clear();
             columnSelected.clear();
             for (final String column : columns) {
                 columnSelected.add(Table+"."+column);
             }
-            for (final String column : AllColumns.get(TableJoinBox.getValue())) {
-                columnSelected.add(Table+"."+column);
+            for (final String column : AllColumns.get(text)) {
+                columnSelected.add(text+"."+column);
             }
             loadWidgets(new ArrayList<>(columnSelected));
             generateQuery();
@@ -64,6 +89,14 @@ public class AdvancedSearchController {
 
     public void setTable(final String Table) {
         this.Table = Table;
+    }
+
+    public String getTable() {
+        return Table;
+    }
+
+    public String getQuery() {
+        return QueryField.getText();
     }
 
     public void setColumns(final HashMap<String, ArrayList<String>> columns) {
@@ -83,6 +116,7 @@ public class AdvancedSearchController {
                 } else {
                     columnSelected.remove(column);
                 }
+                generateQuery();
             });
             box.selectedProperty().set(true);
             ColumnsContainer.getChildren().add(box);
@@ -110,12 +144,12 @@ public class AdvancedSearchController {
         try {
             String selectedColumns = getSelectedColumns();
             String whereClause = buildWhereClause();
-            String sql = String.format("%s %s FROM %s %s %s %s",
+            String sql = selectedColumns.isEmpty() ? "" : String.format("%s %s FROM %s %s %s %s",
                     statementCode,
                     selectedColumns,
                     Table,
-                    JoinBox.getValue(),
-                    TableJoinBox.getValue(),
+                    JoinBox.getValue() == null || JoinBox.getValue().isEmpty() ? "" : JoinBox.getValue(),
+                    TableJoinBox.getValue() == null || TableJoinBox.getValue().isEmpty() ? "" : TableJoinBox.getValue(),
                     whereClause.isEmpty() ? "" : "WHERE " + whereClause
             );
 
@@ -132,7 +166,7 @@ public class AdvancedSearchController {
                 if (!sb.isEmpty()) sb.append(", ");
                 sb.append(column);
         }
-        return !sb.isEmpty() ? sb.toString() : "*";
+        return columns.size() != columnSelected.size() ? sb.toString() : "*";
     }
 
     private String buildWhereClause() {
@@ -155,35 +189,57 @@ public class AdvancedSearchController {
         return sb.toString();
     }
 
+    public void setStage(Stage stage) {
+        this.stage = stage;
+    }
+
     // Classe para representar uma linha de condição
     class ConditionRow extends HBox {
         private final ComboBox<String> columnCombo;
         private final ComboBox<String> operatorCombo;
         private final ComboBox<String> TypeCombo;
+        private final ComboBox<String> ColumnBox;
         private final JFXTextField valueField;
 
         public ConditionRow() {
             super(5);
             setPadding(new Insets(5));
 
-            columnCombo = new ComboBox<>(FXCollections.observableArrayList(columnSelected));
+            ColumnBox = new ComboBox<>(FXCollections.observableArrayList(columnSelected));
+            ColumnBox.setPromptText("column");
+            ColumnBox.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
+
+            valueField = new JFXTextField();
+            valueField.textProperty().addListener(_->generateQuery());
+            valueField.setStyle("-fx-text-fill: #f2f2f2;");
+
+            columnCombo = new ComboBox<>(FXCollections.observableArrayList(columns));
+            columnCombo.setPromptText("column");
             columnCombo.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
-            TypeCombo = new ComboBox<>(FXCollections.observableArrayList("String", "Number", "Column"));
+
+            TypeCombo = new ComboBox<>(FXCollections.observableArrayList("String", "Number", "Column Value"));
+            TypeCombo.setPromptText("Type");
             TypeCombo.getSelectionModel().select("String");
-            TypeCombo.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
-            TypeCombo.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
+            TypeCombo.getSelectionModel().selectedItemProperty().addListener((_, oldItem, item)->{
+                if (!item.equals(oldItem)) {
+                    changeWidget(item);
+                   // generateQuery();
+                }
+            });
+
             operatorCombo = new ComboBox<>(FXCollections.observableArrayList(
                     "=", "!=", ">", "<", ">=", "<=", "LIKE", "IN"
             ));
+            operatorCombo.setPromptText("operator");
             operatorCombo.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
-            valueField = new JFXTextField();
-            valueField.textProperty().addListener(_->generateQuery());
+
             ComboBox<String> logicCombo = new ComboBox<>(FXCollections.observableArrayList(
                     "AND", "OR"
             ));
             logicCombo.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
 
             Button removeBtn = new Button("X");
+            removeBtn.setStyle("-fx-background-color: red; -fx-border-color: transparent; -fx-text-fill: white;");
             removeBtn.setOnAction(_ -> {
                 ConditionBox.getChildren().remove(this);
                 generateQuery();
@@ -199,17 +255,39 @@ public class AdvancedSearchController {
             );
         }
 
+        private void changeWidget(final String item) {
+            switch (item) {
+                case "String", "Number":
+                    getChildren().set(3, valueField);
+                    break;
+                case "Column Value":
+                    getChildren().set(3, ColumnBox);
+                    break;
+            }
+        }
+
+        private String getValue() {
+            return switch (TypeCombo.getValue()) {
+                case "String" ->
+                        valueField.getText().isEmpty() ? "" : "'" + valueField.getText() + "'";
+                case "Number" -> valueField.getText().isEmpty() ? "" : valueField.getText();
+                case "Column Value" ->
+                        ColumnBox.getValue();
+                default -> "";
+            };
+        }
+
         public String getCondition() {
             if (columnCombo.getValue() == null ||
                     operatorCombo.getValue() == null ||
-                    valueField.getText().isEmpty()) {
+                    getValue() == null || getValue().isEmpty()) {
                 return "";
             }
 
             return String.format("%s %s %s",
                     columnCombo.getValue(),
                     operatorCombo.getValue(),
-                    TypeCombo.getValue().equals("String") ? "'" + valueField.getText() + "'" : valueField.getText());
+                    getValue());
         }
     }
 
@@ -221,14 +299,16 @@ public class AdvancedSearchController {
         public ConditionGroup() {
             super(5);
             setPadding(new Insets(5));
-            setStyle("-fx-border-color: #999; -fx-border-width: 1;");
+            setStyle("-fx-border-color: black; -fx-border-width: 1;");
 
             HBox header = new HBox(5);
             groupLogic = new ComboBox<>(FXCollections.observableArrayList("AND", "OR"));
+            groupLogic.setPromptText("logic");
             groupLogic.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
-            Button addConditionBtn = new Button("+ Condition");
-            Button addSubGroupBtn = new Button("+ Sub Group");
+            JFXButton addConditionBtn = new JFXButton("+ Condition");
+            JFXButton addSubGroupBtn = new JFXButton("+ Sub Group");
             Button removeBtn = new Button("X");
+            removeBtn.setStyle("-fx-background-color: red; -fx-border-color: transparent; -fx-text-fill: white;");
 
             header.getChildren().addAll(
                     new Label("Group operator:"),
@@ -248,6 +328,9 @@ public class AdvancedSearchController {
                 generateQuery();
             });
             removeBtn.setOnAction(_ -> {
+
+                getChildren().clear();
+
                 ColumnsContainer.getChildren().remove(this);
                 generateQuery();
             });
@@ -274,6 +357,12 @@ public class AdvancedSearchController {
             }
             return sb.toString();
         }
+    }
+
+    @FXML
+    private void close() {
+        ClosedByUser = true;
+        stage.close();
     }
 
 }
