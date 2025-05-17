@@ -6,20 +6,20 @@ import com.example.sqlide.Container.Assistant.AssistantBoxCode;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.EventLayout.EditEventController;
 import com.example.sqlide.EventLayout.EventController;
+import com.example.sqlide.Notification.NotificationController;
 import com.example.sqlide.ScriptLayout.SearchScriptController;
 import com.example.sqlide.TriggerLayout.EditTriggerController;
 import com.example.sqlide.TriggerLayout.TriggerController;
 import com.example.sqlide.drivers.SQLite.SQLiteDB;
 import com.example.sqlide.drivers.model.DataBase;
-import com.example.sqlide.editor.EditorController;
-import com.example.sqlide.editor.FileEditor;
+import com.example.sqlide.Editor.EditorController;
+import com.example.sqlide.Editor.FileEditor;
 import com.example.sqlide.exporter.CSV.CSVController;
 import com.example.sqlide.exporter.Excel.excelController;
 import com.example.sqlide.exporter.JSON.JSONController;
 import com.example.sqlide.exporter.XML.xmlController;
 import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
-import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -34,14 +34,10 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.text.TextAlignment;
 import javafx.stage.*;
-import org.controlsfx.control.PopOver;
-import org.controlsfx.glyphfont.FontAwesome;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
@@ -68,6 +64,8 @@ public class mainController {
     public JFXButton NotificationButton;
     public TextArea Console;
     @FXML
+    private SplitPane HorizontalSplit;
+    @FXML
     private BorderPane BorderContainer;
 
     @FXML
@@ -86,9 +84,9 @@ public class mainController {
     private Menu backupMenu;
 
     @FXML
-    private VBox MessagesBox, NotificationBox = new VBox(5), NotificationContainer = new VBox();
+    private VBox MessagesBox, NotificationBox = new VBox(5);
 
-    private VBox AssistantContainer;
+    private VBox AssistantContainer, NotificationContainer;
 
     @FXML
     private SplitPane CenterContainer;
@@ -192,13 +190,17 @@ public class mainController {
             LabelDB.setLayoutY(event.getSceneY() - dragDelta.y);
         });
 
+        setHDividerSpace();
+
+        loadNotification();
+
        // CenterContainer.getItems().remove(AssistentContainer);
-        initializeSock();
+      /*  initializeSock();
         NotificationBox.setPadding(new Insets(10, 10, 10, 10));
         initializeNotification();
         for (int i = 0; i < 100; i++) {
             createNotificationBox(new Notification.MessageNotification("dgfiusdgf", "duhf9isudghfiudhgf9weyfuoayhfe8sayiugsdfuisadgfisdgafisadfisagfyhdgsfgasdifbkafuagufefoiabgeefgfuisedahgfousagfuisgfujidgfuigs", 0, LocalTime.now().withNano(0)));
-        }
+        } */
 
         Thread waiterMessage = new Thread(() -> {
             try {
@@ -211,9 +213,6 @@ public class mainController {
         });
         waiterMessage.setDaemon(true);
         waiterMessage.start();
-    }
-
-    private void initializeButtonsInfo() {
     }
 
     @FXML
@@ -293,6 +292,19 @@ public class mainController {
         NotificationFetcher.setDaemon(true);
         NotificationFetcher.start();
 
+    }
+
+    private void loadNotification() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("Notification/NotificationStage.fxml"));
+            //    VBox miniWindow = loader.load();
+            NotificationContainer = loader.load();
+
+            // Criar um novo Stage para a subjanela
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void initializeNotification() {
@@ -379,13 +391,28 @@ public class mainController {
             if (divider != null) {
                 divider.setStyle("-fx-background-color: BLACK; -fx-pref-width: 2px");
             }
-            CenterContainer.getDividers().getFirst().positionProperty().addListener((obs, oldVal, newVal) -> {
+            CenterContainer.getDividers().getFirst().positionProperty().addListener((_, _, newVal) -> {
                 if (newVal.doubleValue() < 0.7) {
                     CenterContainer.setDividerPositions(0.7);
                 }
             });
         }
         CenterContainer.setDividerPositions(0.7);
+    }
+
+    private void setHDividerSpace() {
+        if (HorizontalSplit.getDividers() != null && !HorizontalSplit.getDividers().isEmpty()) {
+            Node divider = HorizontalSplit.lookup(".split-pane-divider");
+            if (divider != null) {
+                divider.setStyle("-fx-background-color: BLACK; -fx-pref-width: 2px");
+            }
+            HorizontalSplit.getDividers().getFirst().positionProperty().addListener((_, _, newVal) -> {
+                if (newVal.doubleValue() < 0.7) {
+                    HorizontalSplit.setDividerPositions(0.7);
+                }
+            });
+        }
+        HorizontalSplit.setDividerPositions(0.7);
     }
 
     @FXML
@@ -916,7 +943,7 @@ public class mainController {
     private void OpenNotifications() {
         if (NotificationContainer.getParent() == null) {
             CenterContainer.getItems().add(NotificationContainer);
-            if (AssistantContainer.getParent() != null) {
+            if (AssistantContainer != null) {
                 AssistantButton.setStyle("-fx-background-color: transparent;");
                 CenterContainer.getItems().remove(AssistantContainer);
             }

@@ -1,18 +1,30 @@
-from genai import genai, types
+from google import genai
+from google.genai import types
+from google.genai.types import Content, Part, GenerateContentResponse
 import inspect
 import json
 
 conversation_history = []
+client = None
 
 def set_light(brit: int):
     """Set the light state.
     Args:
         brit (int): Value between 0 and 100
     """
-    print(f"Light set to {brit}%")
+
+    sender = {
+    'status': 'request',
+    'function': 'set_light',
+    'parameters': [str(brit)],
+    'message': 'ainda changing light'
+    }
+
+    print(json.dumps(sender))
 
 def talkToGemini(s: str):
     global conversation_history
+    global client
 
     config = types.GenerateContentConfig(
         tools=[set_light],
@@ -38,16 +50,20 @@ def talkToGemini(s: str):
             )
     conversation_history.append(model_response)
 
-    return response.Text
+    return response.text
 
 def main():
+    global client
     client = genai.Client(api_key="")
     while True:
         s = input()
-        text = talkToGemini(s)
+        jsonReciver = json.loads(s)
+        text = talkToGemini(jsonReciver["content"])
            # print(json.dumps(res))
         resposta = {
             'status': 'success',
             'message': text
         }
         print(json.dumps(resposta))
+
+main()

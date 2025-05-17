@@ -1,7 +1,6 @@
-package com.example.sqlide.editor;
+package com.example.sqlide.Editor;
 
 import com.example.sqlide.Container.Editor.TextAreaAutocomplete;
-import com.example.sqlide.Container.Editor.TextAreaAutocompleteLines;
 import com.example.sqlide.Container.Editor.Words.SQLWords;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;

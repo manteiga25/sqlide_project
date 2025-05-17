@@ -41,9 +41,10 @@ module com.example.sqlide {
     opens com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater to javafx.fxml;
     opens com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface to javafx.fxml;
     opens com.example.sqlide.Container.loading to javafx.fxml;
-    opens com.example.sqlide.editor to javafx.fxml;
+    opens com.example.sqlide.Editor to javafx.fxml;
     opens com.example.sqlide.AdvancedSearch to javafx.fxml;
     opens com.example.sqlide.Assistant to javafx.fxml;
+    opens com.example.sqlide.Notification to javafx.fxml;
 
     exports com.example.sqlide;
     exports com.example.sqlide.exporter.Excel;
@@ -64,8 +65,9 @@ module com.example.sqlide {
     exports com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface;
     exports com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater;
     exports com.example.sqlide.Container.loading;
-    exports com.example.sqlide.editor;
+    exports com.example.sqlide.Editor;
     exports com.example.sqlide.AdvancedSearch;
     exports com.example.sqlide.Assistant;
+    exports com.example.sqlide.Notification;
 
 }

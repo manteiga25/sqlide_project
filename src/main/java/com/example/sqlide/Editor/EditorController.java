@@ -1,10 +1,9 @@
-package com.example.sqlide.editor;
+package com.example.sqlide.Editor;
 
 import com.example.sqlide.drivers.model.DataBase;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -14,7 +13,6 @@ import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
-import org.apache.poi.ss.formula.functions.T;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowConfirmation;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
@@ -23,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;

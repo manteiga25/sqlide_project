@@ -66,7 +66,7 @@
              </VBox>
          </left>
          <center>
-             <SplitPane dividerPositions="0.8" orientation="VERTICAL" style="-fx-background-color: black;" stylesheets="@../../../css/SplitDivider.css">
+             <SplitPane fx:id="HorizontalSplit" dividerPositions="0.8" orientation="VERTICAL" style="-fx-background-color: black;" stylesheets="@../../../css/SplitHorizontal.css">
           <!--  <Label fx:id="LabelDB" prefHeight="52.0" prefWidth="246.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true" BorderPane.alignment="CENTER"> -->
              <SplitPane fx:id="CenterContainer" prefWidth="1793.0" style="-fx-background-color: #2A2A2A;">
                  <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" prefWidth="1832.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true">

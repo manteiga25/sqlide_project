@@ -1,0 +1,12 @@
+/* Estilo do divisor horizontal */
+.split-pane-divider {
+    -fx-background-color: black; /* Cor da linha de divisão */
+    -fx-border-color: transparent; /* Remove bordas extras */
+    -fx-padding: 0 0.2 0 0.2; /* Espessura da linha (aumenta o padding para tornar mais largo) */
+}
+
+/* Estilo do "grabber" (ícone de arraste) */
+.split-pane-divider .horizontal-grabber {
+    -fx-background-color: #CCCCCC; /* Cor do ícone de arraste */
+    -fx-shape: "M 0 0 L 3 0 L 1.5 3 L 0 0"; // Forma personalizada (opcional)
+}
