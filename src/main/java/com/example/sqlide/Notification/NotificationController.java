@@ -97,4 +97,9 @@ public class NotificationController {
 
     }
 
+    @FXML
+    private void cleanNotifications() {
+        NotificationBox.getChildren().clear();
+    }
+
 }

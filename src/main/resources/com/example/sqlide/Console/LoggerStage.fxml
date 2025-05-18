@@ -3,9 +3,9 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<Pane style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Console.LoggerController">
+<Pane fx:id="Container" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Console.LoggerController">
    <children>
-      <TableView fx:id="TableLogger" layoutY="93.0" stylesheets="@../../../../css/tableStyle.css">
+      <TableView fx:id="TableLogger" layoutY="-7.0" stylesheets="@../../../../css/tableStyle.css">
         <columns>
           <TableColumn fx:id="UserColumn" prefWidth="100.0" text="User" />
           <TableColumn fx:id="QueryColumn" prefWidth="300.0" text="Query" />

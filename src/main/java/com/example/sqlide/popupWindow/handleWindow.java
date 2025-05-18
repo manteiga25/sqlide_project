@@ -1,12 +1,20 @@
 package com.example.sqlide.popupWindow;
 
+import com.example.sqlide.exporter.JSON.JSONController;
+import com.example.sqlide.loading.LoadingController;
 import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 import java.util.Optional;
+import java.util.Stack;
 
 abstract public class handleWindow {
 
@@ -69,6 +77,35 @@ abstract public class handleWindow {
             icon.setFitWidth(25);
             return icon;
         }
+    }
+
+    public static Stage LoadingStage(final String title, final String content) {
+        Stage stage = null;
+        try {
+            // Carrega o arquivo FXML
+
+            FXMLLoader loader = new FXMLLoader(handleWindow.class.getResource("/com/example/sqlide/loading/loadingIndeterminateStage.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            LoadingController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            stage = new Stage();
+            stage.setTitle("Subjanela");
+            stage.setScene(new Scene(root));
+            secondaryController.setTitle(title);
+            secondaryController.setContent(content);
+
+            // Opcional: definir a modalidade da subjanela
+            stage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return stage;
     }
 
 }

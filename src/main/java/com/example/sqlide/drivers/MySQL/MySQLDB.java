@@ -116,7 +116,7 @@ public class MySQLDB extends DataBase {
 
     @Override
     public boolean createColumn(String table, String column, ColumnMetadata meta, boolean fill) {
-        if (meta.isForeign || meta.IsPrimaryKey) {
+        if (meta.foreign.isForeign || meta.IsPrimaryKey) {
             System.out.println("chwguei");
             return createSpecialColumn(table, column, meta);
         }
@@ -124,7 +124,7 @@ public class MySQLDB extends DataBase {
         final String IsUnique = meta.isUnique ? " UNIQUE " : "";
         String Default = meta.defaultValue == null || meta.defaultValue.isEmpty() ? " DEFAULT " + meta.defaultValue : "";
         Default = "";
-        final boolean isForeign = meta.isForeign;
+        final boolean isForeign = meta.foreign.isForeign;
         String Type = meta.Type;
         final String ColumnName = column;
         String PrimaryKey = "";
@@ -485,7 +485,7 @@ public class MySQLDB extends DataBase {
                             Type = "ENUM";
                 }
                 // para mudar
-                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, foreign, isForeign, Default, size, Type, name, nonUnique, integerDigits, decimalDigits, name);
+                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, new ColumnMetadata.Foreign(), Default, size, Type, name, nonUnique, integerDigits, decimalDigits, name);
                 TmpCol.items = checkValues;
                 //     TmpCol.items = checks;
 

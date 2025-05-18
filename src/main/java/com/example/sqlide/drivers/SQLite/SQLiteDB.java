@@ -2,12 +2,14 @@ package com.example.sqlide.drivers.SQLite;
 
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
+import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
 
 import java.io.*;
 import java.sql.*;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -184,14 +186,14 @@ public class SQLiteDB extends DataBase {
     @Override
     public boolean createColumn(String table, String column, ColumnMetadata meta, final boolean fill) {
       //  final String ForeignTable = !Objects.equals(meta.ForeignKey[0], "") ? "FOREIGN KEY (" + column + ") REFERENCES " + meta.ForeignKey[0] + "(" + meta.ForeignKey[1] + ")" : "";
-        if (meta.isForeign || meta.IsPrimaryKey) {
+        if (meta.foreign.isForeign || meta.IsPrimaryKey) {
             System.out.println("chwguei");
             return createSpecialColumn(table, column, meta, fill);
         }
         final String NotNull = meta.NOT_NULL ? " NOT NULL " : "";
         final String IsUnique = meta.isUnique ? " UNIQUE " : "";
         final String Default = meta.defaultValue == null || meta.defaultValue.isEmpty() ? "" : " DEFAULT " + meta.defaultValue;
-        final boolean isForeign = meta.isForeign;
+ //       final boolean isForeign = meta.isForeign;
         final String index = meta.index;
         String Type = meta.Type;
         final String ColumnName = column;
@@ -270,7 +272,7 @@ public class SQLiteDB extends DataBase {
             }
 
             if (fillForeign) {
-                if (!inserDataForeignTable(table, meta.ForeignKey[0], meta.Name, meta.ForeignKey[1], meta)) {
+                if (!inserDataForeignTable(table, meta.foreign.tableRef, meta.Name, meta.foreign.columnRef, meta)) {
                     throw new SQLException(MsgException);
                 }
             }
@@ -410,9 +412,9 @@ public class SQLiteDB extends DataBase {
             final String Default = !Objects.equals(column.defaultValue, "") && !Objects.equals(column.defaultValue, "null") ? " DEFAULT " + column.defaultValue : "";
             final String IsUnique = column.isUnique ? " UNIQUE " : "";
          //   String Default = "";
-            final boolean isForeign = column.isForeign;
+            final boolean isForeign = column.foreign.isForeign;
       //      final String ForeignTable = column.ForeignKey == null || Objects.equals(column.ForeignKey[0], "") ? "REFERENCES " + column.ForeignKey[0] + "(" + column.ForeignKey[1] + ")" : "";
-            final String[] ForeignTable = column.ForeignKey;
+         //   final String[] ForeignTable = column.ForeignKey;
             String Type = column.Type;
             String ColumnName = "";
             String prime = "";
@@ -423,7 +425,7 @@ public class SQLiteDB extends DataBase {
                 prime = " PRIMARY KEY ";
             }
             else if (isForeign) {
-                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.ForeignKey[0] + "(" + column.ForeignKey[1] + ")";
+                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.foreign.tableRef + "(" + column.foreign.columnRef + ")";
                 Type = "";
             }
             else {
@@ -554,7 +556,7 @@ public class SQLiteDB extends DataBase {
                 }
                 data.add(new DataForDB(tmpData));
             }
-            putMessage(command);
+            putMessage(new Logger(getUsername(), command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", LocalTime.now()));
             return  data;
         } catch (SQLException e) {
             System.err.println(e.getMessage());
@@ -843,9 +845,9 @@ public class SQLiteDB extends DataBase {
         command.append(");");
         System.out.println(command);
         final String query = command.toString();
-        putMessage(query);
         try (PreparedStatement pstmt = connection.prepareStatement(query)) {
             pstmt.execute();
+            putMessage(new Logger(getUsername(), query, pstmt.getWarnings() != null ? pstmt.getWarnings().getMessage() : "", LocalTime.now()));
         } catch (SQLException e) {
             MsgException = e.getMessage();
             return false;
@@ -863,10 +865,10 @@ public class SQLiteDB extends DataBase {
         command.append(" WHERE ROWID = '").append(index).append("';");
         System.out.println(command);
         final String query = command.toString();
-        putMessage(query);
         try (PreparedStatement pstmt = connection.prepareStatement(query)) {
             //  pstmt.execute(command.toString());
             pstmt.execute();
+            putMessage(new Logger(getUsername(), query, pstmt.getWarnings() != null ? pstmt.getWarnings().getMessage() : "", LocalTime.now()));
         } catch (SQLException e) {
             MsgException = e.getMessage();
             return false;
@@ -887,7 +889,6 @@ public class SQLiteDB extends DataBase {
         String placeholders = String.join(",", Collections.nCopies(rowid.size(), "?"));
         final String command = "DELETE FROM " + Table + " WHERE ROWID IN (" + placeholders + ");";
         System.out.println(command);
-        putMessage(command);
         try (PreparedStatement pstmt = connection.prepareStatement(command)) {
 
             final boolean isAuto = connection.getAutoCommit();
@@ -915,6 +916,7 @@ public class SQLiteDB extends DataBase {
             if (isAuto) {
                 connection.setAutoCommit(true);
             }
+            putMessage(new Logger(getUsername(), command, pstmt.getWarnings() != null ? pstmt.getWarnings().getMessage() : "", LocalTime.now()));
             return sucess;
 
         } catch (SQLException e) {
@@ -932,12 +934,12 @@ public class SQLiteDB extends DataBase {
     public boolean updateData(String Table, final String column, final String value, final long index) {
         final String command = "UPDATE " + Table + " SET " + column + " = '" + value + "' WHERE ROWID = " + index + ";";
         System.out.println(command);
-        putMessage(command);
         try {
            // PreparedStatement pstmt = connection.prepareStatement(command.toString());
             //  pstmt.execute(command.toString());
           //  pstmt.execute();
             statement.execute(command);
+            putMessage(new Logger(getUsername(), command, statement.getWarnings() != null ? statement.getWarnings().getMessage() : "", LocalTime.now()));
         } catch (SQLException e) {
             MsgException = e.getMessage();
             return false;
@@ -964,7 +966,6 @@ public class SQLiteDB extends DataBase {
 
         }
         System.out.println(command);
-        putMessage(command);
         try (PreparedStatement pstmt = connection.prepareStatement(command)) {
             //  pstmt.execute(command.toString());
             pstmt.setObject(1, value);
@@ -972,6 +973,7 @@ public class SQLiteDB extends DataBase {
                 pstmt.setObject(2, tmp);
             }
             int affectedRows = pstmt.executeUpdate();
+            putMessage(new Logger(getUsername(), command, pstmt.getWarnings() != null ? pstmt.getWarnings().getMessage() : "", LocalTime.now()));
             System.out.println("rows " + affectedRows);
           //  statement.execute(command);
         } catch (SQLException e) {
@@ -995,7 +997,6 @@ public class SQLiteDB extends DataBase {
 
         }
         System.out.println(command);
-        putMessage(command);
         try (PreparedStatement pstmt = connection.prepareStatement(command)) {
             //  pstmt.execute(command.toString());
             pstmt.setObject(1, value);
@@ -1003,6 +1004,7 @@ public class SQLiteDB extends DataBase {
                 pstmt.setObject(2, tmp);
             }
             int affectedRows = pstmt.executeUpdate();
+            putMessage(new Logger(getUsername(), command, pstmt.getWarnings() != null ? pstmt.getWarnings().getMessage() : "", LocalTime.now()));
             System.out.println("rows " + affectedRows);
             //  statement.execute(command);
         } catch (SQLException e) {
@@ -1257,7 +1259,7 @@ public class SQLiteDB extends DataBase {
                     }
                 }
                 // para mudar
-                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, foreign, isForeign, Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);
+                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, new ColumnMetadata.Foreign(), Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);
            //     TmpCol.items = checks;
 
                 ColumnsMetadata.add(TmpCol);

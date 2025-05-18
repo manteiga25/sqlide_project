@@ -1,5 +1,5 @@
 .date-picker {
-    -fx-background-color: #3C3C3C;
+    -fx-background-color: #2C2C2C;
     -fx-text-fill: white;
     -fx-font-family: 'Nunito Sans', sans-serif;
     -fx-background-radius: 5px; /* Adicionar borda arredondada ao campo principal */
@@ -17,73 +17,102 @@
 }
 
 .date-picker .text-field {
-    -fx-background-color: #3C3C3C;
+    -fx-background-color: #2C2C2C;
+    -fx-text-fill: white;
+    /* Torna o fundo transparente para só exibir a borda */
+        -fx-background-color: transparent;
+        /* Define só a borda inferior (width) e remove as outras */
+        -fx-border-width: 0 0 3px 0;
+        /* Borda inferior com gradiente linear horizontal entre dois tons de azul */
+        -fx-border-color:
+            linear-gradient(
+                to right,
+                #3574F0 0%,
+                #4d17d4 100%
+            );
+        /* Ajusta o raio dos cantos, se desejar suavizar */
+        -fx-border-radius: 0 0 2px 2px;
+        /* Mantém a borda “colada” ao campo, sem inset extra */
+        -fx-background-insets: 0;
+}
+
+.date-picker .text-field:focused {
+    -fx-background-size: 100% 2px;
+}
+
+.date-picker .arrow-button {
+    -fx-background-color: #2C2C2C;
+    -fx-border-color: transparent;
+}
+
+.date-picker .arrow-button .arrow {
+    -fx-background-color: white;
+}
+
+/* Cabeçalho do popup */
+.date-picker-popup > .month-year-pane {
+    -fx-background-color: #1e2430;
+    -fx-padding: 10;
+}
+
+.date-picker-popup > .month-year-pane > .label {
     -fx-text-fill: white;
 }
 
-.date-picker:editable .arrow-button {
-    -fx-background-color: #3574F0;
+.date-picker-popup > .month-year-pane > .spinner > .button {
+    -fx-background-color: #1e2430;
 }
 
-.date-picker:editable .arrow-button .arrow {
-    -fx-background-color: black;
+.date-picker-popup > .month-year-pane > .spinner > .button > .left-arrow,
+.date-picker-popup > .month-year-pane > .spinner > .button > .right-arrow {
+    -fx-background-color: #2F77B1;
 }
 
-.date-picker .cell {
-	-fx-background-color: #1B2431;
-/*	-fx-border-color: #283D57; */
--fx-border-color: #1B2431;
-	-fx-text-fill: white;
-}
-.date-picker .cell:hover {
-	-fx-background-color: #283D57;
-	-fx-background-radius: 5px;
-    	-fx-border-color: transparent;
-}
-.date-picker .cell:focused {
-	-fx-background-color: #283D57;
-	-fx-background-radius: 5px;
-	-fx-border-color: #283D57;
-}
-.date-picker .selected {
-	-fx-background-color: #283D57;
-	-fx-text-fill: white;
-}
-.date-picker .selected:focused {
-	-fx-background-color: #283D57;
-	-fx-text-fill: white;
-}
-.date-picker-popup  {
-	-fx-border-color: transparent;
-	-fx-background-color: #1B2431;
-}
-/* Cabeçalho do calendário (mês/ano) */
-.date-picker-popup .month-year-pane {
-    -fx-background-color: #283D57;
-    -fx-background-radius: 5px 5px 0 0; /* Arredondar apenas o topo */
-    -fx-padding: 8px;
+/* Calendário */
+.date-picker-popup {
+    -fx-background-color: #1e2430;
+    -fx-border-color: #4a4a4a;
 }
 
-/* Botões de navegação (setas) */
-.date-picker-popup .spinner .button {
-    -fx-background-color: #3574F0;
-    -fx-background-radius: 5px;
-    -fx-padding: 5px;
+.date-picker-popup > .calendar-grid {
+    -fx-background-color: #1e2430;
 }
 
-/* Ajuste fino nas células para evitar sobreposição */
-.date-picker-popup .calendar-grid {
-    -fx-padding: 5px;
-    -fx-hgap: 2px;
-    -fx-vgap: 2px;
+/* Cabeçalho dos dias da semana */
+.date-picker-popup > .calendar-grid > .day-name-cell {
+    -fx-background-color: #1e2430;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
 }
-.date-picker-popup .month-year-pane .label {
-	-fx-text-fill: white;
+
+/* Células do calendário */
+.date-picker-popup > .calendar-grid > .day-cell {
+    -fx-background-color: #1e2430;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
 }
-.date-picker-popup .week-number-cell {
-	-fx-text-fill: #283D57;
+
+.date-picker-popup > .calendar-grid > .day-cell:hover {
+    -fx-background-color: #394656;
 }
-.date-picker-popup .spinner .button .left-arrow,
-.date-picker-popup .spinner .button .right-arrow {
-	-fx-background-color: white;
+
+.date-picker-popup > .calendar-grid > .day-cell.selected {
+    -fx-background-color: #3b66b5;
+    -fx-text-fill: white;
+}
+
+/* Dia atual */
+.date-picker-popup > .calendar-grid > .day-cell.today {
+    -fx-border-color: #3b66b5;
+}
+
+/* Dias do mês diferente */
+.date-picker-popup > .calendar-grid > .day-cell.previous-month,
+.date-picker-popup > .calendar-grid > .day-cell.next-month {
+    -fx-text-fill: #6d6d6d;
+}
+
+/* Destaque do dia selecionado */
+.date-picker-popup > .calendar-grid > .day-cell.selected {
+    -fx-background-color: #3b66b5;
 }

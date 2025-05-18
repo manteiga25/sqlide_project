@@ -2,10 +2,12 @@ package com.example.sqlide;
 
 import atlantafx.base.controls.Spacer;
 import com.example.sqlide.Configuration.DatabaseConf;
+import com.example.sqlide.Console.ConsoleController;
 import com.example.sqlide.Container.Assistant.AssistantBoxCode;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.EventLayout.EditEventController;
 import com.example.sqlide.EventLayout.EventController;
+import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.Notification.NotificationController;
 import com.example.sqlide.ScriptLayout.SearchScriptController;
 import com.example.sqlide.TriggerLayout.EditTriggerController;
@@ -21,6 +23,7 @@ import com.example.sqlide.exporter.XML.xmlController;
 import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -49,13 +52,11 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static com.example.sqlide.popupWindow.handleWindow.LoadingStage;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class mainController {
@@ -131,9 +132,11 @@ public class mainController {
 
     private Stage primaryStage;
 
-    private final BlockingQueue<String> sender = new LinkedBlockingQueue<>();
-
     private EditorController editorController = null;
+
+    private ConsoleController consoleController = null;
+
+    private final SimpleStringProperty currentDB = new SimpleStringProperty();
 
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
@@ -178,41 +181,10 @@ public class mainController {
 
     @FXML
     public void initialize() {
-        Delta dragDelta = new Delta();
-        LabelDB.setOnMousePressed(event -> {
-            dragDelta.x = event.getSceneX() - LabelDB.getLayoutX();
-            dragDelta.y = event.getSceneY() - LabelDB.getLayoutY();
-        });
-
-        // Evento de arrastar o mouse: atualiza a posição da BorderPane com base na posição atual do mouse
-        LabelDB.setOnMouseDragged(event -> {
-            LabelDB.setLayoutX(event.getSceneX() - dragDelta.x);
-            LabelDB.setLayoutY(event.getSceneY() - dragDelta.y);
-        });
 
         setHDividerSpace();
 
         loadNotification();
-
-       // CenterContainer.getItems().remove(AssistentContainer);
-      /*  initializeSock();
-        NotificationBox.setPadding(new Insets(10, 10, 10, 10));
-        initializeNotification();
-        for (int i = 0; i < 100; i++) {
-            createNotificationBox(new Notification.MessageNotification("dgfiusdgf", "duhf9isudghfiudhgf9weyfuoayhfe8sayiugsdfuisadgfisdgafisadfisagfyhdgsfgasdifbkafuagufefoiabgeefgfuisedahgfousagfuisgfujidgfuigs", 0, LocalTime.now().withNano(0)));
-        } */
-
-        Thread waiterMessage = new Thread(() -> {
-            try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    final String message = sender.take();
-                    Platform.runLater(() -> Console.appendText(message + "\n"));
-                }
-            } catch (InterruptedException _) {
-            }
-        });
-        waiterMessage.setDaemon(true);
-        waiterMessage.start();
     }
 
     @FXML
@@ -252,48 +224,6 @@ public class mainController {
         }
     }
 
-    private static class Delta {
-        double x, y;
-    }
-
-    public mainController() {
-
-    }
-
-    private void initializeSock() {
-        Thread NotificationFetcher = new Thread(() -> {
-            try (ServerSocket serverSocket = new ServerSocket(12345)) {
-                System.out.println("Servidor aguardando conexões...");
-
-                // Aguarda uma conexão do cliente
-                while (true) {
-                    try (Socket clientSocket = serverSocket.accept();
-                         ObjectInputStream in = new ObjectInputStream(clientSocket.getInputStream())) {
-
-                        System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
-
-                        // Lê mensagem do cliente
-                        Notification.MessageNotification message = (Notification.MessageNotification) in.readObject();
-                        System.out.println("Mensagem recebida: " + message);
-
-                        Platform.runLater(() -> createNotificationBox(message));
-
-                    } catch (IOException e) {
-                        System.err.println("Erro na conexão com o cliente: " + e.getMessage());
-                    } catch (ClassNotFoundException e) {
-                        System.err.println(e.getMessage());
-                    }
-                }
-
-            } catch (IOException e) {
-                System.err.println("Erro ao iniciar o servidor: " + e.getMessage());
-            }
-        });
-        NotificationFetcher.setDaemon(true);
-        NotificationFetcher.start();
-
-    }
-
     private void loadNotification() {
         try {
             // Carrega o arquivo FXML
@@ -305,84 +235,6 @@ public class mainController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void initializeNotification() {
-
-        VBox static_cenary = new VBox(10);
-
-        Label titleNot = new Label("Notifications");
-        titleNot.setStyle("-fx-font-size: 16px; -fx-text-fill: white; -fx-font-weight: bold;");
-        titleNot.setPadding(new Insets(15, 0, 0, 15));
-
-        HBox clear_cenary = new HBox();
-
-        Label timeline = new Label("Timeline");
-        timeline.setStyle("-fx-text-fill: #6A6E75; -fx-font-size: 14px;");
-        timeline.setPadding(new Insets(0, 0, 0, 15));
-
-        Hyperlink clearLink = new Hyperlink("Clear all");
-        clearLink.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Hyper.css")).toExternalForm());
-        clearLink.setStyle("-fx-font-size: 14px");
-        clearLink.setOnAction(e -> NotificationBox.getChildren().clear());
-        clearLink.setPadding(new Insets(0, 15, 0, 0));
-
-        clear_cenary.getChildren().addAll(timeline, new Spacer(), clearLink);
-
-        static_cenary.getChildren().addAll(titleNot, clear_cenary);
-
-        ScrollPane scrollNotifications = new ScrollPane();
-        scrollNotifications.setContent(NotificationBox);
-        scrollNotifications.setFitToWidth(true);
-        //  scrollNotifications.setFitToHeight(true);
-        scrollNotifications.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm());
-        scrollNotifications.setStyle("-fx-background: #2A2A2A; -fx-border-color: #2A2A2A;");
-
-        // NotificationContainer.setStyle("-fx-base: #3C3C3C");
-
-        NotificationContainer.getChildren().addAll(static_cenary, scrollNotifications);
-
-    }
-
-    private void createNotificationBox(final Notification.MessageNotification notification) {
-        Pane containerForBorder = new Pane();
-        containerForBorder.setStyle("-fx-background-color: #3C3C3C; -fx-background-radius: 10px; -fx-border-radius: 10px;");
-
-        VBox containerNot = new VBox(10);
-        containerNot.prefWidthProperty().bind(containerForBorder.widthProperty().subtract(20)); // 10px de margem em cada lado
-        containerNot.prefHeightProperty().bind(containerForBorder.heightProperty().subtract(20));
-
-        HBox notificationBox = new HBox(5);
-        notificationBox.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(notificationBox, Priority.ALWAYS);
-
-        Label title = new Label(notification.title());
-        title.setStyle("-fx-font-size: 14px; -fx-text-fill: white; -fx-font-weight: bold;");
-        title.setPadding(new Insets(0, 0, 0, 15));
-        HBox.setHgrow(title, Priority.ALWAYS);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Label date = new Label(notification.date().toString());
-        date.setStyle("-fx-text-fill: #6A6E75;");
-        date.setAlignment(Pos.CENTER_RIGHT);
-
-        notificationBox.getChildren().addAll(title, spacer, date);
-
-        Label message = new Label(notification.message());
-        message.setPadding(new Insets(0, 0, 0, 15));
-        message.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
-        message.setWrapText(true);
-        message.setPrefHeight(Region.USE_COMPUTED_SIZE);
-        VBox.setVgrow(message, Priority.ALWAYS);
-
-        // containerNot.setFillWidth(true);
-
-        containerNot.getChildren().addAll(notificationBox, message);
-        containerForBorder.getChildren().add(containerNot);
-
-        NotificationBox.getChildren().addFirst(containerForBorder);
     }
 
     private void setDividerSpace() {
@@ -407,12 +259,12 @@ public class mainController {
                 divider.setStyle("-fx-background-color: BLACK; -fx-pref-width: 2px");
             }
             HorizontalSplit.getDividers().getFirst().positionProperty().addListener((_, _, newVal) -> {
-                if (newVal.doubleValue() < 0.7) {
-                    HorizontalSplit.setDividerPositions(0.7);
+                if (newVal.doubleValue() < 0.8) {
+                    HorizontalSplit.setDividerPositions(0.8);
                 }
             });
         }
-        HorizontalSplit.setDividerPositions(0.7);
+        HorizontalSplit.setDividerPositions(0.8);
     }
 
     @FXML
@@ -446,6 +298,7 @@ public class mainController {
         if (!db.connect(URL, DBName, UserName, password)) {
             ShowError("Error SQL", "Error to open Database " + URL + "\n" + db.GetException());
         }
+        final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
         db.setMessager(sender);
         DatabaseOpened.put(DBName, db);
         //  final String DBName = db.getDatabaseName();
@@ -454,10 +307,14 @@ public class mainController {
 
         DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
 
+        final Stage loader = LoadingStage("Opening Database.", "You can continue t se application.");
+
         final Thread open = new Thread(()->{
             try {
 
                 openDB.readTables();
+
+                if (consoleController == null) Platform.runLater(this::loadConsole);
 
                 Platform.runLater(this::setDividerSpace);
 
@@ -465,6 +322,7 @@ public class mainController {
                 DBopened.put(DBName, openDB);
                 DatabasesOpened.add(db);
                 DatabasesName.add(DBName);
+                currentDB.set(DBName);
             } catch (Exception e) {
                 try {
                     openDB.closeInterface();
@@ -472,6 +330,8 @@ public class mainController {
                 } catch (SQLException _) {
                 }
                 ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
+            } finally {
+                Platform.runLater(loader::close);
             }
         });
         open.setDaemon(true);
@@ -485,32 +345,46 @@ public class mainController {
             ShowError("Error SQL", "Error to open Database " + path + "\n" + db.GetException());
             return;
         }
+
+        final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
+
         db.setMessager(sender);
         createContainerDB();
         db.buffer = buffer;
 
+        final Stage loader = LoadingStage("Opening Database.", "You can continue t se application.");
+
         DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
+
+        if (consoleController == null) loadConsole();
 
         final Thread open = new Thread(()->{
             try {
 
-                Platform.runLater(()->{
-                    openDB.readTables();
-                    setDividerSpace();
-                });
+                openDB.readTables();
 
+
+
+                Platform.runLater(this::setDividerSpace);
+                Platform.runLater(this::setHDividerSpace);
+
+                consoleController.addData(DBName, sender);
             DatabaseOpened.put(DBName, db);
             DBopens.put(DBName, openDB);
             DBopened.put(DBName, openDB);
                 DatabasesOpened.add(db);
                 DatabasesName.add(DBName);
+                currentDB.set(DBName);
         } catch (Exception e) {
             try {
                 openDB.closeInterface();
                 db.disconnect();
             } catch (SQLException _) {
             }
+            ContainerForDB.getTabs().remove(ContainerForDB.getSelectionModel().selectedItemProperty().get());
             ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
+        } finally {
+            Platform.runLater(loader::close);
         }
         });
         open.setDaemon(true);
@@ -538,7 +412,7 @@ public class mainController {
             ShowError("Error SQL", "Error to create Database " + DBName + "\n" + db.GetException());
             return;
         }
-        db.setMessager(sender);
+       // db.setMessager(sender);
         //if (db.Connect(DBName + ".db", modes)) {
         //  System.out.println("sucess");
         //if (!created) {
@@ -548,6 +422,8 @@ public class mainController {
         //    createTabDB(DBName);
 
         DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
+
+        if (consoleController == null) Platform.runLater(this::loadConsole);
 
         setDividerSpace();
 
@@ -570,6 +446,7 @@ public class mainController {
         DBopened.put(DBName, openDB);
         DatabasesOpened.add(db);
         DatabasesName.add(DBName);
+        currentDB.set(DBName);
 
     }
 
@@ -597,6 +474,7 @@ public class mainController {
                         if (ContainerForDB.getTabs().isEmpty()) {
                             DBopens.clear();
                             DatabaseOpened.clear();
+                            HorizontalSplit.getItems().removeLast();
                             DBopened.clear();
                             removeContainerTab();
                             created = false;
@@ -932,6 +810,24 @@ public class mainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("Assistant/AssistantStage.fxml"));
             //    VBox miniWindow = loader.load();
             AssistantContainer = loader.load();
+
+            // Criar um novo Stage para a subjanela
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadConsole() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("Console/ConsoleStage.fxml"));
+            //    VBox miniWindow = loader.load();
+            VBox container = loader.load();
+
+            consoleController = loader.getController();
+            consoleController.currentDBProperty().bind(currentDB);
+
+            HorizontalSplit.getItems().add(container);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {

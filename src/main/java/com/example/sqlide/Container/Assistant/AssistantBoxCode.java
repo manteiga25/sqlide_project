@@ -9,14 +9,19 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
 public class AssistantBoxCode extends Pane {
 
     private final VBox box = new VBox(10);
 
+    Font customFont = Font.loadFont(
+            getClass().getResourceAsStream("/Fonts/JetBrains.ttf"), 18
+    );
+
     public AssistantBoxCode() {
-        setStyle("-fx-background-radius: 15px; -fx-border-radius-15px; -fx-background-color: #393939;");
+        setStyle("-fx-background-radius: 15px; -fx-border-radius-15px;");
         getChildren().add(box);
         VBox.setMargin(this, new Insets(0,60,0,0));
     }
@@ -42,7 +47,7 @@ public class AssistantBoxCode extends Pane {
 
     public void addErrorMessage(final String message) {
         final TextArea areaMessage = createMessageContainer(message);
-        areaMessage.setStyle("-fx-control-inner-background: #393939; -fx-border-color: #393939; -fx-region-background: #393939;-fx-text-fill: red;");
+        areaMessage.setStyle("-fx-control-inner-background: #393939; -fx-border-color: #393939; -fx-region-background: #393939; -fx-text-fill: red;");
         box.getChildren().add(areaMessage);
     }
 
@@ -53,6 +58,7 @@ public class AssistantBoxCode extends Pane {
         VBox boxAi = new VBox();
 
         JFXButton copy = new JFXButton("copy");
+        copy.setTextFill(Color.WHITE);
 
         copy.setOnAction(e-> ClipBoard.CopyToBoard(code));
 

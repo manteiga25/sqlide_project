@@ -16,9 +16,11 @@ import javafx.stage.Stage;
 import org.apache.poi.ss.formula.functions.Column;
 import org.apache.poi.ss.formula.functions.T;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
@@ -44,10 +46,10 @@ public class NewTable {
     private TextField TableNameInput;
 
     @FXML
-    CheckBox TempBox, RowIDBox;
+    private CheckBox TempBox, RowIDBox;
 
     public NewTable() {
-        columnsMetadata.add(new ColumnMetadata(true, true,null, false, "", 0, "INTEGER", "ID", true, 0, 0, ""));
+        columnsMetadata.add(new ColumnMetadata(true, true, new ColumnMetadata.Foreign(), "", 0, "INTEGER", "ID", true, 0, 0, ""));
     }
 
     @FXML
@@ -78,6 +80,8 @@ public class NewTable {
             Error.setText("'" + TableName + "'" + " is invalid name");
             return;
         }
+
+      //  context.executeCode();
 
         if (ref.createDBTable(TableName, TempBox.isSelected(), RowIDBox.isSelected())) {
             closeWindow();
@@ -153,7 +157,7 @@ public class NewTable {
     public void PutColumnCallback(final ColumnMetadata metadata) {
         columnsMetadata.add(metadata);
         //  columnTable.getItems().add(new TableItems(metadata.Type, metadata.Name, metadata.IsPrimaryKey ? "PRIMARY KEY" : metadata.foreign.isForeign ? "FOREIGN KEY" : "NO KEY", metadata.NOT_NULL));
-        items.add(new TableColumnMeta(metadata.Type, metadata.Name, metadata.IsPrimaryKey ? "PRIMARY KEY" : metadata.foreign.isForeign ? "FOREIGN KEY" : "NO KEY", metadata.NOT_NULL));
+        items.add(new TableColumnMeta(metadata.Name, metadata.Type, metadata.IsPrimaryKey ? "PRIMARY KEY" : metadata.foreign.isForeign ? "FOREIGN KEY" : "NO KEY", metadata.NOT_NULL));
     }
 
     @FXML

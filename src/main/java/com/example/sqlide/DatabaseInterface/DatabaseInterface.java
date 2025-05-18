@@ -57,16 +57,21 @@ public class DatabaseInterface {
     public void readTables() {
         final ArrayList<String> Tables = DatabaseSeted.getTables();
         for (final String t : Tables) {
+
             Platform.runLater(()->{
-                TableInterface table = new TableInterface(DatabaseSeted, t, DBTabContainer, this);
+                final TableInterface table = new TableInterface(DatabaseSeted, t, DBTabContainer, this);
                 table.createDatabaseTab();
                 table.readColumns();
                 TableInterfaceList.add(table);
             });
+
+
         }
+
         if (!TableInterfaceList.isEmpty()) {
             TableInterfaceList.getFirst().fetchIfIsPrimeClick(); // faça fetch da primeira tabela
         }
+
     }
 
     public HashMap<String, ArrayList<String>> getColumnPrimaryKey(final String TableToIgnore) {
@@ -166,7 +171,7 @@ public class DatabaseInterface {
     public void createDBTab(final String TableName, final boolean rowid) {
         TableInterface table = new TableInterface(DatabaseSeted, TableName, DBTabContainer, this);
         table.createDatabaseTab();
-        table.createDBcolContainer(new ColumnMetadata(false, rowid, null, false, null, 0, "INTEGER", "id", false, 0, 0, null));
+        table.createDBcolContainer(new ColumnMetadata(false, rowid, new ColumnMetadata.Foreign(), null, 0, "INTEGER", "id", false, 0, 0, null));
         if (rowid) {
             table.createRowId();
         }

@@ -99,7 +99,7 @@ public class PostreSQLDB extends DataBase {
 
     @Override
     public boolean createColumn(String table, String column, ColumnMetadata meta, boolean fill) {
-        if (meta.isForeign || meta.IsPrimaryKey) {
+        if (meta.foreign.isForeign || meta.IsPrimaryKey) {
             System.out.println("chwguei");
             return createSpecialColumn(table, column, meta);
         }
@@ -107,7 +107,7 @@ public class PostreSQLDB extends DataBase {
         final String IsUnique = meta.isUnique ? " UNIQUE " : "";
         String Default = meta.defaultValue == null || meta.defaultValue.isEmpty() ? " DEFAULT " + meta.defaultValue : "";
         Default = "";
-        final boolean isForeign = meta.isForeign;
+        final boolean isForeign = meta.foreign.isForeign;
         String Type = meta.Type;
         final String ColumnName = column;
         String PrimaryKey = "";
@@ -210,9 +210,9 @@ public class PostreSQLDB extends DataBase {
             final String Default = !Objects.equals(column.defaultValue, "") && !Objects.equals(column.defaultValue, "null") ? " DEFAULT " + column.defaultValue : "";
             final String IsUnique = column.isUnique ? " UNIQUE " : "";
             //   String Default = "";
-            final boolean isForeign = column.isForeign;
+            final boolean isForeign = column.foreign.isForeign;
             //      final String ForeignTable = column.ForeignKey == null || Objects.equals(column.ForeignKey[0], "") ? "REFERENCES " + column.ForeignKey[0] + "(" + column.ForeignKey[1] + ")" : "";
-            final String[] ForeignTable = column.ForeignKey;
+           // final String[] ForeignTable = column.foreign.tableRef;
             String Type = column.Type;
             String ColumnName = "";
             String prime = "";
@@ -223,7 +223,7 @@ public class PostreSQLDB extends DataBase {
                 prime = " PRIMARY KEY ";
             }
             else if (isForeign) {
-                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.ForeignKey[0] + "(" + column.ForeignKey[1] + ")";
+                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.foreign.tableRef + "(" + column.foreign.columnRef + ")";
                 Type = "";
             }
             else {
@@ -864,7 +864,7 @@ public class PostreSQLDB extends DataBase {
                   //  Type = "ENUM";
                // }
                 // para mudar
-                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, foreign, isForeign, Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);
+                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, new ColumnMetadata.Foreign(), Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);
                      TmpCol.items = listEnum;
                      TmpCol.aliasType = aliasType;
 

@@ -65,7 +65,7 @@ public class ColumnInterface {
         final String ColName = Metadata.Name;
         final boolean isPrimeKey = Metadata.IsPrimaryKey;
 
-        return getForDBStringTableColumn(TableName, isPrimeKey, Metadata.isForeign);
+        return getForDBStringTableColumn(TableName, isPrimeKey, Metadata.foreign.isForeign);
     }
 
     private void createMenu(final TableColumn<DataForDB, String> col) {

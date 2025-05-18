@@ -43,6 +43,8 @@ public class NewColumn {
 
     private boolean Edit = false;
 
+    private NewTable newTable;
+
     @FXML
     private TextField ColumnNameInput, text1, text2, text3;
 
@@ -65,7 +67,7 @@ public class NewColumn {
     TextField WordBox;
 
     @FXML
-    Button AddButton, RemoveButton, EditList;
+    Button AddButton, EditList;
 
     private final ObservableList<String> setList = FXCollections.observableArrayList();
 
@@ -83,7 +85,6 @@ public class NewColumn {
             switchSize(true);
             AddButton.setDisable(true);
             WordBox.setDisable(true);
-            RemoveButton.setDisable(true);
         }
         else {
             ForeignKeyBox.setDisable(true);
@@ -100,7 +101,6 @@ public class NewColumn {
             switchDecimal(false);
             AddButton.setDisable(false);
             WordBox.setDisable(false);
-            RemoveButton.setDisable(false);
         }
     }
 
@@ -148,6 +148,7 @@ public class NewColumn {
         this.TableName = TableName;
         this.DBName = DBName;
         //this.ref = ref;
+        this.newTable = ref;
         this.KeysForForeign = KeysForForeign;
         this.types = types;
         this.charList = charList;
@@ -209,7 +210,6 @@ public class NewColumn {
         SetName.setDisable(mode);
         AddButton.setDisable(mode);
         WordBox.setDisable(mode);
-        RemoveButton.setDisable(mode);
     }
 
     @FXML
@@ -375,14 +375,16 @@ public class NewColumn {
 
         System.out.println("is " + IsPrimeKey);
 
-        final ColumnMetadata meta = new ColumnMetadata(IsNotNull, IsPrimeKey, ForeignKeyValue, ForeignKeyOption.isSelected(), DefaultValue, len, type, colName, IsUnique, decimal1, decimal2, indexName);
+        final ColumnMetadata meta = new ColumnMetadata(IsNotNull, IsPrimeKey, new ColumnMetadata.Foreign(), DefaultValue, len, type, colName, IsUnique, decimal1, decimal2, indexName);
         meta.indexType = indexType;
 
        // ref.createDBCol(colName, typeBox.getValue(),"0", IsPrimeKey);
         if (Edit) {
           //  ref.AlterFBCol(meta);
         } else {
-            ref.createDBCol(colName, meta, FillOption.isSelected());
+            if (newTable != null) {
+                newTable.PutColumnCallback(meta);
+            } else ref.createDBCol(colName, meta, FillOption.isSelected());
         }
     }
 
@@ -397,12 +399,12 @@ public class NewColumn {
         typeBox.setValue(metadata.Type);
         primaryKeyOption.setSelected(metadata.IsPrimaryKey);
         NotNullOption.setSelected(metadata.NOT_NULL);
-        ForeignKeyOption.setSelected(metadata.isForeign);
+        ForeignKeyOption.setSelected(metadata.foreign.isForeign);
         DefaultOption.setSelected(metadata.defaultValue != null);
         UniqueOption.setSelected(metadata.isUnique);
         DefaultValueText.setText(metadata.defaultValue);
         AlterForeignBox();
-        ForeignKeyBox.setValue(metadata.ForeignKey[0] + ": " + metadata.ForeignKey[1]);
+        ForeignKeyBox.setValue(metadata.foreign.tableRef + ": " + metadata.foreign.columnRef);
         checkType();
         text1.setText(String.valueOf(metadata.size));
         text2.setText(String.valueOf(metadata.integerDigits));

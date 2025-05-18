@@ -67,6 +67,7 @@ public class EditorController {
     public void setList(final ObservableList<DataBase> list, final ObservableList<String> names) {
         SchemasOpened = list;
         SchemasName = names;
+        SchemaBox.setItems(SchemasName);
     }
 
     @FXML
@@ -87,7 +88,7 @@ public class EditorController {
                             SchemaBox.requestFocus();
                         });
                     } else {
-                        selectedDB.executeCode("shdfgyhsf");
+                        selectedDB.executeCode(editors.get(TabContainer.getSelectionModel().getSelectedIndex()).getText());
                     }
                 } catch (SQLException e) {
                     ShowError("SQL Error", "Error to execute code.\n" + e.getMessage());

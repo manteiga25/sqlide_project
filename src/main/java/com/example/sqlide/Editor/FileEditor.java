@@ -45,6 +45,10 @@ public class FileEditor {
         return editorText.isChanged();
     }
 
+    public String getText() {
+        return editorText.getText();
+    }
+
     public FileEditor(final String path) {
         this.path = path;
 

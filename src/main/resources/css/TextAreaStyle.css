@@ -1,6 +1,7 @@
 .text-area {
     -fx-control-inner-background: #1e1f22;
     -fx-text-fill: white;
+    -fx-font-family: "JetBrains Mono Medium" !important;
     -fx-font-size: 14px;
 }
 

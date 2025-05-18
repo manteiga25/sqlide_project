@@ -180,7 +180,7 @@ public class TableInterface {
         HBox ButtonsLine = new HBox(8);
         // searchBox.setStyle("-fx-border-color: black; -fx-border-radius: 50;");
 
-        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvButton(), createCleanButton(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode());
+        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvDelButton(), createAdvButton(), createCleanButton(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode());
 
         ScrollPane buttonsScroll = new ScrollPane();
         buttonsScroll.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm());
@@ -256,9 +256,15 @@ public class TableInterface {
         return DelData;
     }
 
+    private JFXButton createAdvDelButton() {
+        JFXButton AdvancedDelete = new JFXButton("Advanced delete");
+        AdvancedDelete.setOnAction(e->loadAdvancedWin("DELETE"));
+        return AdvancedDelete;
+    }
+
     private JFXButton createAdvButton() {
         JFXButton AdvancedSearch = new JFXButton("Advanced Search");
-        AdvancedSearch.setOnAction(e->loadAdvancedWin());
+        AdvancedSearch.setOnAction(e->loadAdvancedWin("SELECT"));
         return AdvancedSearch;
     }
 
@@ -470,7 +476,7 @@ public class TableInterface {
 
     }
 
-    private void loadAdvancedWin() {
+    private void loadAdvancedWin(final String command) {
         try {
             // Carrega o arquivo FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedSearchStage.fxml"));
@@ -483,7 +489,7 @@ public class TableInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Create Column");
             subStage.setScene(new Scene(root));
-            secondaryController.setCode("SELECT");
+            secondaryController.setCode(command);
             secondaryController.setTable(TableName.get());
             secondaryController.setColumns(context.getColumnsNames());
             secondaryController.setStage(subStage);
@@ -491,8 +497,20 @@ public class TableInterface {
 
             subStage.showingProperty().addListener(_->{
                 if (secondaryController.isClosedByUser()) {
-                    codeField.setText(secondaryController.getQuery());
-                    AdvancedSearchButton.fire();
+                    if (command.equals("SELECT")) {
+                        if (secondaryController.getQuery().toUpperCase().contains("SELECT")) {
+                            codeField.setText(secondaryController.getQuery());
+                            AdvancedSearchButton.fire();
+                        } else {
+                            ShowInformation("Invalid query", "The query " + secondaryController.getQuery() + " is invalid.");
+                        }
+                    } else {
+                        if (secondaryController.getQuery().toUpperCase().contains("DELETE")) {
+                        deleteQuery(secondaryController.getQuery());
+                    } else {
+                        ShowInformation("Invalid query", "The query " + secondaryController.getQuery() + " is invalid.");
+                    }
+                    }
                 }
             });
 
@@ -504,6 +522,19 @@ public class TableInterface {
         } catch (Exception e) {
             ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
         }
+    }
+
+    private void deleteQuery(final String query) {
+        final Thread delete = new Thread(()->{
+            try {
+                Database.executeCode(query);
+                prepareFetch();
+            } catch (SQLException e) {
+                ShowError("Error to delete", "Error to delete items.\n" + e.getMessage());
+            }
+        });
+        delete.setDaemon(true);
+        delete.start();
     }
 
     private void removeItem() {

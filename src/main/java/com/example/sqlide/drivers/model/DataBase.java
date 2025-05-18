@@ -2,6 +2,7 @@ package com.example.sqlide.drivers.model;
 
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
+import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 
 import java.io.*;
@@ -24,7 +25,7 @@ public abstract class DataBase {
     protected Statement statement;
     public int buffer = 250;
     protected String idType;
-    protected BlockingQueue<String> sender = new LinkedBlockingQueue<>();
+    protected BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
     protected SQLTypes SQLType;
 
     protected String[] indexModes;
@@ -64,7 +65,7 @@ public abstract class DataBase {
         return connection.getClientInfo("charset");
     }
 
-    protected void putMessage(final String message) {
+    protected void putMessage(final Logger message) {
         try {
             sender.put(message);
         } catch (InterruptedException _) {
@@ -100,7 +101,7 @@ public abstract class DataBase {
             connection.setAutoCommit(true);
     }
 
-    public void setMessager(final BlockingQueue<String> sender) {
+    public void setMessager(final BlockingQueue<Logger> sender) {
         this.sender = sender;
     }
 

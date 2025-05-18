@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+
+<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" spacing="30.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.loading.LoadingController">
+   <children>
+      <ProgressIndicator />
+      <VBox spacing="10.0">
+         <children>
+            <Label fx:id="Title" textFill="#f2f2f2">
+               <font>
+                  <Font name="JetBrains Mono SemiBold" size="18.0" />
+               </font>
+            </Label>
+            <Label fx:id="Content" textFill="#f2f2f2">
+               <font>
+                  <Font name="JetBrains Mono Medium" size="14.0" />
+               </font>
+            </Label>
+         </children>
+      </VBox>
+   </children>
+   <padding>
+      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+   </padding>
+</HBox>
