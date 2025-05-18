@@ -1,10 +1,12 @@
 package com.example.sqlide;
 
 import atlantafx.base.controls.Spacer;
+import com.example.sqlide.Assistant.AssistantController;
 import com.example.sqlide.Configuration.DatabaseConf;
 import com.example.sqlide.Console.ConsoleController;
 import com.example.sqlide.Container.Assistant.AssistantBoxCode;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
+import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.EventLayout.EditEventController;
 import com.example.sqlide.EventLayout.EventController;
 import com.example.sqlide.Logger.Logger;
@@ -41,6 +43,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.*;
+import org.apache.poi.ss.formula.functions.Finance;
+import org.apache.xmlbeans.impl.xb.xmlconfig.Extensionconfig;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
@@ -59,7 +63,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static com.example.sqlide.popupWindow.handleWindow.LoadingStage;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
-public class mainController {
+public class mainController implements requestInterface {
 
     public JFXButton AssistantButton;
     public JFXButton NotificationButton;
@@ -140,6 +144,55 @@ public class mainController {
 
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
+    }
+
+    @Override
+    public boolean ShowData(final String Query, final String table) {
+        final DatabaseInterface db = DBopened.get(currentDB.get());
+
+        if (db != null) {
+            final TableInterface tableInterface = db.getTable(table);
+
+            if (tableInterface != null) {
+                return tableInterface.ShowData(Query);
+            } else return false;
+        } else return false;
+    }
+
+    @Override
+    public HashMap<String, ArrayList<Object>> getData(final String query, final String table) {
+
+        final ArrayList<String> columns = new ArrayList<>();
+
+        final DataBase db = DatabaseOpened.get(currentDB.get());
+        ArrayList<DataForDB> data = db.fetchData(query , columns, table);
+
+        return null;
+
+    }
+
+    @Override
+    public ArrayList<HashMap<String, String>> getTableMetadata(final String table) {
+        final DatabaseInterface db = DBopened.get(currentDB.get());
+        ArrayList<HashMap<String, String>> meta = null;
+        if (db != null) {
+            final TableInterface tableInterface = db.getTable(table);
+            if (tableInterface != null) {
+                meta = tableInterface.getColumnsMetadataMap();
+            }
+        }
+        return meta;
+    }
+
+    @Override
+    public boolean sendEmail(final String body) {
+        final DatabaseInterface db = DBopened.get(currentDB.get());
+
+        if (db != null) {
+            Platform.runLater(()->db.openEmailStage(body));
+            return true;
+        }
+        return false;
     }
 
     @FXML
@@ -362,7 +415,6 @@ public class mainController {
             try {
 
                 openDB.readTables();
-
 
 
                 Platform.runLater(this::setDividerSpace);
@@ -810,6 +862,9 @@ public class mainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("Assistant/AssistantStage.fxml"));
             //    VBox miniWindow = loader.load();
             AssistantContainer = loader.load();
+
+            AssistantController controller = loader.getController();
+            controller.setAssistantFunctionsInterface(this);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {

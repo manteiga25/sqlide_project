@@ -1,15 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import com.jfoenix.controls.*?>
+<?import java.net.*?>
 <?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox alignment="TOP_RIGHT" maxHeight="-Infinity" prefHeight="393.0" style="-fx-background-color: #3C3C3C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.EditSetController">
+<VBox alignment="TOP_RIGHT" maxHeight="-Infinity" spacing="5.0" style="-fx-background-color: #3C3C3C;" stylesheets="@../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.EditSetController">
    <children>
-      <JFXListView fx:id="ListView" editable="true" prefHeight="364.0" prefWidth="200.0" stylesheets="@../../../css/ListViewStyle.css" />
+      <HBox alignment="CENTER" spacing="5.0">
+         <children>
+            <Label text="Search:" textFill="#f2f2f2">
+               <HBox.margin>
+                  <Insets left="5.0" />
+               </HBox.margin></Label>
+            <JFXTextField fx:id="SearchField" style="-fx-text-fill: white;" HBox.hgrow="ALWAYS">
+               <HBox.margin>
+                  <Insets bottom="5.0" right="5.0" />
+               </HBox.margin></JFXTextField>
+         </children>
+      </HBox>
+      <JFXListView fx:id="ListView" editable="true" VBox.vgrow="ALWAYS">
+         <stylesheets>
+            <URL value="@../../../css/ListViewStyle.css" />
+            <URL value="@../../../css/ScrollHbarStyle.css" />
+         </stylesheets></JFXListView>
       <JFXButton layoutX="146.0" layoutY="367.0" mnemonicParsing="false" onAction="#deleteData" style="-fx-background-color: #3574F0;" text="Delete" textFill="WHITE">
          <VBox.margin>
             <Insets right="5.0" />
          </VBox.margin></JFXButton>
    </children>
+   <padding>
+      <Insets bottom="5.0" />
+   </padding>
 </VBox>

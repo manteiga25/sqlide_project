@@ -2,6 +2,7 @@ package com.example.sqlide.DatabaseInterface;
 
 import com.example.sqlide.*;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
+import com.example.sqlide.Email.EmailController;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
 import com.jfoenix.controls.JFXButton;
@@ -68,10 +69,37 @@ public class DatabaseInterface {
 
         }
 
-        if (!TableInterfaceList.isEmpty()) {
-            TableInterfaceList.getFirst().fetchIfIsPrimeClick(); // faça fetch da primeira tabela
-        }
+    //    if (!TableInterfaceList.isEmpty()) {
+      //      TableInterfaceList.getFirst().fetchIfIsPrimeClick(); // faça fetch da primeira tabela
+        //}
 
+    }
+
+    public void openEmailStage(final String content) {
+        try {
+
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Email/emailStage.fxml"));
+            Parent root = loader.load();
+
+            EmailController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Send email");
+            subStage.setScene(new Scene(root));
+            secondaryController.setText(content);
+            secondaryController.setTablesAndColumns(getColumnsNames());
+            //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            subStage.show();
+        } catch (Exception e) {
+            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+        }
     }
 
     public HashMap<String, ArrayList<String>> getColumnPrimaryKey(final String TableToIgnore) {
@@ -112,7 +140,10 @@ public class DatabaseInterface {
         JFXButton deleteTab = new JFXButton("Delete table");
         deleteTab.setOnAction(e -> deleteDBTab());
 
-        ButtonsLine.getChildren().addAll(createTab, deleteTab);
+        JFXButton SendEmailButton = new JFXButton("Send email");
+        SendEmailButton.setOnAction(e -> openEmailStage(""));
+
+        ButtonsLine.getChildren().addAll(createTab, deleteTab, SendEmailButton);
 
         DBTabContainer = new TabPane();
         VBox.setVgrow(DBTabContainer, Priority.ALWAYS);
@@ -206,6 +237,15 @@ public class DatabaseInterface {
             }
         }
 
+    }
+
+    public TableInterface getTable(final String table) {
+        for (final TableInterface tableInterface : TableInterfaceList) {
+            if (tableInterface.TableName.get().equals(table)) {
+                return tableInterface;
+            }
+        }
+        return null;
     }
 
     public void refreshSearch() {

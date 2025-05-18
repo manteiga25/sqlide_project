@@ -9,7 +9,10 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -45,42 +48,57 @@ public class TableAdvancedSearchController {
 
     public void setTables(final HashMap<String, ArrayList<String>> data) {
         for (final String table : data.keySet()) {
-            try {
-                final Tab TableTab = new Tab(table);
+            createTab(table, data);
+        }
+    }
 
-                final VBox container = new VBox(5);
-                container.setPadding(new Insets(5,0,0,0));
+    private void createTab(final String table, final HashMap<String, ArrayList<String>> data) {
+        try {
+            final Tab TableTab = new Tab(table);
 
-                final JFXToggleButton tableState = new JFXToggleButton();
-                tableState.setText("Fetch Table");
-                tableState.setPadding(new Insets(0,5,0,0));
-                tableState.selectedProperty().set(true);
+            final VBox container = new VBox();
+            container.setStyle("-fx-background-color: #2C2C2C;");
+            container.setPadding(new Insets(5,0,0,0));
 
-                // Carrega o arquivo FXML
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedSearchStage.fxml"));
-                //    VBox miniWindow = loader.load();
-                Parent root = loader.load();
+            final JFXToggleButton tableState = new JFXToggleButton();
+            tableState.setText("Fetch Table");
+            tableState.setTextFill(Color.WHITE);
+            tableState.setSize(8);
+            tableState.setToggleColor(Color.valueOf("#3574F0"));
+            tableState.setPadding(new Insets(0,5,0,0));
+            tableState.selectedProperty().set(true);
 
-                tableState.selectedProperty().addListener(((_, _, state) -> {
-                    root.setDisable(!state);
-                }));
+            // Carrega o arquivo FXML
+            final FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedSearchStage.fxml"));
+            System.out.println("uhm");
+            //    VBox miniWindow = loader.load();
+            final Parent root = loader.load();
+            VBox.setVgrow(root, Priority.ALWAYS);
 
-                AdvancedSearchController secondaryController = loader.getController();
+            tableState.selectedProperty().addListener(((_, _, state) -> {
+                root.setDisable(!state);
+            }));
 
-                secondaryController.setTable(table);
-                secondaryController.setCode("SELECT");
-                secondaryController.setColumns(data);
-                secondaryController.removeBottomContainer();
+            final AdvancedSearchController secondaryController = loader.getController();
 
-                container.getChildren().addAll(tableState, root);
-                TableTab.setContent(container);
-                TabContainer.getTabs().add(TableTab);
-                controllers.put(table, secondaryController);
-                queryList.put(table, "SELECT * FROM " + table + ";");
+            secondaryController.setTable(table);
+            secondaryController.setCode("SELECT");
+            secondaryController.setColumns((HashMap<String, ArrayList<String>>) data.clone());
+            secondaryController.removeBottomContainer();
 
-            } catch (Exception e) {
-                ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
-            }
+            System.out.println("2");
+
+            container.getChildren().addAll(tableState, root);
+            TableTab.setContent(container);
+            System.out.println("3");
+            TabContainer.getTabs().add(TableTab);
+            controllers.put(table, secondaryController);
+            System.out.println("4");
+            queryList.put(table, "SELECT * FROM " + table + ";");
+            System.out.println("5");
+
+        } catch (Exception e) {
+            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
         }
     }
 

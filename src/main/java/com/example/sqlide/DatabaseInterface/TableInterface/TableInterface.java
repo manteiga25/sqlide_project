@@ -112,6 +112,15 @@ public class TableInterface {
         return MetaDataList;
     }
 
+    public ArrayList<HashMap<String, String>> getColumnsMetadataMap() {
+        ArrayList<HashMap<String, String>> MetaDataList = new ArrayList<>();
+        for (final ColumnInterface column : columnsInterfaceList) {
+            final ColumnMetadata meta = column.getMetadata();
+            MetaDataList.add(ColumnMetadata.MetadataToMap(meta));
+        }
+        return MetaDataList;
+    }
+
     public ArrayList<String> getColumnsMetadataName() {
         ArrayList<String> MetaDataList = new ArrayList<>();
         for (final ColumnInterface column : columnsInterfaceList) {
@@ -493,6 +502,10 @@ public class TableInterface {
             secondaryController.setTable(TableName.get());
             secondaryController.setColumns(context.getColumnsNames());
             secondaryController.setStage(subStage);
+            if (command.equals("DELETE")) {
+                secondaryController.setSelector(" ");
+                secondaryController.removeLeft();
+            }
           //  secondaryController.initWin(ColumnsNames, subStage, this);
 
             subStage.showingProperty().addListener(_->{
@@ -855,6 +868,13 @@ public class TableInterface {
                 break;
             }
         }
+    }
+
+    public boolean ShowData(String query) {
+        query += ";";
+        codeField.setText(query);
+        AdvancedSearchButton.fire();
+        return true;
     }
 
     public void readColumns() {

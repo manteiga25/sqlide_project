@@ -1,0 +1,87 @@
+/* Estilo geral para o HTMLEditor */
+.html-editor {
+    -fx-background-color: #2b2b2b; /* Fundo escuro principal */
+    -fx-text-fill: #e0e0e0;       /* Cor do texto principal */
+    -fx-font-family: "Arial", sans-serif; /* Fonte moderna */
+}
+
+/* Área de conteúdo onde o HTML é editado */
+.html-editor .web-view {
+    -fx-background-color: #3c3f41; /* Fundo da área de edição um pouco mais claro */
+    -fx-page-fill: #3C3C3C;
+}
+
+/* Estilizando a barra de ferramentas */
+.html-editor .tool-bar {
+    -fx-background-color: #333333;
+    -fx-border-color: #444444;
+    -fx-spacing: 5px;
+    -fx-padding: 5px;
+}
+
+/* Estilizando os botões da barra de ferramentas */
+.html-editor .tool-bar .button,
+.html-editor .tool-bar .toggle-button,
+.html-editor .tool-bar .color-picker .arrow-button,
+.html-editor .tool-bar .combo-box .arrow-button {
+    -fx-background-color: #4f4f4f;
+    -fx-text-fill: #d0d0d0;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.html-editor .tool-bar .button:hover,
+.html-editor .tool-bar .toggle-button:hover,
+.html-editor .tool-bar .color-picker .arrow-button:hover,
+.html-editor .tool-bar .combo-box .arrow-button:hover {
+    -fx-background-color: #5f5f5f;
+}
+
+.html-editor .tool-bar .toggle-button:selected {
+    -fx-background-color: #6f6f6f;
+    -fx-text-fill: #ffffff;
+}
+
+.html-editor .combo-box {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #e0e0e0;
+}
+
+/* Estilizando ComboBoxes (dropdowns) na barra de ferramentas */
+.html-editor .combo-box .list-cell {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: #e0e0e0;
+}
+
+.html-editor .combo-box .list-view {
+    -fx-background-color: #3c3f41;
+    -fx-border-color: #444444;
+}
+
+.html-editor .combo-box .arrow, .html-editor .combo-box .arrow-button .arrow {
+    -fx-background-color: #d0d0d0; /* Cor da seta do dropdown */
+}
+
+/* Estilizando o ColorPicker */
+.html-editor .color-picker {
+    -fx-background-color: #4f4f4f;
+    -fx-text-fill: #e0e0e0;
+}
+
+.html-editor .color-picker .color-picker-label {
+    -fx-text-fill: #d0d0d0;
+}
+
+/* Para tornar as bordas e separadores mais suaves ou integrados ao tema escuro */
+.html-editor .separator *.line {
+    -fx-border-color: #444444;
+}
+
+/* Webview (onde o conteúdo é renderizado) também pode precisar de estilo para o conteúdo em si */
+/* Isso é mais complexo pois envolve o conteúdo HTML, mas você pode injetar CSS no HTML */
+
+/* Para um visual mais moderno, você pode querer: */
+/* - Usar fontes sem serifa */
+/* - Aumentar o espaçamento */
+/* - Usar ícones (pode ser mais complexo apenas com CSS, mas possível com fontes de ícones ou SVGs via CSS) */
+/* - Bordas arredondadas */

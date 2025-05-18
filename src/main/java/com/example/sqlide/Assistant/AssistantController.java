@@ -2,6 +2,7 @@ package com.example.sqlide.Assistant;
 
 import com.example.sqlide.Assistant.service.AssistantRequest;
 import com.example.sqlide.Container.Assistant.AssistantBoxCode;
+import com.example.sqlide.requestInterface;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -17,6 +18,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -36,9 +39,15 @@ public class AssistantController {
     private BufferedReader processOutput, processErr;
     private BufferedWriter processInput;
 
+    private requestInterface AssistantFunctionsInterface;
+
     private final BooleanProperty search = new SimpleBooleanProperty(false), function = new SimpleBooleanProperty(false), deep = new SimpleBooleanProperty(false);
 
     final BlockingQueue<String> sender = new LinkedBlockingQueue<>(), reciver = new LinkedBlockingQueue<>();
+
+    public void setAssistantFunctionsInterface(final requestInterface assistantFunctionsInterface) {
+        this.AssistantFunctionsInterface = assistantFunctionsInterface;
+    }
 
     @FXML
     private void initialize() throws IOException {
@@ -76,17 +85,24 @@ public class AssistantController {
                             JSONArray parameters = json.getJSONArray("parameters");
 
                             switch (function) {
-                                case "set_light":
-                                        int brit = parameters.getInt(0);
-                                        System.out.println("Ajustando luz para: " + brit + "%");
-                                        // Chamar método Java equivalente
+                                case "Show_Data":
+                                        final boolean status = AssistantFunctionsInterface.ShowData(parameters.getString(0), parameters.getString(1));
+                                        sender.put(String.valueOf(status));
                                     break;
 
-                                    case "get_dollar":
-                                        System.out.println("Obtendo cotação do dólar...");
-                                        int valor = 5; // Chamar método Java equivalente
-                                        System.out.println("Valor do dólar: $" + valor);
+                                    case "FetchData":
+                                        final HashMap<String, ArrayList<Object>> data = AssistantFunctionsInterface.getData(parameters.getString(0), parameters.getString(1));
+                                        sender.put(data.toString());
                                         break;
+
+                                    case "GetTableMeta":
+                                        final ArrayList<HashMap<String, String>> meta = AssistantFunctionsInterface.getTableMetadata(parameters.getString(0));
+                                        sender.put(meta.toString());
+                                        break;
+
+                                case "sendEmail":
+                                    sender.put(String.valueOf(AssistantFunctionsInterface.sendEmail(parameters.getString(0))));
+                                    break;
 
                                     default:
                                         System.out.println("Função não reconhecida: " + function);

@@ -6,18 +6,54 @@ import json
 conversation_history = []
 client = None
 
-def set_light(brit: int):
-    """Set the light state.
+def ShowData(query: str, table: str):
+    """Show data for user from a SQL query.
     Args:
-        brit (int): Value between 0 and 100
+        query (str): Generate the query to execute fetch.
+        table (str): The table to execute query.
+    Return (bool): True success, False error
     """
 
     sender = {
     'status': 'request',
-    'function': 'set_light',
-    'parameters': [str(brit)],
-    'message': 'ainda changing light'
+    'function': 'Show_Data',
+    'parameters': [query, table],
+    'message': f'Fetching data of {table}'
     }
+
+    print(json.dumps(sender))
+
+    return input()
+
+def GetColumnsMetadata(table: str):
+    """Request metadata of table to process metadata of columns.
+    Args:
+        table (str): The table to execute query.
+    Return (list(dict[str, str]): the list of metadata
+    """
+
+    sender = {
+    'status': 'request',
+    'function': 'GetTableMeta',
+    'parameters': [table],
+    'message': f'Fetching Metadata of {table}'
+    }
+
+    print(json.dumps(sender))
+
+    return input()
+
+def sendEmail(body: str):
+    """Generate and send a html email body ex: <html dir="ltr"><head></head><body contenteditable="true"><span style="font-family: &quot;&quot;;">Olá&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=user:Name/&gt;</span><span style="font-family: &quot;&quot;;">, parabéns foi selecionado como candidato para o prémio por ter completado os seus&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=user:age/&gt; de idade, vá para a lojá maos proxima e use o seguinte código&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=product:id/&gt; para receber o prémio, obrigado.&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=worker:Name/&gt;.</span></body></html>
+        use GetColumnsMetadata function to get information odf tables to insert data tag to email ex: <DataSrc='table':'column'/>.
+    """
+
+    sender = {
+        'status': 'request',
+        'function': 'sendEmail',
+        'parameters': [body],
+        'message': ''
+        }
 
     print(json.dumps(sender))
 
@@ -31,7 +67,7 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
         google_search = GoogleSearch()
     )
 
-    func_tools = [set_light]
+    func_tools = [ShowData, GetColumnsMetadata, sendEmail]
 
     tools = None
 

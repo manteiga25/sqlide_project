@@ -1,5 +1,6 @@
 package com.example.sqlide.AdvancedSearch;
 
+import com.example.sqlide.ColumnMetadata;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
@@ -40,6 +41,8 @@ public class AdvancedSearchController {
 
     private ArrayList<String> columns;
 
+    private String selector = "*";
+
     private final ObservableList<String> columnSelected = FXCollections.observableArrayList();
 
     private String Table;
@@ -56,6 +59,15 @@ public class AdvancedSearchController {
 
     public void removeBottomContainer() {
         Container.getChildren().remove(Container.getBottom());
+    }
+
+    public void removeLeft() {
+        Container.getChildren().remove(Container.getLeft());
+        generateQuery();
+    }
+
+    public void setSelector(final String selector) {
+        this.selector = selector;
     }
 
     @FXML
@@ -166,7 +178,7 @@ public class AdvancedSearchController {
                 if (!sb.isEmpty()) sb.append(", ");
                 sb.append(column);
         }
-        return columns.size() != columnSelected.size() ? sb.toString() : "*";
+        return columns.size() != columnSelected.size() ? sb.toString() : selector;
     }
 
     private String buildWhereClause() {
