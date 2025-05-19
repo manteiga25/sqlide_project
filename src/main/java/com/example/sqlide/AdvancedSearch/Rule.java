@@ -17,6 +17,18 @@ public class Rule {
             this.status.set(status);
         }
 
+    public BooleanProperty statusProperty() {
+        return status;
+    }
+
+    public StringProperty ruleProperty() {
+        return rule;
+    }
+
+    public StringProperty columnProperty() {
+        return column;
+    }
+
     public boolean isStatus() {
         return status.get();
     }

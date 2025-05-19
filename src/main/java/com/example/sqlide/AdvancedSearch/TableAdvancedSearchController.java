@@ -75,11 +75,14 @@ public class TableAdvancedSearchController {
             final Parent root = loader.load();
             VBox.setVgrow(root, Priority.ALWAYS);
 
+            final AdvancedSearchController secondaryController = loader.getController();
+
             tableState.selectedProperty().addListener(((_, _, state) -> {
                 root.setDisable(!state);
+                secondaryController.setDisabled(!state);
             }));
 
-            final AdvancedSearchController secondaryController = loader.getController();
+
 
             secondaryController.setTable(table);
             secondaryController.setCode("SELECT");
@@ -100,6 +103,14 @@ public class TableAdvancedSearchController {
         } catch (Exception e) {
             ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
         }
+    }
+
+    public HashMap<String, ArrayList<String>> getSelected() {
+        final HashMap<String, ArrayList<String>> selected = new HashMap<>();
+        for (final String controllerName : controllers.keySet()) {
+            selected.put(controllerName, controllers.get(controllerName).isDisabled() ? null : controllers.get(controllerName).getSelected());
+        }
+        return selected;
     }
 
     @FXML

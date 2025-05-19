@@ -1,0 +1,72 @@
+/* 1) Estilo geral do MenuBar */
+.menu-bar {
+    /* Gradiente sutil de #2C2C2C para #3A3A3A */
+    -fx-background-color: linear-gradient(
+        to right,
+        #2C2C2C 0%,     /* cor-base idêntica ao fundo principal */    /* :contentReference[oaicite:0]{index=0} */
+        #3A3A3A 100%    /* tom levemente mais claro para profundidade */ /* :contentReference[oaicite:1]{index=1} */
+    );
+    -fx-padding: 4 8;                                          /* espaçamento interno */            /* :contentReference[oaicite:2]{index=2} */
+    -fx-effect: dropshadow(
+        gaussian,
+        rgba(0, 0, 0, 0.6),
+        8, 0.2, 0, 2
+    );                                                         /* sombra sutil */                  /* :contentReference[oaicite:4]{index=4} */
+}
+
+/* 2) Botões de menu (Menus principais) */
+.menu-bar .menu-button {
+    -fx-background-color: transparent;                        /* fundo transparente */
+    -fx-text-fill: #E0E0E0;                                    /* texto claro */
+    -fx-font-size: 14px;
+    -fx-padding: 6 12;                                         /* espaçamento interno do botão */
+    -fx-background-radius: 4;                                  /* cantos dos botões */
+    -fx-border-radius: 4;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+/* 2) Botões de menu (Menus principais) */
+.menu-bar .menu-button .label {
+    -fx-text-fill: #E0E0E0;                                    /* texto claro */
+}
+
+/* 3) Efeito hover nos menus */
+.menu-bar .menu-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);           /* leve realce */
+    -fx-text-fill: white;                                     /* texto destacado */
+}
+
+/* 4) Ícones e setas em menus (quando houver) */
+.menu-bar .menu-button .arrow {
+    -fx-background-color: white;                              /* cor da seta */
+    -fx-scale-x: 0.7;                                          /* tamanho menor */
+    -fx-scale-y: 0.7;
+}
+
+/* 5) Itens do menu suspenso (MenuItem) */
+.context-menu {
+    -fx-background-color: #2C2C2C;                            /* mesmo tom do menu-bar */ /* :contentReference[oaicite:2]{index=2} */
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 6 0;
+}
+
+/* Cada item */
+.context-menu .menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #E0E0E0;
+    -fx-padding: 6 20;                                         /* espaço interno dos itens */
+}
+
+/* Hover em cada MenuItem */
+.context-menu .menu-item:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-text-fill: white;
+}
+
+/* Separadores dentro do menu */
+.context-menu .separator {
+    -fx-background-color: rgba(255,255,255,0.2);
+    -fx-pref-height: 1;
+    -fx-padding: 4 0;
+}

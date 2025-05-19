@@ -8,6 +8,7 @@ import javafx.scene.Node;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.util.HashMap;
@@ -61,6 +62,7 @@ public class ConsoleController {
             LoggerController controller = loader.getController();
             controller.setQueue(senders.get(currentDB.get()));
             tables.put(currentDB.get(), controller.getContainer().getChildren().removeFirst());
+            VBox.setVgrow(tables.get(currentDB.get()), Priority.ALWAYS);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {

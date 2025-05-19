@@ -58,13 +58,10 @@ public class DatabaseInterface {
     public void readTables() {
         final ArrayList<String> Tables = DatabaseSeted.getTables();
         for (final String t : Tables) {
-
-            Platform.runLater(()->{
-                final TableInterface table = new TableInterface(DatabaseSeted, t, DBTabContainer, this);
-                table.createDatabaseTab();
-                table.readColumns();
-                TableInterfaceList.add(table);
-            });
+            final TableInterface table = new TableInterface(DatabaseSeted, t, DBTabContainer, this);
+            Platform.runLater(table::createDatabaseTab);
+            Platform.runLater(table::readColumns);
+            TableInterfaceList.add(table);
 
 
         }

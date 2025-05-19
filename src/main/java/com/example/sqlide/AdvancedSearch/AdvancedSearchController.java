@@ -1,6 +1,7 @@
 package com.example.sqlide.AdvancedSearch;
 
 import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.exporter.XML.xmlController;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
@@ -9,16 +10,21 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.xmlbeans.impl.xb.xsdschema.AllNNI;
 
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,12 +55,24 @@ public class AdvancedSearchController {
 
     private String statementCode = "";
 
-    private Stage stage;
+    private Stage stage, ordenateStage;
+
+    private OrderingController controller;
 
     private boolean ClosedByUser = false;
 
     public boolean isClosedByUser() {
         return ClosedByUser;
+    }
+
+    private boolean disabled = false;
+
+    public void setDisabled(final boolean disabled) {
+        this.disabled = disabled;
+    }
+
+    public boolean isDisabled(){
+        return disabled;
     }
 
     public void removeBottomContainer() {
@@ -70,8 +88,12 @@ public class AdvancedSearchController {
         this.selector = selector;
     }
 
+    public ArrayList<String> getSelected() {
+        return (ArrayList<String>) columnSelected.stream().toList();
+    }
+
     @FXML
-    private void initialize() {
+    private void initialize() throws IOException {
 
         Container.disableProperty().addListener(_->QueryField.setText(""));
 
@@ -84,15 +106,45 @@ public class AdvancedSearchController {
             ColumnsContainer.getChildren().removeAll();
             ColumnsContainer.getChildren().clear();
             columnSelected.clear();
+            final ArrayList<String> list = new ArrayList<>();
             for (final String column : columns) {
-                columnSelected.add(Table+"."+column);
+                list.add(Table+"."+column);
             }
             for (final String column : AllColumns.get(text)) {
-                columnSelected.add(text+"."+column);
+                list.add(text+"."+column);
             }
-            loadWidgets(new ArrayList<>(columnSelected));
+            loadWidgets(list);
             generateQuery();
         });
+
+        loadOrdenateController();
+
+    }
+
+    private void loadOrdenateController() throws IOException {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("ordenate/OrdenateStage.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            controller = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            ordenateStage = new Stage();
+            ordenateStage.setTitle("Subjanela");
+            ordenateStage.setScene(new Scene(root));
+            ordenateStage.showingProperty().addListener(_->{
+                    generateQuery();
+            });
+            controller.InflateOrderingResultController(columnSelected);
+
+            // Opcional: definir a modalidade da subjanela
+            ordenateStage.initModality(Modality.APPLICATION_MODAL);
+    }
+
+    @FXML
+    private void openOrdenateStage() {
+        ordenateStage.show();
     }
 
     public void setCode(final String code) {
@@ -156,12 +208,14 @@ public class AdvancedSearchController {
         try {
             String selectedColumns = getSelectedColumns();
             String whereClause = buildWhereClause();
-            String sql = selectedColumns.isEmpty() ? "" : String.format("%s %s FROM %s %s %s %s",
+            String rules = controller.getRules();
+            String sql = selectedColumns.isEmpty() ? "" : String.format("%s %s FROM %s %s %s %s %s",
                     statementCode,
                     selectedColumns,
                     Table,
                     JoinBox.getValue() == null || JoinBox.getValue().isEmpty() ? "" : JoinBox.getValue(),
                     TableJoinBox.getValue() == null || TableJoinBox.getValue().isEmpty() ? "" : TableJoinBox.getValue(),
+                    rules,
                     whereClause.isEmpty() ? "" : "WHERE " + whereClause
             );
 

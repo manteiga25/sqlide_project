@@ -6,6 +6,7 @@ import com.jfoenix.controls.JFXTextField;
 import com.jfoenix.controls.JFXToggleButton;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -43,7 +44,7 @@ public class EmailController {
 
     private final ObservableList<String> emails = FXCollections.observableArrayList();
 
-    private HashMap<String, ArrayList<String>> TablesAndColumns;
+    private HashMap<String, ArrayList<String>> TablesAndColumns, selected = new HashMap<>();
 
     public void setText(final String content) {
         EmailEditor.setHtmlText(content);
@@ -53,7 +54,9 @@ public class EmailController {
         this.TablesAndColumns = TablesAndColumns;
         for (final String table : TablesAndColumns.keySet()) {
             QueryList.put(table, "SELECT * FROM " + table + ";");
+            selected.put(table, TablesAndColumns.get(table));
         }
+        setEmailBox();
     }
 
     @FXML
@@ -62,10 +65,13 @@ public class EmailController {
         EmailWeb.setPageFill(Color.valueOf("#1E1F22"));
         ToolBar toolbar = (ToolBar) EmailEditor.lookup(".tool-bar");
 
+        final Button exportButton = new Button("Export");
+        exportButton.setOnAction(_->loadInterface());
+
         final Button dataButton = new Button("Add Data");
         dataButton.setOnAction(_->loadInterface());
 
-        toolbar.getItems().addAll(dataButton, new Separator());
+        toolbar.getItems().addAll(exportButton, dataButton, new Separator());
 
         EmailEditor.setOnKeyReleased(_->{
             System.out.println(EmailEditor.getHtmlText());
@@ -135,6 +141,8 @@ public class EmailController {
             subStage.showingProperty().addListener(_->{
                 if (secondaryController.isClosedByUser()) {
                     QueryList = secondaryController.getQueryList();
+                    selected = secondaryController.getSelected();
+                    setEmailBox();
                 }
             });
 
@@ -183,6 +191,14 @@ public class EmailController {
         }
     }
 
+    private void setEmailBox() {
+        for (final String table : selected.keySet()) {
+            for (final String column : selected.get(table)) {
+                ColumnEmailBox.getItems().add(table+":"+column);
+            }
+        }
+    }
+
     public void insertData(final String data) {
         final String insertScript =
                 "var selection = window.getSelection();" +
@@ -196,10 +212,25 @@ public class EmailController {
     @FXML
     private void send() {
 
+
+
     }
 
     private void optimize() {
+        final String content = EmailEditor.getHtmlText();
+        for (final String table : selected.keySet()) {
+            if (!content.contains("<"+table+":")) {
+                QueryList.put(table, "");
+            }
+        }
+    }
+
+    @FXML
+    private void ExportWord() {
 
     }
 
+    @FXML
+    private void ExportPDF() {
+    }
 }

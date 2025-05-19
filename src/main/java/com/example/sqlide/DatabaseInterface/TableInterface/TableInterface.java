@@ -884,7 +884,7 @@ public class TableInterface {
                 TablePrimeKey.set(ColumnMetadata.Name);
             }
             ColumnInterface column = new ColumnInterface(Database, ColumnMetadata, TablePrimeKey, this, tableContainer);
-            tableContainer.getColumns().add(column.createDBColContainer(TableName));
+            Platform.runLater(()->tableContainer.getColumns().add(column.createDBColContainer(TableName)));
             columnsInterfaceList.add(column);
             ColumnsNames.add(ColumnMetadata.Name);
             if (!dataList.isEmpty()) {

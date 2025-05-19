@@ -1,12 +1,13 @@
 package com.example.sqlide.AdvancedSearch;
 
+import com.jfoenix.controls.JFXCheckBox;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.paint.Color;
 
 public class OrderingController {
 
@@ -21,12 +22,19 @@ public class OrderingController {
 
     private final ObservableList<Rule> data = FXCollections.observableArrayList();
 
+    private ObservableList<String> columns;
+
     @FXML
-    public void initialize() {
+    private void initialize() {
+        ColumnsColumn.setCellValueFactory(new PropertyValueFactory<>("column"));
+        ruleColumn.setCellValueFactory(new PropertyValueFactory<>("rule"));
+        StatusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
         StatusColumn.setCellFactory(column -> {
             return new TableCell<Rule, Boolean>() {
-                private final CheckBox checkBox = new CheckBox();
+                private final JFXCheckBox checkBox = new JFXCheckBox();
                 {
+                    checkBox.setText("State");
+                    checkBox.setTextFill(Color.WHITE);
                     checkBox.selectedProperty().addListener((obs, oldValue, newValue) -> {
                         //  final Rule item = getTableRow().getItem();
                         getTableRow().getItem().setStatus(newValue);
@@ -47,6 +55,31 @@ public class OrderingController {
                 }
             };
         });
+        ruleColumn.setCellFactory(column -> {
+            return new TableCell<Rule, String>() {
+                private final ChoiceBox<String> choiceBox = new ChoiceBox<>(FXCollections.observableArrayList("ASC", "DESC"));
+                {
+                    choiceBox.setStyle("-fx-background-color: #2C2C2C;");
+                    choiceBox.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+                          final Rule item = getTableRow().getItem();
+                        item.setRule(newValue);
+                    });
+                }
+
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    //    updateByUser.set(false);
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setGraphic(null);
+                    } else {
+                        choiceBox.setValue(getItem());
+                        setGraphic(choiceBox);
+                    }
+                    //  updateByUser.set(true);
+                }
+            };
+        });
     }
 
 /*    public void InflateOrderingResultController(final ArrayList<String> columns) {
@@ -58,8 +91,19 @@ public class OrderingController {
     } */
 
     public void InflateOrderingResultController(final ObservableList<String> columns) {
+        this.columns = columns;
+        this.columns.addListener((ListChangeListener<? super String>) change -> {
+            if (change.next()) {
+                if (change.wasRemoved()) {
+                    change.getRemoved().forEach(this::removeItem);
+                }
+                if (change.wasAdded()) {
+                    change.getAddedSubList().forEach(this::addItem);
+                }
+            }
+        });
         for (final String column : columns) {
-            data.add(new Rule(column, "", false));
+       //     data.add(new Rule(column, "", false));
         }
 
         InflateTable();
@@ -70,11 +114,13 @@ public class OrderingController {
     }
 
     public void addItem(final String column) {
+        System.out.println(column);
         data.add(new Rule(column, "", false));
     }
 
     public void removeItem(final String column) {
         data.removeIf(col->col.getColumn().equals(column));
+        TableOrdering.refresh();
     }
 
     public String getRules() {
@@ -84,7 +130,7 @@ public class OrderingController {
                 ruleQuery.append(rule.getColumn()).append(", ").append(rule.getRule());
             }
         }
-        ruleQuery.delete(ruleQuery.length()-2, ruleQuery.length());
+      //  if (!ruleQuery.isEmpty()) ruleQuery.delete(ruleQuery.length() - 2, ruleQuery.length());
         return ruleQuery.toString();
     }
 

@@ -9,6 +9,21 @@
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" spacing="10.0" style="-fx-background-color: #2C2C2C;" stylesheets="@../../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Email.EmailController">
    <children>
+      <MenuBar stylesheets="@../../../../css/MenuBarStyle.css">
+        <menus>
+          <Menu mnemonicParsing="false" text="Export">
+            <items>
+              <MenuItem mnemonicParsing="false" onAction="#ExportWord" text="Word" />
+                  <MenuItem mnemonicParsing="false" onAction="#ExportPDF" text="PDF" />
+            </items>
+          </Menu>
+          <Menu mnemonicParsing="false" text="Import">
+            <items>
+              <MenuItem mnemonicParsing="false" text="Open file" />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
       <HBox alignment="CENTER_LEFT" spacing="5.0">
          <children>
             <Label text="Email:" textFill="#f2f2f2">
