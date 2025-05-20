@@ -23,6 +23,9 @@ module com.example.sqlide {
     requires org.fxmisc.richtext;
     requires javafx.web;
     requires java.xml.crypto;
+    requires org.docx4j.openxml_objects;
+    requires docx4j_ImportXHTML;
+    requires org.docx4j.core;
 
     opens com.example.sqlide to javafx.fxml;
     opens com.example.sqlide.exporter.Excel to javafx.fxml;

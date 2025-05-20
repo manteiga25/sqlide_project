@@ -20,10 +20,14 @@ import javafx.scene.web.HTMLEditor;
 import javafx.scene.web.WebView;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.docx4j.convert.in.xhtml.XHTMLImporterImpl;
+import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
+import static com.example.sqlide.misc.path.createFile;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
 
@@ -227,6 +231,22 @@ public class EmailController {
 
     @FXML
     private void ExportWord() {
+        new Thread().ofVirtual().start(()-> {
+            try {
+                final String path = createFile((Stage) EmailEditor.getScene().getWindow());
+                WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.createPackage();
+// Configura o importer
+                XHTMLImporterImpl xhtmlImporter = new XHTMLImporterImpl(wordMLPackage);
+// Importa o HTML
+                // List<Object> objs = xhtmlImporter.convert(EmailEditor.getHtmlText());
+                wordMLPackage.getMainDocumentPart().getContent().addAll(xhtmlImporter.convert(EmailEditor.getHtmlText(), null));
+                // wordMLPackage.getMainDocumentPart().getContent().addAll(objs);
+// Salva em docx
+                wordMLPackage.save(new java.io.File(path));
+            } catch (Exception e) {
+                ShowError("Error to create", "Error to create .docx file\n" + e.getMessage());
+            }
+        });
 
     }
 
