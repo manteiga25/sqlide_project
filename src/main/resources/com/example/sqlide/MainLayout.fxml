@@ -7,9 +7,9 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<BorderPane fx:id="BorderContainer" prefHeight="1280.0" prefWidth="1920.0" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.mainController">
+<BorderPane fx:id="BorderContainer" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.mainController">
          <top>
-             <HBox prefHeight="27.0" prefWidth="600.0" style="-fx-background-color: #3C3F41;" stylesheets="@../../../css/MenuStyle.css" BorderPane.alignment="CENTER">
+             <HBox style="-fx-background-color: #3C3F41;" stylesheets="@../../../css/MenuStyle.css" BorderPane.alignment="CENTER">
                  <MenuButton mnemonicParsing="false" text="Database">
                      <items>
                          <MenuItem mnemonicParsing="false" onAction="#SQLiteInterface" text="New Database" />
@@ -68,7 +68,7 @@
          <center>
              <SplitPane fx:id="HorizontalSplit" orientation="VERTICAL" style="-fx-background-color: black;" stylesheets="@../../../css/SplitHorizontal.css">
           <!--  <Label fx:id="LabelDB" prefHeight="52.0" prefWidth="246.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true" BorderPane.alignment="CENTER"> -->
-             <SplitPane fx:id="CenterContainer" prefWidth="1793.0" style="-fx-background-color: #2A2A2A;">
+             <SplitPane fx:id="CenterContainer" style="-fx-background-color: #2A2A2A;">
                  <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" prefWidth="1832.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true">
             <font>
                <Font size="36.0" />

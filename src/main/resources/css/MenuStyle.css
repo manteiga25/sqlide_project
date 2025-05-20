@@ -6,9 +6,13 @@
     -fx-border-width: 2px;
     -fx-border-radius: 10px;
     -fx-background-radius: 10px;
-    -fx-padding: 5px 10px;
+    -fx-padding: 5px 5px;
     -fx-font-family: 'Arial';
     -fx-cursor: hand;
+}
+
+.menu-button .label {
+    -fx-text-fill: #f5f5f5;
 }
 
 /* Efeito hover para ambos */

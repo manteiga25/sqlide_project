@@ -9,9 +9,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class MySQLDB extends DataBase {
 
@@ -116,10 +114,10 @@ public class MySQLDB extends DataBase {
 
     @Override
     public boolean createColumn(String table, String column, ColumnMetadata meta, boolean fill) {
-        if (meta.foreign.isForeign || meta.IsPrimaryKey) {
-            System.out.println("chwguei");
-            return createSpecialColumn(table, column, meta);
-        }
+      //  if (meta.foreign.isForeign || meta.IsPrimaryKey) {
+        //    System.out.println("chwguei");
+          //  return createSpecialColumn(table, column, meta);
+       // }
         final String NotNull = meta.NOT_NULL ? " NOT NULL " : "";
         final String IsUnique = meta.isUnique ? " UNIQUE " : "";
         String Default = meta.defaultValue == null || meta.defaultValue.isEmpty() ? " DEFAULT " + meta.defaultValue : "";
@@ -131,6 +129,15 @@ public class MySQLDB extends DataBase {
         if (meta.IsPrimaryKey) {
             PrimaryKey = " PRIMARY KEY";
         }
+        StringBuilder items = new StringBuilder();
+        if (!meta.items.isEmpty()) {
+            items.append("(");
+            for (final String item : meta.items) {
+                items.append("'").append(item).append("'").append(", ");
+            }
+            items = new StringBuilder(items.substring(0, items.length() - 2));
+            items.append(")");
+        }
         //     else if (isForeign) {
         //     ColumnName = "CONSTRAINT fk_h_fgr FOREIGN KEY (" + column + ") REFERENCES(" + ;
         //       ColumnName = "CONSTRAINT idyhgfvduydf FOREIGN KEY (" + "id" + ") REFERENCES " +  meta.ForeignKey[0] + "(" + meta.ForeignKey[1] + "))";
@@ -138,8 +145,9 @@ public class MySQLDB extends DataBase {
         //   Default = "";
         // }
         try {
-            System.out.println("ALTER TABLE " + table + " ADD " + ColumnName + Type + NotNull + Default + PrimaryKey + ";");
-            statement.execute("ALTER TABLE " + table + " ADD " + ColumnName + " " + Type + NotNull + IsUnique + Default + PrimaryKey + ";");
+            String x = "ALTER TABLE " + table + " ADD " + ColumnName + " " + Type + " " + items + NotNull + IsUnique + Default + PrimaryKey + ";";
+            System.out.println(x);
+            statement.execute(x);
         } catch (SQLException e) {
             MsgException = e.getMessage();
             return false;
@@ -371,9 +379,10 @@ public class MySQLDB extends DataBase {
 
     @Override
     public ArrayList<String> getTables() {
+
         ArrayList<String> TablesName = new ArrayList<>();
         try {
-            ResultSet tabledMeta = connection.getMetaData().getTables(null, null, "%", new String[]{"TABLE"});
+            ResultSet tabledMeta = connection.getMetaData().getTables(databaseName, databaseName, "%", new String[]{"TABLE"});
             while (tabledMeta.next()) {
                 TablesName.add(tabledMeta.getString("TABLE_NAME"));
             }
@@ -388,7 +397,7 @@ public class MySQLDB extends DataBase {
     public ArrayList<String> getColumnsName(String Table) {
         ArrayList<String> TablesMetadata = new ArrayList<>();
         try {
-            ResultSet columns = connection.getMetaData().getColumns(null, null, Table, null);
+            ResultSet columns = connection.getMetaData().getColumns(databaseName, databaseName, Table, null);
             while (columns.next()) {
                 TablesMetadata.add(columns.getString("COLUMN_NAME"));
             }
@@ -404,7 +413,7 @@ public class MySQLDB extends DataBase {
     protected HashMap<String, Boolean> isUnique(String Table) {
         HashMap<String, Boolean> ColumnsUnique = new HashMap<>();
         try {
-            ResultSet columns = connection.getMetaData().getIndexInfo(null, null, Table, true, true);
+            ResultSet columns = connection.getMetaData().getIndexInfo(databaseName, databaseName, Table, true, true);
             while (columns.next()) {
                 ColumnsUnique.put(columns.getString("COLUMN_NAME"), columns.getBoolean("NON_UNIQUE"));
             }
@@ -418,7 +427,7 @@ public class MySQLDB extends DataBase {
     protected HashMap<String, String[]> getForeign(String Table) {
         HashMap<String, String[]> ColumnForeign = new HashMap<>();
         try {
-            ResultSet foreignKeys = connection.getMetaData().getImportedKeys(null, null, Table);
+            ResultSet foreignKeys = connection.getMetaData().getImportedKeys(databaseName, databaseName, Table);
             while (foreignKeys.next()) {
                 String[] foreignMeta = new String[2];
                 final String fkColumnName = foreignKeys.getString("FKCOLUMN_NAME");
@@ -442,7 +451,7 @@ public class MySQLDB extends DataBase {
         HashMap<String, Boolean> uniqueColumns = isUnique(Table);
         String[] foreign = new String[2];
         try {
-            ResultSet columns = connection.getMetaData().getColumns(null, null, Table, null);
+            ResultSet columns = connection.getMetaData().getColumns(databaseName, databaseName, Table, null);
             while (columns.next()) {
                 boolean isForeign = false;
                 final String name = columns.getString("COLUMN_NAME");
@@ -480,14 +489,18 @@ public class MySQLDB extends DataBase {
                         break;
                     }
                 }
-                if (Type.toUpperCase().contains("ENUM")) {
-                    checkValues = getCheckConstraintValues(Type);
+                if (Type.toUpperCase().contains("ENUM") || Type.toUpperCase().contains("SET")) {
+                   // checkValues = getCheckConstraintValues(Type);
+
+                    checkValues = getColumnValues(Table, name);
+                    System.out.println("balues are " + checkValues);
                             Type = "ENUM";
                 }
                 // para mudar
                 ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, new ColumnMetadata.Foreign(), Default, size, Type, name, nonUnique, integerDigits, decimalDigits, name);
                 TmpCol.items = checkValues;
                 //     TmpCol.items = checks;
+
 
                 ColumnsMetadata.add(TmpCol);
             }
@@ -500,11 +513,37 @@ public class MySQLDB extends DataBase {
         }
     }
 
+    public ArrayList<String> getColumnValues(String tableName, String columnName) throws SQLException {
+        String sql = "SELECT COLUMN_NAME, COLUMN_TYPE " +
+                "FROM INFORMATION_SCHEMA.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() " +
+                "  AND TABLE_NAME = ? " +
+                "  AND COLUMN_NAME = ?";
+        ArrayList<String> values = new ArrayList<>();
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            stmt.setString(1, tableName);
+            stmt.setString(2, columnName);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String columnType = rs.getString("COLUMN_TYPE");
+                    System.out.println("typeeee " + columnType);
+                    values = getCheckConstraintValues(columnType);
+                }
+            }
+        }
+
+        return values;
+    }
+
     private ArrayList<String> getCheckConstraintValues(String Column) {
         ArrayList<String> values = new ArrayList<>();
         final int init = Column.indexOf("(");
         final int end = Column.indexOf(")");
         if (init != -1 && end != -1) {
+            Column = Column.replaceAll("'", "");
             final String check = Column.substring(init + 1, end);
             final String[] checkValues = check.split(",");
             for (final String value : checkValues) {

@@ -23,6 +23,7 @@ import javafx.stage.Stage;
 import org.docx4j.convert.in.xhtml.XHTMLImporterImpl;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -230,13 +231,15 @@ public class EmailController {
     }
 
     @FXML
-    private void ExportWord() {
-        new Thread().ofVirtual().start(()-> {
+    private void ExportWord() throws IOException {
+        final String path = createFile((Stage) EmailEditor.getScene().getWindow(), new String[]{"Word"}, new String[]{".docx"});
+        Thread.ofVirtual().start(()-> {
             try {
-                final String path = createFile((Stage) EmailEditor.getScene().getWindow());
+
                 WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.createPackage();
 // Configura o importer
                 XHTMLImporterImpl xhtmlImporter = new XHTMLImporterImpl(wordMLPackage);
+                xhtmlImporter.setHyperlinkStyle("Hyperlink");
 // Importa o HTML
                 // List<Object> objs = xhtmlImporter.convert(EmailEditor.getHtmlText());
                 wordMLPackage.getMainDocumentPart().getContent().addAll(xhtmlImporter.convert(EmailEditor.getHtmlText(), null));

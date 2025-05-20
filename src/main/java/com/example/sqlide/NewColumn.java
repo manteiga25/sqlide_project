@@ -18,6 +18,7 @@ import javafx.stage.Stage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
@@ -355,12 +356,12 @@ public class NewColumn {
             }
         }
 
-        String[] set = null;
+        String[] set = {};
         if (!SetName.isDisabled()) {
             if (!SetName.getText().isEmpty()) {
                 if (!setList.isEmpty()) {
                     set = setList.toArray(new String[0]);
-                    type = SetName.getText();
+                   // type = SetName.getText(); for postgre
                 } else {
                     WordBox.requestFocus();
                     ShowError("Value error", "You need to insert a values.");
@@ -377,6 +378,7 @@ public class NewColumn {
 
         final ColumnMetadata meta = new ColumnMetadata(IsNotNull, IsPrimeKey, new ColumnMetadata.Foreign(), DefaultValue, len, type, colName, IsUnique, decimal1, decimal2, indexName);
         meta.indexType = indexType;
+        meta.items = new ArrayList<>(List.of(set));
 
        // ref.createDBCol(colName, typeBox.getValue(),"0", IsPrimeKey);
         if (Edit) {
