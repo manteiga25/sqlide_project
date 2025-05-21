@@ -197,9 +197,12 @@ public class EmailController {
     }
 
     private void setEmailBox() {
+        ColumnEmailBox.getItems().clear();
         for (final String table : selected.keySet()) {
-            for (final String column : selected.get(table)) {
-                ColumnEmailBox.getItems().add(table+":"+column);
+            if (selected.get(table) != null) {
+                for (final String column : selected.get(table)) {
+                    ColumnEmailBox.getItems().add(table + ":" + column);
+                }
             }
         }
     }

@@ -9,6 +9,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;

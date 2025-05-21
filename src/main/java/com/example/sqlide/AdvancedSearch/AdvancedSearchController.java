@@ -89,7 +89,7 @@ public class AdvancedSearchController {
     }
 
     public ArrayList<String> getSelected() {
-        return (ArrayList<String>) columnSelected.stream().toList();
+        return new ArrayList<>(columnSelected);
     }
 
     @FXML

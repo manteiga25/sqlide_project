@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import com.jfoenix.controls.*?>
+<?import java.net.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
@@ -52,7 +53,7 @@
             <JFXButton mnemonicParsing="false" onAction="#addEmail" text="Add" textFill="WHITE" />
             <JFXButton mnemonicParsing="false" onAction="#loadEditEmail" text="Edit" textFill="WHITE" />
             <JFXButton mnemonicParsing="false" onAction="#loadFetchStage" text="Fetch" textFill="WHITE" />
-            <ComboBox fx:id="ColumnEmailBox" disable="true" prefWidth="150.0" promptText="Column...." stylesheets="@../../../../css/ComboboxModern.css" />
+            <ComboBox fx:id="ColumnEmailBox" prefWidth="150.0" promptText="Column...." stylesheets="@../../../../css/ComboboxModern.css" />
             <JFXToggleButton fx:id="FetchEmailTool" mnemonicParsing="false" onAction="#setFetchEmail" size="8.0" text="Fetch email" textFill="#f2f2f2" toggleColor="#3574f0" />
          </children>
          <VBox.margin>
@@ -62,7 +63,11 @@
             <Insets left="5.0" right="5.0" />
          </padding>
       </HBox>
-      <HTMLEditor fx:id="EmailEditor" htmlText="&lt;html&gt;&lt;head&gt;&lt;/head&gt;&lt;body contenteditable=&quot;true&quot;&gt;&lt;/body&gt;&lt;/html&gt;" stylesheets="@../../../../css/Email/EmailEditorStyle.css" VBox.vgrow="ALWAYS" />
+      <HTMLEditor fx:id="EmailEditor" htmlText="&lt;html&gt;&lt;head&gt;&lt;/head&gt;&lt;body contenteditable=&quot;true&quot;&gt;&lt;/body&gt;&lt;/html&gt;" VBox.vgrow="ALWAYS">
+         <stylesheets>
+            <URL value="@../../../../css/Email/EmailEditorStyle.css" />
+            <URL value="@../../../../css/ScrollHbarStyle.css" />
+         </stylesheets></HTMLEditor>
       <HBox alignment="TOP_RIGHT" spacing="5.0">
          <children>
             <JFXButton mnemonicParsing="false" text="Cancel" textFill="WHITE" />

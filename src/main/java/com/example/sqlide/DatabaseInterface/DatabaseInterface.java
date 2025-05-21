@@ -129,7 +129,10 @@ public class DatabaseInterface {
         DBContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/DarkButton.css")).toExternalForm());
 
         HBox ButtonsLine = new HBox(5);
-        ButtonsLine.setPadding(new Insets(5,5,5,0));
+        ButtonsLine.setPadding(new Insets(5,0,5,5));
+
+        JFXButton save = new JFXButton("create table");
+        save.setOnAction(e -> commit());
 
         JFXButton createTab = new JFXButton("create table");
         createTab.setOnAction(e -> createDBTabInterface());
@@ -144,8 +147,7 @@ public class DatabaseInterface {
 
         DBTabContainer = new TabPane();
         VBox.setVgrow(DBTabContainer, Priority.ALWAYS);
-        DBTabContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/TabPane.css")).toExternalForm());
-        DBTabContainer.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
+        DBTabContainer.getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/TabPane.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
         DBTabContainer.getSelectionModel().selectedIndexProperty().addListener((_, _, newValue) -> {
             if (!TableInterfaceList.isEmpty() && !removing) {
                 TableInterfaceList.get(newValue.intValue()).fetchIfIsPrimeClick();
@@ -157,6 +159,14 @@ public class DatabaseInterface {
 
         Container.getTabs().add(DBPane);
         Container.getSelectionModel().select(DBPane);
+    }
+
+    private void commit() {
+        try {
+            DatabaseSeted.commit();
+        } catch (SQLException e) {
+            ShowError("Error to save", "Error to commit.\n" + e.getMessage());
+        }
     }
 
     private void createDBTabInterface() {

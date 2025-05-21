@@ -208,7 +208,7 @@ public class ColumnInterface {
             EnumFieldCell.createColumn(ColumnContainer, Database, Metadata, tablePrimeKey, TableName, format);
         }
         else if (Metadata.items != null && Metadata.Type.equals("SET")) {
-            EnumFieldCell.createColumn(ColumnContainer, Database, Metadata, tablePrimeKey, TableName, format);
+            SetFieldCell.createColumn(ColumnContainer, Database, Metadata, tablePrimeKey, TableName, format);
         }
         else if (Metadata.Type.equals("DATE")) {
             DateFieldCell.createColumn(ColumnContainer, Database, Metadata, tablePrimeKey, TableName, format);

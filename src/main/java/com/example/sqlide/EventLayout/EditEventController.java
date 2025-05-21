@@ -25,8 +25,9 @@ public class EditEventController {
 
     private HashMap<String, String> list;
 
-    public void initEventWindow(final DataBase db) {
+    public void initEventWindow(final DataBase db, final HashMap<String, String> list) {
         this.db = db;
+        this.list = list;
         initCombo();
         codeView.setPrefHeight(CodeViewContainer.getPrefHeight());
         codeView.setPrefWidth(CodeViewContainer.getPrefWidth());
@@ -34,7 +35,6 @@ public class EditEventController {
     }
 
     private void initCombo() {
-        list = db.getEvents();
         for (final String EventName : list.keySet()) {
             EventBox.getItems().add(EventName);
         }

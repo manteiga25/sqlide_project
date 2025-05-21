@@ -374,7 +374,33 @@ public class MySQLDB extends DataBase {
 
     @Override
     public boolean updateData(String Table, String column, String value, String[] index, String type, String PrimeKey, String tmp) {
-        return false;
+        String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
+        boolean prime = false;
+        if (PrimeKey == null || PrimeKey.isEmpty()) {
+            command += "ROWID = " + index[0] + ";";
+        }
+        else {
+            //  command += PrimeKey + " = '" + tmp + "'";
+            command += PrimeKey + " = ?";
+            prime = true;
+
+        }
+        System.out.println(command);
+        try {
+            PreparedStatement pstmt = connection.prepareStatement(command);
+            //  pstmt.execute(command.toString());
+            pstmt.setObject(1, value);
+            if (prime) {
+                pstmt.setObject(2, tmp);
+            }
+            int affectedRows = pstmt.executeUpdate();
+            System.out.println("rows " + affectedRows);
+            //  statement.execute(command);
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -494,7 +520,7 @@ public class MySQLDB extends DataBase {
 
                     checkValues = getColumnValues(Table, name);
                     System.out.println("balues are " + checkValues);
-                            Type = "ENUM";
+                         //   Type = "ENUM";
                 }
                 // para mudar
                 ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, new ColumnMetadata.Foreign(), Default, size, Type, name, nonUnique, integerDigits, decimalDigits, name);
@@ -540,10 +566,10 @@ public class MySQLDB extends DataBase {
 
     private ArrayList<String> getCheckConstraintValues(String Column) {
         ArrayList<String> values = new ArrayList<>();
+        Column = Column.replaceAll("'", "");
         final int init = Column.indexOf("(");
         final int end = Column.indexOf(")");
         if (init != -1 && end != -1) {
-            Column = Column.replaceAll("'", "");
             final String check = Column.substring(init + 1, end);
             final String[] checkValues = check.split(",");
             for (final String value : checkValues) {
