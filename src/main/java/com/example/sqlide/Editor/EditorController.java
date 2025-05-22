@@ -81,14 +81,15 @@ public class EditorController {
 
             work.set(new Thread(() -> {
                 try {
-                    final DataBase selectedDB = SchemasOpened.get(SchemaBox.getSelectionModel().getSelectedIndex());
-                    if (selectedDB == null) {
-                        Platform.runLater(() -> {
-                            ShowError("No selected", "No Database selected to execute code.");
-                            SchemaBox.requestFocus();
-                        });
+                    final int index = SchemaBox.getSelectionModel().getSelectedIndex();
+                    if (index != -1) {
+                        System.out.println(index);
+                        SchemasOpened.forEach(System.out::println);
+                        final DataBase selectedDB = SchemasOpened.get(index);
+                        selectedDB.executeCode(editors.get(TabContainer.getSelectionModel().getSelectedIndex()-1).getText());
                     } else {
-                        selectedDB.executeCode(editors.get(TabContainer.getSelectionModel().getSelectedIndex()).getText());
+                        ShowError("No selected", "No Database selected to execute code.");
+                        Platform.runLater(() -> SchemaBox.requestFocus());
                     }
                 } catch (SQLException e) {
                     ShowError("SQL Error", "Error to execute code.\n" + e.getMessage());
@@ -134,7 +135,7 @@ public class EditorController {
                     TabContainer.getSelectionModel().select(addedTab);
                 }
                 else if (change.wasRemoved()) {
-                        final FileEditor editor = editors.get(TabContainer.getSelectionModel().getSelectedIndex()-1);
+                        final FileEditor editor = editors.remove(TabContainer.getSelectionModel().getSelectedIndex()-1);
                         if (editor != null) {
                             if (editor.isChanged()) {
                                 if (ShowConfirmation("No saved", "The content is not saved.\nDo you want to save?")) {
@@ -185,8 +186,12 @@ public class EditorController {
 
     @FXML
     public void createScript() {
-        final FileEditor editor = editors.get(TabContainer.getSelectionModel().getSelectedIndex()-1);
+        final FileEditor editor = new FileEditor(null);
+        final Tab newTab = new Tab("");
+        TabContainer.getTabs().add(newTab);
+        editor.putContainer(newTab);
         editor.createScript();
+        editors.add(editor);
        /*     final String path = editor.getPath();
             final String name = path.substring(path.lastIndexOf("/"));
             tab.setText(name);

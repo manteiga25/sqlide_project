@@ -126,10 +126,9 @@ public class OrderingController {
     public String getRules() {
         StringBuilder ruleQuery = new StringBuilder();
         for (Rule rule : data) {
-            if (rule.getStatus()) {
-                ruleQuery.append(rule.getColumn()).append(", ").append(rule.getRule());
-            }
+            if (rule.getStatus()) ruleQuery.append(rule.getColumn()).append(" ").append(rule.getRule()).append(", ");
         }
+        if (!ruleQuery.isEmpty()) ruleQuery = new StringBuilder(ruleQuery.substring(0, ruleQuery.length() - 2));
       //  if (!ruleQuery.isEmpty()) ruleQuery.delete(ruleQuery.length() - 2, ruleQuery.length());
         return ruleQuery.toString();
     }

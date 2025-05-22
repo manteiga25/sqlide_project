@@ -157,6 +157,8 @@ public class FileEditor {
                     throw new Exception("");
                 }
                 path = selectedFile.getPath();
+                tab.setId(path);
+                tab.setText(selectedFile.getName());
               //  createFolderEditor(selectedFile.getAbsolutePath(), selectedFile.getName());
             }
         } catch (Exception e) {

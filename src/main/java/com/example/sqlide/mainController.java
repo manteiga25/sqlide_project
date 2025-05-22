@@ -25,6 +25,7 @@ import com.example.sqlide.exporter.JSON.JSONController;
 import com.example.sqlide.exporter.XML.xmlController;
 import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -67,26 +68,16 @@ public class mainController implements requestInterface {
 
     public JFXButton AssistantButton;
     public JFXButton NotificationButton;
-    public TextArea Console;
     @FXML
     private SplitPane HorizontalSplit;
     @FXML
     private BorderPane BorderContainer;
 
     @FXML
-    private TabPane TableOption;
+    private Button openScript, createScript;
 
     @FXML
-    private Tab Table1;
-
-    @FXML
-    private Tab newTable;
-
-    @FXML
-    private Button newCol, openScript, createScript;
-
-    @FXML
-    private Menu backupMenu;
+    private MenuItem backupMenu;
 
     @FXML
     private VBox MessagesBox, NotificationBox = new VBox(5);
@@ -99,13 +90,6 @@ public class mainController implements requestInterface {
     @FXML
     private Label LabelDB;
 
-    @FXML
-    private TextArea MessageBox;
-    //private TextField MessageBox;
-
-    @FXML
-    private Pane con;
-
     private TabPane ContainerForDB, ContainerForEditor;
 
     private Popup MenuPopup;
@@ -114,21 +98,18 @@ public class mainController implements requestInterface {
 
     private boolean editor = false;
 
-    private final HashMap<String, DatabaseInterface> DBopens = new HashMap<>();
-
     public HashMap<String, DataBase> DatabaseOpened = new HashMap<>();
 
-    HashMap<String, DatabaseInterface> DBopened = new HashMap<>();
+    private final HashMap<String, DatabaseInterface> DBopened = new HashMap<>();
 
     private final ArrayList<String> ScriptsOpened = new ArrayList<>();
 
     private final ObservableList<String> DatabasesName = FXCollections.observableArrayList();
     private final ObservableList<DataBase> DatabasesOpened = FXCollections.observableArrayList();
 
-    private String messageAi = "";
-
     @FXML
-    MenuButton queryMenu;
+    private Menu queryMenu;
+  //  MenuButton queryMenu;
 
     private boolean created = false;
 
@@ -358,7 +339,6 @@ public class mainController implements requestInterface {
 
         final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
         db.setMessager(sender);
-        DatabaseOpened.put(DBName, db);
         //  final String DBName = db.getDatabaseName();
         createContainerDB();
         db.buffer = buffer;
@@ -376,9 +356,9 @@ public class mainController implements requestInterface {
 
                 Platform.runLater(this::setDividerSpace);
 
-                DBopens.put(DBName, openDB);
                 DBopened.put(DBName, openDB);
                 DatabasesOpened.add(db);
+                DatabaseOpened.put(DBName, db);
                 DatabasesName.add(DBName);
                 currentDB.set(DBName);
             } catch (Exception e) {
@@ -431,7 +411,6 @@ public class mainController implements requestInterface {
 
                 consoleController.addData(DBName, sender);
             DatabaseOpened.put(DBName, db);
-            DBopens.put(DBName, openDB);
             DBopened.put(DBName, openDB);
                 DatabasesOpened.add(db);
                 DatabasesName.add(DBName);
@@ -503,7 +482,6 @@ public class mainController implements requestInterface {
         }
 
         DatabaseOpened.put(DBName, db);
-        DBopens.put(DBName, openDB);
         DBopened.put(DBName, openDB);
         DatabasesOpened.add(db);
         DatabasesName.add(DBName);
@@ -524,17 +502,20 @@ public class mainController implements requestInterface {
                     if (change.wasRemoved()) {  // Verifica se houve remoção de abas
                         try {
                             final String id = change.getRemoved().getFirst().getText();
-                            DatabaseInterface DatabaseToClose = DBopens.remove(id);
-                            DatabaseToClose.closeInterface();
+                            DatabaseInterface DatabaseToClose = DBopened.remove(id);
                             DatabaseOpened.remove(id);
-                            DBopened.remove(id);
-                            System.gc();
+                           // DatabasesOpened.remove(ContainerForDB.getTabs().indexOf(change.getRemoved().getFirst()));
+                            DatabasesOpened.clear(); // errata
+                            DatabasesName.clear();
+                            DatabasesOpened.addAll(DatabaseOpened.values());
+                            DatabasesName.addAll(DatabaseOpened.keySet());
+                            DatabaseToClose.closeInterface();
                         } catch (SQLException e) {
                             ShowError("Error SQL", "Error to close database");
                         }
                         if (ContainerForDB.getTabs().isEmpty()) {
-                            DBopens.clear();
                             DatabaseOpened.clear();
+                            DatabasesOpened.clear();
                             HorizontalSplit.getItems().removeLast();
                             DBopened.clear();
                             removeContainerTab();
@@ -943,7 +924,7 @@ public class mainController implements requestInterface {
         if (size != buffer) {
             for (final String dbName : DatabaseOpened.keySet()) {
                 DatabaseOpened.get(dbName).buffer = size;
-                DBopens.get(dbName).refreshSearch();
+                DBopened.get(dbName).refreshSearch();
             }
             buffer = size;
         }

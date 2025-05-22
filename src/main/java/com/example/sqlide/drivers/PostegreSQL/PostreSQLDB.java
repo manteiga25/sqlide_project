@@ -459,6 +459,11 @@ public class PostreSQLDB extends DataBase {
     }
 
     @Override
+    public long totalPages(String table, String column, String condition) {
+        return 0;
+    }
+
+    @Override
     public void renameDatabase(String name) {
         try {
             statement.execute("ALTER DATABASE " + super.databaseName + " RENAME TO " + name + ";");

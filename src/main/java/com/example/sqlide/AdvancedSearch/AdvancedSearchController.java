@@ -215,7 +215,7 @@ public class AdvancedSearchController {
                     Table,
                     JoinBox.getValue() == null || JoinBox.getValue().isEmpty() ? "" : JoinBox.getValue(),
                     TableJoinBox.getValue() == null || TableJoinBox.getValue().isEmpty() ? "" : TableJoinBox.getValue(),
-                    rules,
+                    rules.isEmpty() ? rules : "ORDER BY " + rules,
                     whereClause.isEmpty() ? "" : "WHERE " + whereClause
             );
 

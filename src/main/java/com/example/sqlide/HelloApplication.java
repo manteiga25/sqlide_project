@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.awt.*;
 import java.io.IOException;
@@ -16,6 +17,7 @@ public class HelloApplication extends Application {
         Scene scene = new Scene(fxmlLoader.load(), screenSize.getWidth() * 0.9, screenSize.getHeight() * 0.9);
         mainController controller = fxmlLoader.getController();
         controller.setPrimaryStage(stage);
+       // stage.initStyle(StageStyle.UNDECORATED);
         stage.setTitle("SQL IDE");
         stage.setScene(scene);
        // Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());

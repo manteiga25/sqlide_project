@@ -18,7 +18,7 @@
                      </image>
                   </ImageView>
                </graphic></Button>
-            <ChoiceBox fx:id="SchemaBox" prefWidth="150.0" style="-fx-background-color: #2A2A2A;" stylesheets="@../../../../css/ChoiceBoxModern.css" />
+            <ChoiceBox fx:id="SchemaBox" nodeOrientation="LEFT_TO_RIGHT" prefWidth="150.0" style="-fx-background-color: #2A2A2A;" stylesheets="@../../../../css/ChoiceBoxModern.css" />
             <Label text="Database:" textFill="#f2f2f2">
                <font>
                   <Font name="Arial" size="18.0" />
@@ -36,7 +36,7 @@
                            <Font name="Arial" size="48.0" />
                         </font>
                      </Label>
-                     <HBox alignment="TOP_CENTER" spacing="5.0">
+                     <HBox alignment="TOP_CENTER" spacing="5.0" stylesheets="@../../../../css/Hyper.css">
                         <children>
                            <Hyperlink onAction="#setOpenScript" text="Open Script">
                               <font>

@@ -35,6 +35,7 @@ import javafx.stage.Stage;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
@@ -786,9 +787,10 @@ public class TableInterface {
 
             isFetching.set(true);
 
-            fetcherThread = new Thread(() -> {
+            final AtomicReference<Stage> loading = new AtomicReference<>();
+            Platform.runLater(()->loading.set(LoadingStage("Loading data", "You can continue to use application")));
 
-                int fetched;
+            fetcherThread = new Thread(() -> {
 
                 ArrayList<DataForDB> data;
 
@@ -800,17 +802,17 @@ public class TableInterface {
                 }
 
                 if (data != null) {
-                    if (fetcherThread.isInterrupted()) {
-                        isFetching.set(false);
-                        return;
+                    if (!fetcherThread.isInterrupted()) {
+                        Platform.runLater(()-> {
+                            putData(data);
+                            pageLabel.setText(PageNum.get() + ":" + totalPages);
+                        });
                     }
-                    Platform.runLater(()-> {
-                        putData(data);
-                        pageLabel.setText(PageNum.get() + ":" + totalPages);
-                    });
-                } else {
+                    } else {
                     ShowError("Error", "Error to fetch data.\n" + Database.GetException());
                 }
+
+                Platform.runLater(()->loading.get().close());
 
                 isFetching.set(false);
 
@@ -1022,16 +1024,23 @@ public class TableInterface {
     public void setTotalPages(final ArrayList<String> columns, final String condition) {
         final Thread fetchPage = new Thread(()->{
 
+            long max = -1;
+
             final int indexOffset = condition.toUpperCase().indexOf("OFFSET");
             String conditionComplete = condition;
             if (indexOffset != -1) {
                 System.out.println("vd");
                 conditionComplete = condition.replace(condition.substring(indexOffset-1), "");
             }
-            totalPages = Database.totalPages(TableName.get(), columns, conditionComplete)-1;
-            if (totalPages == -2) {
-                System.out.println(Database.GetException());
+            for (final String column : columns) {
+                totalPages = Database.totalPages(TableName.get(), column, conditionComplete);
+                if (totalPages == -1) {
+                    System.out.println(Database.GetException());
+                } else if (totalPages > max) {
+                    max = totalPages;
+                }
             }
+            totalPages = max == -1 ? Long.MAX_VALUE : totalPages;
             Platform.runLater(()->PageNum.set(0));
         }
         );

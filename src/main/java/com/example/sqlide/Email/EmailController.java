@@ -51,6 +51,8 @@ public class EmailController {
 
     private HashMap<String, ArrayList<String>> TablesAndColumns, selected = new HashMap<>();
 
+    private Stage advancedFetcherstage;
+
     public void setText(final String content) {
         EmailEditor.setHtmlText(content);
     }
@@ -62,6 +64,7 @@ public class EmailController {
             selected.put(table, TablesAndColumns.get(table));
         }
         setEmailBox();
+        loadFetchStage();
     }
 
     @FXML
@@ -127,6 +130,10 @@ public class EmailController {
     }
 
     @FXML
+    private void openFetchStage() {
+        advancedFetcherstage.show();
+    }
+
     private void loadFetchStage() {
         try {
 
@@ -157,7 +164,8 @@ public class EmailController {
             subStage.initModality(Modality.APPLICATION_MODAL);
 
             // Mostrar a subjanela
-            subStage.show();
+            advancedFetcherstage = subStage;
+            //subStage.show();
         } catch (Exception e) {
             ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
         }

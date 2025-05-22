@@ -1111,6 +1111,23 @@ public class SQLiteDB extends DataBase {
     }
 
     @Override
+    public synchronized long totalPages(final String table, final String column, final String condition) {
+        try {
+            System.out.println("SELECT COUNT(" + column + ") FROM " + table + " " + condition + ";");
+            //  ResultSet ret = statement.executeQuery("SELECT COUNT(" + cols.substring(0, cols.length()-2) + ") FROM " + table + " " + condition + ";");
+            ResultSet ret = statement.executeQuery("SELECT COUNT(" + column + ") FROM " + table + " " + condition + ";");
+            if (ret.next()) {
+                System.out.println("total " + (long) Math.ceil((double) ret.getLong(1) / buffer));
+                return (long) Math.ceil((double) ret.getLong(1) / buffer);
+            }
+            return 0;
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return -1;
+        }
+    }
+
+    @Override
     public void renameDatabase(final String name) {
         return;
     }

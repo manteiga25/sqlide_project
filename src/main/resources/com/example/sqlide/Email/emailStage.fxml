@@ -52,7 +52,7 @@
                </HBox.margin></JFXTextField>
             <JFXButton mnemonicParsing="false" onAction="#addEmail" text="Add" textFill="WHITE" />
             <JFXButton mnemonicParsing="false" onAction="#loadEditEmail" text="Edit" textFill="WHITE" />
-            <JFXButton mnemonicParsing="false" onAction="#loadFetchStage" text="Fetch" textFill="WHITE" />
+            <JFXButton mnemonicParsing="false" onAction="#openFetchStage" text="Fetch" textFill="WHITE" />
             <ComboBox fx:id="ColumnEmailBox" prefWidth="150.0" promptText="Column...." stylesheets="@../../../../css/ComboboxModern.css" />
             <JFXToggleButton fx:id="FetchEmailTool" mnemonicParsing="false" onAction="#setFetchEmail" size="8.0" text="Fetch email" textFill="#f2f2f2" toggleColor="#3574f0" />
          </children>

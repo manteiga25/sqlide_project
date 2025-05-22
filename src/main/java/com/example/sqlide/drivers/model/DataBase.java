@@ -244,6 +244,8 @@ public abstract class DataBase {
 
     public abstract long totalPages(String table, ArrayList<String> columns, String condition);
 
+    public abstract long totalPages(String table, String column, String condition);
+
     public abstract void renameDatabase(String name);
 
     public abstract ArrayList<String> getTables();

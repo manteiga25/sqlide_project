@@ -1,0 +1,28 @@
+.HBox {
+    -fx-background-color: linear-gradient(
+            to right,
+            #2C2C2C 0%,     /* cor-base idêntica ao fundo principal */    /* :contentReference[oaicite:0]{index=0} */
+            #3A3A3A 100%    /* tom levemente mais claro para profundidade */ /* :contentReference[oaicite:1]{index=1} */
+        );
+            -fx-effect: dropshadow(
+                gaussian,
+                rgba(0, 0, 0, 0.6),
+                6, 0.2, 0, 0
+            );
+}
+
+.button {
+    -fx-background-color: transparent;
+}
+
+.button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+.button-close {
+    -fx-background-color: transparent;
+}
+
+.button-close:hover {
+    -fx-background-color: red;
+}
