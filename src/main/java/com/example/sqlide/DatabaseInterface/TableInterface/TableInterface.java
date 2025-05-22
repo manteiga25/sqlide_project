@@ -168,6 +168,7 @@ public class TableInterface {
           //      prepareCodeFetch(codeSQL);
            // }
         });
+        Platform.runLater(this::createDatabaseTab);
     }
 
     public void createRowId() {
@@ -897,12 +898,13 @@ public class TableInterface {
             createRowId();
         }
         setTotalPages();
-        pageLabel.setText("0:" + totalPages);
+        //  pageLabel.setText("0:" + totalPages);
        // fetchData();
     //    prepareFetch();
     }
 
     public void fetchIfIsPrimeClick() {
+        Platform.runLater(()->pageLabel.setText("0:" + totalPages));
         if (!alreadyFetched) {
             alreadyFetched = true;
             prepareFetch();

@@ -376,8 +376,11 @@ public class AdvancedSearchController {
             Button removeBtn = new Button("X");
             removeBtn.setStyle("-fx-background-color: red; -fx-border-color: transparent; -fx-text-fill: white;");
 
+            final Label label = new Label("Group operator:");
+            label.setTextFill(Color.WHITE);
+
             header.getChildren().addAll(
-                    new Label("Group operator:"),
+                    label,
                     groupLogic,
                     addConditionBtn,
                     addSubGroupBtn,
@@ -398,6 +401,7 @@ public class AdvancedSearchController {
                 getChildren().clear();
 
                 ColumnsContainer.getChildren().remove(this);
+                setStyle("-fx-border-width: 0;");
                 generateQuery();
             });
 

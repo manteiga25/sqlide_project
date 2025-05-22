@@ -1,5 +1,6 @@
 package com.example.sqlide.EventLayout;
 
+import com.example.sqlide.Container.Editor.TextAreaAutocomplete;
 import com.example.sqlide.Container.Editor.TextAreaAutocompleteLines;
 import com.example.sqlide.drivers.model.DataBase;
 import javafx.fxml.FXML;
@@ -7,8 +8,11 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.layout.Pane;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
+import static com.example.sqlide.Container.Editor.Words.SQLWords.getWords;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class EditEventController {
@@ -19,7 +23,7 @@ public class EditEventController {
     @FXML
     Pane CodeViewContainer;
 
-    private final TextAreaAutocompleteLines codeView = new TextAreaAutocompleteLines();
+    private final TextAreaAutocomplete codeView = new TextAreaAutocomplete();
 
     private DataBase db;
 
@@ -31,6 +35,7 @@ public class EditEventController {
         initCombo();
         codeView.setPrefHeight(CodeViewContainer.getPrefHeight());
         codeView.setPrefWidth(CodeViewContainer.getPrefWidth());
+        codeView.setAutoCompleteWords(new ArrayList<>(List.of(getWords(db.getSQLType().ordinal()))));
         CodeViewContainer.getChildren().add(codeView);
     }
 

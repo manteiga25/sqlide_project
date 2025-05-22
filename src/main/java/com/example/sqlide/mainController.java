@@ -351,6 +351,11 @@ public class mainController implements requestInterface {
         if (!db.connect(URL, DBName, UserName, password)) {
             ShowError("Error SQL", "Error to open Database " + URL + "\n" + db.GetException());
         }
+
+        for (final DataBase dataBase : DatabasesOpened) {
+            if (dataBase.getUrl().equals(db.getUrl())) return;
+        }
+
         final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
         db.setMessager(sender);
         DatabaseOpened.put(DBName, db);
@@ -397,6 +402,10 @@ public class mainController implements requestInterface {
         if (!db.connect(path)) {
             ShowError("Error SQL", "Error to open Database " + path + "\n" + db.GetException());
             return;
+        }
+
+        for (final DataBase dataBase : DatabasesOpened) {
+            if (dataBase.getUrl().equals(db.getUrl())) return;
         }
 
         final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();

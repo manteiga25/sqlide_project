@@ -59,16 +59,16 @@ public class DatabaseInterface {
         final ArrayList<String> Tables = DatabaseSeted.getTables();
         for (final String t : Tables) {
             final TableInterface table = new TableInterface(DatabaseSeted, t, DBTabContainer, this);
-            Platform.runLater(table::createDatabaseTab);
-            Platform.runLater(table::readColumns);
+        //    Platform.runLater(table::createDatabaseTab);
+            table.readColumns();
             TableInterfaceList.add(table);
 
 
         }
 
-    //    if (!TableInterfaceList.isEmpty()) {
-      //      TableInterfaceList.getFirst().fetchIfIsPrimeClick(); // faça fetch da primeira tabela
-        //}
+        if (!TableInterfaceList.isEmpty()) {
+            TableInterfaceList.getFirst().fetchIfIsPrimeClick(); // faça fetch da primeira tabela
+        }
 
     }
 
