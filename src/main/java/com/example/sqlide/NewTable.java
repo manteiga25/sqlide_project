@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.stream.Stream;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
+import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
 
 public class NewTable {
 
@@ -83,7 +84,7 @@ public class NewTable {
 
       //  context.executeCode();
 
-        if (ref.createDBTable(TableName, TempBox.isSelected(), RowIDBox.isSelected())) {
+        if (ref.createDBTable(TableName, TempBox.isSelected(), RowIDBox.isSelected(), columnsMetadata)) {
             closeWindow();
          //   ref.createDBColContainer(TableName, new ColumnMetadata(false, false, null, false, null, 0, "INTEGER", "id", false, 0, 0));
         }
@@ -91,27 +92,33 @@ public class NewTable {
 
     @FXML
     private void EditColumn() {
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NewColumn.fxml"));
-            //    VBox miniWindow = loader.load();
-            Parent root = loader.load();
+        if (!TableColumns.getSelectionModel().getSelectedItems().isEmpty()) {
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NewColumn.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
 
-            NewColumn secondaryController = loader.getController();
+                NewColumn secondaryController = loader.getController();
 
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Create Column");
-            subStage.setScene(new Scene(root));
-     //       secondaryController.NewColumnWin("", "", this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes());
+                // Criar um novo Stage para a subjanela
+                Stage subStage = new Stage();
+                subStage.setTitle("Create Column");
+                subStage.setScene(new Scene(root));
+                secondaryController.NewColumnWin(context.getDatabaseName(), TableNameInput.getText(), this, subStage, ref.getColumnPrimaryKeyName(""), context.types, context.getList(), context.getListChars(), context.getIndexModes());
+                secondaryController.insertMetadata(columnsMetadata.get(TableColumns.getSelectionModel().getSelectedIndex()));
+                //       secondaryController.NewColumnWin("", "", this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes());
 
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
 
-            // Mostrar a subjanela
-            subStage.show();
-        } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+                // Mostrar a subjanela
+                subStage.show();
+            } catch (Exception e) {
+                ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            }
+        } else {
+            ShowInformation("No selected", "No column selected to edit.");
         }
     }
 
@@ -158,6 +165,12 @@ public class NewTable {
         columnsMetadata.add(metadata);
         //  columnTable.getItems().add(new TableItems(metadata.Type, metadata.Name, metadata.IsPrimaryKey ? "PRIMARY KEY" : metadata.foreign.isForeign ? "FOREIGN KEY" : "NO KEY", metadata.NOT_NULL));
         items.add(new TableColumnMeta(metadata.Name, metadata.Type, metadata.IsPrimaryKey ? "PRIMARY KEY" : metadata.foreign.isForeign ? "FOREIGN KEY" : "NO KEY", metadata.NOT_NULL));
+    }
+
+    public void EditColumnCallBack(final ColumnMetadata metadata) {
+        final int index = TableColumns.getSelectionModel().getSelectedIndex();
+        columnsMetadata.set(index, metadata);
+        items.set(index, new TableColumnMeta(metadata.Name, metadata.Type, metadata.IsPrimaryKey ? "PRIMARY KEY" : metadata.foreign.isForeign ? "FOREIGN KEY" : "NO KEY", metadata.NOT_NULL));
     }
 
     @FXML

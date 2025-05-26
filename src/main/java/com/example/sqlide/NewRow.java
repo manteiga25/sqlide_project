@@ -9,28 +9,23 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.*;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class NewRow {
-    public AnchorPane NewRowContainer;
     public GridPane GridContainer;
     public Label DBInfo;
 
@@ -81,8 +76,11 @@ public class NewRow {
     private Object WidgetGenericType(final String column) {
         Object widget = null;
         final String Type = type.get(column).Type;
-        if (type.get(column).items != null) {
+        if (type.get(column).items != null && type.get(column).Type.equals("ENUM")) {
             widget = createComboBox(column);
+        }
+        else if (type.get(column).items != null && type.get(column).Type.equals("SET")) {
+            widget = createCheckComboBox(column);
         }
         else if (Type.equals("DATETIME")) {
             widget = createCalendarTime(column);
@@ -101,7 +99,7 @@ public class NewRow {
         tmpText.setId(column);
         tmpText.setLabelFloat(true);
         tmpText.setPromptText(type.get(column).Type);
-        tmpText.setText(type.get(column).defaultValue);
+        tmpText.setText(type.get(column).defaultValue == null ? "" : type.get(column).defaultValue);
         tmpText.setStyle("-fx-text-fill: white;");
         return tmpText;
     }
@@ -109,7 +107,19 @@ public class NewRow {
     private ComboBox<String> createComboBox(final String column) {
         ComboBox<String> box = new ComboBox<>();
         box.setId(column);
+        box.getItems().addAll(type.get(column).items);
         box.setValue(type.get(column).defaultValue != null ? type.get(column).defaultValue : "");
+        return box;
+    }
+
+    private CheckComboBox<String> createCheckComboBox(final String column) {
+        CheckComboBox<String> box = new CheckComboBox<>();
+        box.setId(column);
+        box.getItems().addAll(type.get(column).items);
+        if (type.get(column).defaultValue != null && !type.get(column).defaultValue.isEmpty()) {
+            List<String> currentValues = Arrays.asList(type.get(column).defaultValue.split(","));
+            currentValues.forEach(value -> box.getCheckModel().check(value));
+        }
         return box;
     }
 
@@ -137,24 +147,31 @@ public class NewRow {
     private void addData() {
         HashMap<String, String> data = new HashMap<>();
         for (final Object widget : WidgetsList) {
-            if (widget instanceof JFXTextField) {
-                if (!treatTextField((JFXTextField) widget, data)) {
-                    return;
+            switch (widget) {
+                case JFXTextField jfxTextField -> {
+                    if (!treatTextField(jfxTextField, data)) {
+                        return;
+                    }
                 }
-            }
-            else if (widget instanceof DateTimePicker) {
-                if (!treatCalendarTime((DateTimePicker) widget, data)) {
-                    return;
+                case DateTimePicker dateTimePicker -> {
+                    if (!treatCalendarTime(dateTimePicker, data)) {
+                        return;
+                    }
                 }
-            }
-            else if (widget instanceof DatePicker) {
-                if (!treatCalendar((DatePicker) widget, data)) {
-                    return;
+                case DatePicker datePicker -> {
+                    if (!treatCalendar(datePicker, data)) {
+                        return;
+                    }
                 }
-            }
-            else {
-                if (!treatComboBox((ComboBox<String>) widget, data)) {
-                    return;
+                case CheckComboBox<?> _ -> {
+                    if (!treatCheckBox((CheckComboBox<String>) widget, data)) {
+                        return;
+                    }
+                }
+                case null, default -> {
+                    if (!treatComboBox((ComboBox<String>) widget, data)) {
+                        return;
+                    }
                 }
             }
         }
@@ -167,7 +184,8 @@ public class NewRow {
         final String value = widget.getText();
         final String columnName = widget.getId();
         final ColumnMetadata meta = type.get(columnName);
-        if (!routines.checkValue(meta.Type, value, meta.size, !meta.NOT_NULL)) {
+     //   if (!routines.checkValue(meta.Type, value, meta.size, !meta.NOT_NULL)) {
+        if (!meta.NOT_NULL && value.isEmpty()) {
             System.out.println(routines.getException());
             widget.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
             widget.requestFocus();
@@ -189,6 +207,20 @@ public class NewRow {
             return false;
         }
         data.put(columnName, value);
+        return true;
+    }
+
+    private boolean treatCheckBox(CheckComboBox<String> widget, HashMap<String, String> data) {
+        final List<String> value = widget.checkModelProperty().getValue().getCheckedItems();
+        final String columnName = widget.getId();
+        final ColumnMetadata meta = type.get(columnName);
+        if (!meta.NOT_NULL && (value == null || value.isEmpty())) {
+            widget.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
+            widget.requestFocus();
+            ShowError("Invalid data", "Please insert data on column " + columnName + ".\n" + routines.getException());
+            return false;
+        }
+        data.put(columnName, String.join(",", value));
         return true;
     }
 
@@ -223,38 +255,47 @@ public class NewRow {
 
     private void freeText() {
         for (final Object widget : WidgetsList) {
-            if (widget instanceof JFXTextField w) {
-                final ColumnMetadata meta = type.get(w.getId());
-                 w.setText(meta.defaultValue);
-            }
-            else if (widget instanceof DateTimePicker w) {
-                final ColumnMetadata meta = type.get(w.getId());
-                LocalDateTime date;
-                if (meta != null && !meta.defaultValue.isEmpty()) {
-                    date = LocalDateTime.from(LocalTime.parse(meta.defaultValue));
+            switch (widget) {
+                case JFXTextField w -> {
+                    final ColumnMetadata meta = type.get(w.getId());
+                    w.setText(meta.defaultValue == null ? "" : meta.defaultValue);
                 }
-                else {
-                    date = LocalDateTime.now();
+                case DateTimePicker w -> {
+                    final ColumnMetadata meta = type.get(w.getId());
+                    LocalDateTime date;
+                    if (meta != null && !meta.defaultValue.equals("null")) {
+                        date = LocalDateTime.from(LocalTime.parse(meta.defaultValue));
+                    } else {
+                        date = LocalDateTime.now();
+                    }
+                    w.setDateTimeValue(date);
+                    // w.setDateTimeValue(date);
                 }
-                w.setDateTimeValue(date);
-               // w.setDateTimeValue(date);
-            }
-            else if (widget instanceof DatePicker w) {
-                final ColumnMetadata meta = type.get(w.getId());
-                LocalDate date;
-                if (meta != null && !meta.defaultValue.isEmpty()) {
-                    date = LocalDate.parse(meta.defaultValue);
+                case DatePicker w -> {
+                    final ColumnMetadata meta = type.get(w.getId());
+                    LocalDate date;
+                    if (meta != null && !meta.defaultValue.isEmpty()) {
+                        date = LocalDate.parse(meta.defaultValue);
+                    } else {
+                        date = LocalDate.now();
+                    }
+                    w.setValue(date);
+                    // w.setDateTimeValue(date);
                 }
-                else {
-                    date = LocalDate.now();
+                case CheckComboBox<?> _ -> {
+                    CheckComboBox<String> w = (CheckComboBox<String>) widget;
+                    final ColumnMetadata meta = type.get(w.getId());
+                    w.getCheckModel().clearChecks();
+                    if (!meta.defaultValue.isEmpty()) {
+                        List<String> currentValues = Arrays.asList(meta.defaultValue.split(","));
+                        currentValues.forEach(value -> w.getCheckModel().check(value));
+                    }
                 }
-                w.setValue(date);
-                // w.setDateTimeValue(date);
-            }
-            else {
-                ComboBox<String> box = (ComboBox<String>) widget;
-                final ColumnMetadata meta = type.get(box.getId());
-                box.setValue(meta.defaultValue);
+                case null, default -> {
+                    ComboBox<String> box = (ComboBox<String>) widget;
+                    final ColumnMetadata meta = type.get(box.getId());
+                    box.setValue(meta.defaultValue);
+                }
             }
         }
     }

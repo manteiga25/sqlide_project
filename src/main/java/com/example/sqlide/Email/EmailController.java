@@ -15,6 +15,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Separator;
 import javafx.scene.control.ToolBar;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.web.HTMLEditor;
 import javafx.scene.web.WebView;
@@ -49,7 +51,7 @@ public class EmailController {
 
     private final ObservableList<String> emails = FXCollections.observableArrayList();
 
-    private HashMap<String, ArrayList<String>> TablesAndColumns, selected = new HashMap<>();
+    private HashMap<String, ArrayList<String>> TablesAndColumns;
 
     private Stage advancedFetcherstage;
 
@@ -61,7 +63,7 @@ public class EmailController {
         this.TablesAndColumns = TablesAndColumns;
         for (final String table : TablesAndColumns.keySet()) {
             QueryList.put(table, "SELECT * FROM " + table + ";");
-            selected.put(table, TablesAndColumns.get(table));
+        //    selected.put(table, TablesAndColumns.get(table));
         }
         setEmailBox();
         loadFetchStage();
@@ -73,13 +75,10 @@ public class EmailController {
         EmailWeb.setPageFill(Color.valueOf("#1E1F22"));
         ToolBar toolbar = (ToolBar) EmailEditor.lookup(".tool-bar");
 
-        final Button exportButton = new Button("Export");
-        exportButton.setOnAction(_->loadInterface());
-
         final Button dataButton = new Button("Add Data");
         dataButton.setOnAction(_->loadInterface());
 
-        toolbar.getItems().addAll(exportButton, dataButton, new Separator());
+        toolbar.getItems().addAll(dataButton, new Separator());
 
         EmailEditor.setOnKeyReleased(_->{
             System.out.println(EmailEditor.getHtmlText());
@@ -153,7 +152,7 @@ public class EmailController {
             subStage.showingProperty().addListener(_->{
                 if (secondaryController.isClosedByUser()) {
                     QueryList = secondaryController.getQueryList();
-                    selected = secondaryController.getSelected();
+              //      selected = secondaryController.getSelected();
                     setEmailBox();
                 }
             });
@@ -206,9 +205,9 @@ public class EmailController {
 
     private void setEmailBox() {
         ColumnEmailBox.getItems().clear();
-        for (final String table : selected.keySet()) {
-            if (selected.get(table) != null) {
-                for (final String column : selected.get(table)) {
+        for (final String table : QueryList.keySet()) {
+            if (!QueryList.get(table).isEmpty()) {
+                for (final String column : TablesAndColumns.get(table)) {
                     ColumnEmailBox.getItems().add(table + ":" + column);
                 }
             }
@@ -234,8 +233,8 @@ public class EmailController {
 
     private void optimize() {
         final String content = EmailEditor.getHtmlText();
-        for (final String table : selected.keySet()) {
-            if (!content.contains("<"+table+":")) {
+        for (final String table : QueryList.keySet()) {
+            if (!content.contains("<"+table+":") && !QueryList.get(table).isEmpty()) {
                 QueryList.put(table, "");
             }
         }

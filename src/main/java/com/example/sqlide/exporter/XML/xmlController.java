@@ -1,9 +1,13 @@
 package com.example.sqlide.exporter.XML;
 
+import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
+import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.exporter.CSV.SqlToCSV;
 import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXCheckBox;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -31,6 +35,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
+import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
+import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
 public class xmlController {
@@ -39,7 +45,7 @@ public class xmlController {
     private JFXButton folderButton;
 
     @FXML
-    ComboBox<String> DatabaseBox;
+    private JFXCheckBox MetaBox;
 
     @FXML
     TextField PathBox, FileName;
@@ -51,9 +57,17 @@ public class xmlController {
 
     private Stage loadingStage;
 
-    HashMap<String, DataBase> db;
+    DataBase db;
 
     private SqlToXml xml = new SqlToXml();
+
+    private HashMap<String, String> QueryList = new HashMap<>();
+
+    private HashMap<String, ArrayList<String>> TablesAndColumnsNames;
+
+    private HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns;
+
+    private Stage advancedFetcherstage;
 
     private final DoubleProperty progress = new SimpleDoubleProperty(0);
 
@@ -95,26 +109,68 @@ public class xmlController {
         }
     }
 
-    public void initXmlController(final HashMap<String, DataBase> db, final Stage stage) throws InterruptedException {
+    @FXML
+    private void openFetchStage() {
+        advancedFetcherstage.show();
+    }
+
+    private void loadFetchStage() {
+        try {
+
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedTableSearchStage.fxml"));
+            Parent root = loader.load();
+
+            TableAdvancedSearchController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Send email");
+            subStage.setScene(new Scene(root));
+            secondaryController.setStage(subStage);
+            secondaryController.setTables(TablesAndColumnsNames);
+
+            subStage.showingProperty().addListener(_->{
+                if (secondaryController.isClosedByUser()) {
+                    QueryList = secondaryController.getQueryList();
+                }
+            });
+
+            //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            advancedFetcherstage = subStage;
+            //subStage.show();
+        } catch (Exception e) {
+            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+        }
+    }
+
+    public void initXmlController(final DataBase db, final Stage stage) throws InterruptedException {
         this.db = db;
         this.stage = stage;
         TaskState.addListener((observable -> cancelTask()));
-        for (final String dbName : db.keySet()) {
-            DatabaseBox.getItems().add(dbName);
-        }
         writeSem.acquire();
+        final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
+        final HashMap<String, ArrayList<String>> TablesAndColumnsName = new HashMap<>();
+        for (final String table : db.getTables()) {
+            TablesAndColumns.put(table, db.getColumnsMetadata(table));
+            TablesAndColumnsName.put(table, db.getColumnsName(table));
+        }
+        for (final String table : TablesAndColumns.keySet()) {
+            QueryList.put(table, "SELECT * FROM " + table + ";");
+        }
+
+        this.TablesAndColumns = TablesAndColumns;
+        this.TablesAndColumnsNames = TablesAndColumnsName;
+        loadFetchStage();
     }
 
     @FXML
     private void createBackup() throws Exception {
-
-        final String dbSelected = DatabaseBox.getValue();
-
-        if (dbSelected == null) {
-            ShowError("No selected", "You need to select Database to make a backup.");
-            DatabaseBox.setStyle("-fx-border-color: red; -fx-border-width: 2px; border-radius: 25px;");
-            return;
-        }
 
         String path = PathBox.getText();
         String name = FileName.getText();
@@ -141,8 +197,6 @@ public class xmlController {
 
         path = removeDot(path);
 
-        final DataBase cursor = db.get(dbSelected);
-
         xml = new SqlToXml();
 
         String finalPath = path;
@@ -152,12 +206,12 @@ public class xmlController {
 
                 Platform.runLater(this::setLoadingStage);
 
-                final ArrayList<String> tables = cursor.getTables();
+                final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
 
                 if (Mult.isSelected()) {
-                    prepareWorkMultiple(dbSelected, cursor, tables, finalPath);
+                    prepareWorkMultiple(db.getDatabaseName(), db, tables, finalPath);
                 } else {
-                    prepareWorkSingle(dbSelected, cursor, tables, finalPath);
+                    prepareWorkSingle(db.getDatabaseName(), db, tables, finalPath);
                 }
                 state = true;
                 ShowSucess("Exporting xml", "Success to export database to XML.");
@@ -186,34 +240,38 @@ public class xmlController {
         final double interact = (double) (100 / tables.size()) / 100;
         xml.createXML(removeDot(dbSelected), path, cursor.getCharset());
         for (final String sheetName : tables) {
-            xml.createTableChild(sheetName);
-            final ArrayList<String> columns = cursor.getColumnsName(sheetName);
-            xml.setStructure(columns);
-            final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
-            if (RowBox.isSelected() && !hasPrimeKey) {
-                xml.setRow(true);
-                columns.addFirst(cursor.getRowId());
-            }
-
-            writer = new Thread(() -> writer(xml));
-
-            fetcher = new Thread(() -> {
-                try {
-                    fetcher(cursor, columns, sheetName, writer);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+            final String query = QueryList.get(sheetName);
+            if (!query.isEmpty()) {
+                if (MetaBox.isSelected()) createMetadata(path, sheetName);
+                xml.createTableChild(sheetName);
+                final ArrayList<String> columns = TablesAndColumnsNames.get(sheetName);
+                xml.setStructure(columns);
+                final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
+                if (RowBox.isSelected() && !hasPrimeKey) {
+                    xml.setRow(true);
+                    columns.addFirst(cursor.getRowId());
                 }
-            });
-            fetcher.start();
-            writer.start();
 
-            fetcher.join();
-            writer.join();
+                writer = new Thread(() -> writer(xml));
 
-            Platform.runLater(()->progress.set(progress.get()+interact));
+                fetcher = new Thread(() -> {
+                    try {
+                        fetcher(cursor, columns, sheetName, writer);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                fetcher.start();
+                writer.start();
 
-            System.out.println("acabou");
+                fetcher.join();
+                writer.join();
 
+                Platform.runLater(() -> progress.set(progress.get() + interact));
+
+                System.out.println("acabou");
+
+            }
         }
         xml.close();
         //xml.flush(path);
@@ -223,45 +281,49 @@ public class xmlController {
         final double interact = (100.0 / tables.size()) / 100.0;
         final SqlToXml xml = new SqlToXml();
         for (final String sheetName : tables) {
-            xml.createXML(removeDot(dbSelected), path + "-" + sheetName, cursor.getCharset());
-            xml.createTableChild(sheetName);
-            final ArrayList<String> columns = cursor.getColumnsName(sheetName);
-            final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
-            xml.setStructure(columns);
-            if (RowBox.isSelected() && !hasPrimeKey) {
-                xml.setRow(true);
-                columns.addFirst(cursor.getRowId());
-            }
-
-            writer = new Thread(() -> writer(xml));
-
-            fetcher = new Thread(() -> {
-                try {
-                    fetcher(cursor, columns, sheetName, writer);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+            final String query = QueryList.get(sheetName);
+            if (!query.isEmpty()) {
+                if (MetaBox.isSelected()) createMetadata(xml, sheetName);
+                xml.createXML(removeDot(dbSelected), path + "-" + sheetName, cursor.getCharset());
+                xml.createTableChild(sheetName);
+                final ArrayList<String> columns = cursor.getColumnsName(sheetName);
+                final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
+                xml.setStructure(columns);
+                if (RowBox.isSelected() && !hasPrimeKey) {
+                    xml.setRow(true);
+                    columns.addFirst(cursor.getRowId());
                 }
-            });
-            fetcher.start();
-            writer.start();
 
-            System.out.println(sheetName + " " + 6);
+                writer = new Thread(() -> writer(xml));
 
-            fetcher.join();
-            writer.join();
+                fetcher = new Thread(() -> {
+                    try {
+                        fetcher(cursor, columns, sheetName, writer);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                fetcher.start();
+                writer.start();
 
-            System.out.println("foi");
+                System.out.println(sheetName + " " + 6);
 
-            xml.close();
+                fetcher.join();
+                writer.join();
 
-           // throw new RuntimeException();
+                System.out.println("foi");
 
-            Platform.runLater(()->progress.set(progress.get()+interact));
+                xml.close();
 
-            System.out.println("acabou");
+                // throw new RuntimeException();
 
-          //  xml.flushIntermediate(path + "-" + sheetName);
+                Platform.runLater(() -> progress.set(progress.get() + interact));
 
+                System.out.println("acabou");
+
+                //  xml.flushIntermediate(path + "-" + sheetName);
+
+            }
         }
     }
 
@@ -292,7 +354,7 @@ public class xmlController {
         long offset = 0;
         final long buffer = cursor.buffer * 10L;
         while (true) {
-            final ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(sheetName, columns, buffer, offset);
+            final ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(QueryList.get(sheetName), columns, buffer, offset);
             if (dataCopy == null) {
                 throw new Exception(cursor.GetException());
             }
@@ -310,6 +372,34 @@ public class xmlController {
             offset += buffer;
         }
         writer.interrupt();
+    }
+
+    private void createMetadata(String Path, final String sheetName) throws Exception {
+        final SqlToXml xml = new SqlToXml();
+        xml.createXML("", Path, db.getCharset());
+        xml.createTableChild(sheetName + "-metadata");
+        final ArrayList<ColumnMetadata> columns = TablesAndColumns.get(sheetName);
+        //  final ArrayList<String> columns = TablesAndColumns.get(sheetName);
+        xml.setStructure(new ArrayList<>(MetadataToMap(columns.getFirst()).keySet()));
+        final ArrayList<ArrayList<Object>> ArrayMeta = new ArrayList<>();
+        for (final ColumnMetadata meta : columns) {
+            ArrayMeta.add(MetadataToArrayList(meta));
+        }
+        xml.addData(ArrayMeta);
+        xml.flushIntermediate();
+    }
+
+    private void createMetadata(SqlToXml xml, final String sheetName) throws Exception {
+        xml.createTableChild(sheetName + "-metadata");
+        final ArrayList<ColumnMetadata> columns = TablesAndColumns.get(sheetName);
+        //  final ArrayList<String> columns = TablesAndColumns.get(sheetName);
+        xml.setStructure(new ArrayList<>(MetadataToMap(columns.getFirst()).keySet()));
+        final ArrayList<ArrayList<Object>> ArrayMeta = new ArrayList<>();
+        for (final ColumnMetadata meta : columns) {
+            ArrayMeta.add(MetadataToArrayList(meta));
+        }
+        xml.addData(ArrayMeta);
+      //  xml.flushIntermediate();
     }
 
     private void createSingleXML(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {

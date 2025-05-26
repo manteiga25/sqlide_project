@@ -98,7 +98,7 @@ abstract public class handleWindow {
             secondaryController.setContent(content);
 
             // Opcional: definir a modalidade da subjanela
-            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initModality(Modality.WINDOW_MODAL);
 
             // Mostrar a subjanela
             stage.show();

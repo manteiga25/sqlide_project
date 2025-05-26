@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.net.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane fx:id="NewRowContainer" prefHeight="450.0" prefWidth="606.0" style="-fx-background-color: #3C3C3C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewRow">
+<VBox spacing="5.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewRow">
     <Label fx:id="DBInfo" alignment="CENTER" prefHeight="58.0" prefWidth="606.0" textAlignment="CENTER" textFill="WHITE">
         <font>
           <Font name="JetBrains Mono Regular" size="18.0" />
         </font>
     </Label>
-   <Button layoutX="542.0" layoutY="414.0" mnemonicParsing="false" onAction="#addData" prefHeight="25.0" prefWidth="52.0" text="Save" />
-   <Button layoutX="484.0" layoutY="414.0" mnemonicParsing="false" onAction="#exit" prefHeight="25.0" prefWidth="52.0" text="Cancel" />
-   <ScrollPane layoutY="71.0" prefHeight="333.0" prefWidth="606.0" style="-fx-background-color: #3C3C3C;">
+   <ScrollPane layoutY="71.0" maxHeight="1.7976931348623157E308" pannable="true" style="-fx-background-color: #2C2C2C;" stylesheets="@../../../css/ScrollHbarStyle.css" VBox.vgrow="ALWAYS">
      <content>
-       <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="331.0" prefWidth="604.0" style="-fx-background-color: #3C3C3C;">
+       <AnchorPane maxHeight="1.7976931348623157E308" minHeight="0.0" minWidth="0.0" style="-fx-background-color: #2C2C2C;">
             <children>
-                <GridPane fx:id="GridContainer" hgap="5.0" prefHeight="311.0" prefWidth="606.0" style="-fx-background-color: #3C3C3C;" vgap="10.0">
+                <GridPane fx:id="GridContainer" hgap="5.0" prefWidth="606.0" style="-fx-background-color: #2C2C2C;" vgap="25.0">
                   <columnConstraints>
                       <ColumnConstraints hgrow="SOMETIMES" />
                       <ColumnConstraints hgrow="SOMETIMES" />
@@ -24,9 +24,23 @@
                   <rowConstraints>
                      <RowConstraints />
                   </rowConstraints>
+                  <stylesheets>
+                     <URL value="@../../../css/DatePicker.css" />
+                     <URL value="@../../../css/ContextMenuStyle.css" />
+                     <URL value="@../../../css/ComboboxModern.css" />
+                  </stylesheets>
                 </GridPane>
             </children>
          </AnchorPane>
      </content>
    </ScrollPane>
-</AnchorPane>
+   <HBox alignment="CENTER_RIGHT" spacing="5.0">
+      <children>
+         <Button mnemonicParsing="false" onAction="#exit" text="Cancel" />
+         <Button mnemonicParsing="false" onAction="#addData" text="Save" />
+      </children>
+      <VBox.margin>
+         <Insets bottom="5.0" right="5.0" />
+      </VBox.margin>
+   </HBox>
+</VBox>

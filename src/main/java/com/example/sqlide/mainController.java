@@ -1,31 +1,25 @@
 package com.example.sqlide;
 
-import atlantafx.base.controls.Spacer;
 import com.example.sqlide.Assistant.AssistantController;
 import com.example.sqlide.Configuration.DatabaseConf;
 import com.example.sqlide.Console.ConsoleController;
-import com.example.sqlide.Container.Assistant.AssistantBoxCode;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.EventLayout.EditEventController;
 import com.example.sqlide.EventLayout.EventController;
 import com.example.sqlide.Logger.Logger;
-import com.example.sqlide.Notification.NotificationController;
 import com.example.sqlide.ScriptLayout.SearchScriptController;
 import com.example.sqlide.TriggerLayout.EditTriggerController;
 import com.example.sqlide.TriggerLayout.TriggerController;
 import com.example.sqlide.drivers.SQLite.SQLiteDB;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.Editor.EditorController;
-import com.example.sqlide.Editor.FileEditor;
 import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.exporter.CSV.CSVController;
 import com.example.sqlide.exporter.Excel.excelController;
 import com.example.sqlide.exporter.JSON.JSONController;
 import com.example.sqlide.exporter.XML.xmlController;
-import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
-import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -35,7 +29,6 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -45,19 +38,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.*;
-import org.apache.poi.ss.formula.functions.Finance;
-import org.apache.xmlbeans.impl.xb.xmlconfig.Extensionconfig;
-import org.jetbrains.annotations.NotNull;
-import org.json.JSONObject;
 
 import java.io.*;
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -153,14 +136,11 @@ public class mainController implements requestInterface {
     }
 
     @Override
-    public ArrayList<HashMap<String, String>> getTableMetadata(final String table) {
+    public HashMap<String, ArrayList<HashMap<String, String>>> getTableMetadata() {
         final DatabaseInterface db = DBopened.get(currentDB.get());
-        ArrayList<HashMap<String, String>> meta = null;
+        HashMap<String, ArrayList<HashMap<String, String>>> meta = null;
         if (db != null) {
-            final TableInterface tableInterface = db.getTable(table);
-            if (tableInterface != null) {
-                meta = tableInterface.getColumnsMetadataMap();
-            }
+            meta = db.getTables();
         }
         return meta;
     }
@@ -555,7 +535,7 @@ public class mainController implements requestInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initExcelController(DatabaseOpened, subStage);
+            secondaryController.initExcelController(DatabaseOpened.get(currentDB.get()), subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -583,7 +563,7 @@ public class mainController implements requestInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initCSVController(DatabaseOpened, subStage);
+            secondaryController.initCSVController(DatabaseOpened.get(currentDB.get()), subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -611,7 +591,7 @@ public class mainController implements requestInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initXmlController(DatabaseOpened, subStage);
+            secondaryController.initXmlController(DatabaseOpened.get(currentDB.get()), subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -639,7 +619,7 @@ public class mainController implements requestInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initJsonController(DatabaseOpened, subStage);
+            secondaryController.initJsonController(DatabaseOpened.get(currentDB.get()), subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);

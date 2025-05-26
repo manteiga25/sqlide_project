@@ -2,6 +2,7 @@ package com.example.sqlide;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class ColumnMetadata {
 
@@ -16,9 +17,11 @@ public class ColumnMetadata {
     public int integerDigits = 0;
     public int decimalDigits = 0;
     public ArrayList<String> items;
-    public String indexType = null;
-    public String aliasType = null;
+    public String indexType = "";
+    public String aliasType = "";
     public Foreign foreign;
+    public String check = "";
+    public long autoincrement = -1;
 
     public ColumnMetadata(final boolean NOT_NULL, final boolean IsPrimaryKey, Foreign foreign, final String defaultValue, final int size, final String Type, final String Name, boolean isUnique, int integerDigits, int decimalDigits, final String index) {
         this.NOT_NULL = NOT_NULL;
@@ -39,8 +42,8 @@ public class ColumnMetadata {
         public String onUpdate = "", onEliminate = "", tableRef, columnRef;
     }
 
-    public static HashMap<String, String> MetadataToMap(final ColumnMetadata meta) {
-        final HashMap<String, String> map = new HashMap<>();
+    public static LinkedHashMap<String, String> MetadataToMap(final ColumnMetadata meta) {
+        final LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
         // Campos primitivos
         map.put("Name", meta.Name);
@@ -71,6 +74,42 @@ public class ColumnMetadata {
         }
 
         return map;
+    }
+
+    public static ArrayList<Object> MetadataToArrayList(final ColumnMetadata meta) {
+        ArrayList<Object> list = new ArrayList<>();
+
+        // Campos primitivos
+        list.add(meta.Name);
+        list.add(meta.Type);
+        list.add(meta.NOT_NULL);
+        list.add(meta.IsPrimaryKey);
+        list.add(meta.defaultValue);
+        list.add(meta.size);
+        list.add(meta.isUnique);
+        list.add(meta.index != null ? meta.index : "");
+        list.add(meta.integerDigits);
+        list.add(meta.decimalDigits);
+        list.add(meta.indexType != null ? meta.indexType : "");
+        list.add(meta.aliasType != null ? meta.aliasType : "");
+
+        // Lista de items
+        if (meta.items != null && !meta.items.isEmpty()) {
+            list.add(meta.items);
+        }
+
+        // Chave estrangeira
+        if (meta.foreign != null) {
+            ArrayList<Object> foreignList = new ArrayList<>();
+            foreignList.add(meta.foreign.isForeign);
+            foreignList.add(meta.foreign.onUpdate);
+            foreignList.add(meta.foreign.onEliminate);
+            foreignList.add(meta.foreign.tableRef);
+            foreignList.add(meta.foreign.columnRef);
+            list.add(foreignList);
+        }
+
+        return list;
     }
 
 }

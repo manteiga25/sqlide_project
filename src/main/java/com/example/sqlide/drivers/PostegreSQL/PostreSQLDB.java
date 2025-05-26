@@ -527,6 +527,11 @@ public class PostreSQLDB extends DataBase {
     }
 
     @Override
+    public ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset) {
+        return null;
+    }
+
+    @Override
     public ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset) {
         return null;
     }
@@ -724,17 +729,32 @@ public class PostreSQLDB extends DataBase {
         return ColumnsUnique;
     }
 
+    private String ruleToString(short rule) {
+        return switch (rule) {
+            case DatabaseMetaData.importedKeyCascade   -> "CASCADE";
+            case DatabaseMetaData.importedKeyRestrict  -> "RESTRICT";
+            case DatabaseMetaData.importedKeySetNull   -> "SET NULL";
+            case DatabaseMetaData.importedKeyNoAction  -> "NO ACTION";
+            case DatabaseMetaData.importedKeySetDefault-> "SET DEFAULT";
+            default                                     -> "UNKNOWN";
+        };
+    }
+
     @Override
-    protected HashMap<String, String[]> getForeign(String Table) {
-        HashMap<String, String[]> ColumnForeign = new HashMap<>();
+    protected HashMap<String, ColumnMetadata.Foreign> getForeign(final String Table) {
+        HashMap<String, ColumnMetadata.Foreign> ColumnForeign = new HashMap<>();
         try {
             ResultSet foreignKeys = connection.getMetaData().getImportedKeys(null, null, Table);
             while (foreignKeys.next()) {
-                String[] foreignMeta = new String[2];
+                ColumnMetadata.Foreign foreign = new ColumnMetadata.Foreign();
                 final String fkColumnName = foreignKeys.getString("FKCOLUMN_NAME");
-                foreignMeta[0] = foreignKeys.getString("PKTABLE_NAME");
-                foreignMeta[1] = foreignKeys.getString("PKCOLUMN_NAME");
-                ColumnForeign.put(fkColumnName, foreignMeta);
+                foreign.tableRef = foreignKeys.getString("PKTABLE_NAME");
+                foreign.columnRef = foreignKeys.getString("PKCOLUMN_NAME");
+                short updateRule  = foreignKeys.getShort("UPDATE_RULE");
+                short deleteRule  = foreignKeys.getShort("DELETE_RULE");
+                foreign.onEliminate = ruleToString(deleteRule);
+                foreign.onUpdate = ruleToString(updateRule);
+                ColumnForeign.put(fkColumnName, foreign);
                 System.out.println(fkColumnName);
             }
         } catch (Exception e) {
@@ -811,14 +831,13 @@ public class PostreSQLDB extends DataBase {
     public ArrayList<ColumnMetadata> getColumnsMetadata(String Table) {
         ArrayList<ColumnMetadata> ColumnsMetadata = new ArrayList<>();
         final ArrayList<String> PrimaryKeyList = PrimaryKeyList(Table);
-        final HashMap<String, String[]> ForeignKeyList = getForeign(Table);
+        final HashMap<String, ColumnMetadata.Foreign> ForeignKeyList = getForeign(Table);
         HashMap<String, Boolean> uniqueColumns = isUnique(Table);
-        String[] foreign = new String[2];
         try {
             final ArrayList<String> RealTypes = searchTypes(Table);
             ResultSet columns = connection.getMetaData().getColumns(null, null, Table, null);
             for  (int iter = 0; columns.next(); iter++) {
-                boolean isForeign = false;
+                ColumnMetadata.Foreign foreign = new ColumnMetadata.Foreign();
                 final String name = columns.getString("COLUMN_NAME");
                 String Type = columns.getString("TYPE_NAME");
                 String aliasType = null;
@@ -858,9 +877,7 @@ public class PostreSQLDB extends DataBase {
                 }
                 for (final String key : ForeignKeyList.keySet()) {
                     if (key.equals(name)) {
-                        foreign = ForeignKeyList.get(key);
-                        ForeignKeyList.remove(key);
-                        isForeign = true;
+                        foreign = ForeignKeyList.remove(key);
                         break;
                     }
                 }
@@ -869,7 +886,7 @@ public class PostreSQLDB extends DataBase {
                   //  Type = "ENUM";
                // }
                 // para mudar
-                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, new ColumnMetadata.Foreign(), Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);
+                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, foreign, Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);
                      TmpCol.items = listEnum;
                      TmpCol.aliasType = aliasType;
 
@@ -985,6 +1002,11 @@ public class PostreSQLDB extends DataBase {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public boolean createTable(String table, boolean temporary, boolean rowid, ArrayList<ColumnMetadata> columnMetadata) {
+        return false;
     }
 
     @Override

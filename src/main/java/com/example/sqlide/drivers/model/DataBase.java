@@ -210,6 +210,8 @@ public abstract class DataBase {
 
     public abstract ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long limit, long offset);
 
+    public abstract ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset);
+
     public abstract ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset);
 
     public abstract ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long offset);
@@ -257,7 +259,7 @@ public abstract class DataBase {
 
     protected abstract HashMap<String, Boolean> isUnique(String Table);
 
-    protected abstract HashMap<String, String[]> getForeign(String Table);
+    protected abstract HashMap<String, ColumnMetadata.Foreign> getForeign(String Table);
 
     public abstract ArrayList<ColumnMetadata> getColumnsMetadata(String Table);
 
@@ -274,6 +276,8 @@ public abstract class DataBase {
     public abstract String getUrl();
 
     public abstract boolean createTable(String table, boolean temporary, boolean rowid);
+
+    public abstract boolean createTable(String table, boolean temporary, boolean rowid, ArrayList<ColumnMetadata> columnMetadata);
 
     public abstract void changeCommitMode(final boolean mode) throws SQLException;
 

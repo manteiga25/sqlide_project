@@ -639,7 +639,7 @@ public class TableInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Create Column");
             subStage.setScene(new Scene(root));
-            secondaryController.NewColumnWin(Database.getDatabaseName(), TableName.get(), this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes());
+            secondaryController.NewColumnWin(Database.getDatabaseName(), TableName.get(), this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes());
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -741,10 +741,12 @@ public class TableInterface {
             ShowError("Error SQL", "Error to create column " + ColName + " on Table " + TableName + " on Database " + "dbName" + "\n" + Database.GetException());
             return;
         }
-        try {
-            Database.createIndex(TableName.get(), ColName, meta.index, meta.indexType);
-        } catch (SQLException e) {
-            ShowError("Error SQL", "Error to create index for column " + ColName + " on Table " + TableName + " on Database " + Database.getDatabaseName() + "\n" + Database.GetException());
+        if (meta.index != null) {
+            try {
+                Database.createIndex(TableName.get(), ColName, meta.index, meta.indexType);
+            } catch (SQLException e) {
+                ShowError("Error SQL", "Error to create index for column " + ColName + " on Table " + TableName + " on Database " + Database.getDatabaseName() + "\n" + Database.GetException());
+            }
         }
         createDBcolContainer(meta);
     }
@@ -947,6 +949,7 @@ public class TableInterface {
     }
 
     public boolean insertData(HashMap<String, String> values) {
+        System.out.println(values);
         if (!Database.insertData(TableName.get(), values)) {
             ShowError("SQL Error", "Error to insert data\n" + Database.GetException());
             return false;

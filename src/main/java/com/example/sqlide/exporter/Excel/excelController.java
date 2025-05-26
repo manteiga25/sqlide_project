@@ -1,8 +1,12 @@
 package com.example.sqlide.exporter.Excel;
 
+import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
+import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.exporter.CSV.SqlToCSV;
 import com.example.sqlide.popupWindow.Notification;
+import com.jfoenix.controls.JFXCheckBox;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -34,6 +38,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
+import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
+import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
 public class excelController {
@@ -42,14 +48,14 @@ public class excelController {
     private Button folderButton;
 
     @FXML
-    ComboBox<String> DatabaseBox;
+    private JFXCheckBox MetaBox;
 
     @FXML
     TextField PathBox, nameOfFolder;
 
     Stage stage;
 
-    HashMap<String, DataBase> db;
+    DataBase db;
 
     private final BooleanProperty TaskState = new SimpleBooleanProperty(true);
 
@@ -57,10 +63,18 @@ public class excelController {
 
     private ArrayList<ArrayList<Object>> data = new ArrayList<>();
 
+    private HashMap<String, String> QueryList = new HashMap<>();
+
+    private HashMap<String, ArrayList<String>> TablesAndColumnsNames;
+
+    private HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns;
+
     private final Semaphore fetcherSem = new Semaphore(1);
     private final Semaphore writeSem = new Semaphore(1);
 
     private Stage loadingStage;
+
+    private Stage advancedFetcherstage;
 
     @FXML
     public void initialize() {
@@ -92,29 +106,71 @@ public class excelController {
         }
     }
 
-    public void initExcelController(final HashMap<String, DataBase> db, final Stage stage) {
+    @FXML
+    private void openFetchStage() {
+        advancedFetcherstage.show();
+    }
+
+    private void loadFetchStage() {
+        try {
+
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedTableSearchStage.fxml"));
+            Parent root = loader.load();
+
+            TableAdvancedSearchController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Send email");
+            subStage.setScene(new Scene(root));
+            secondaryController.setStage(subStage);
+            secondaryController.setTables(TablesAndColumnsNames);
+
+            subStage.showingProperty().addListener(_->{
+                if (secondaryController.isClosedByUser()) {
+                    QueryList = secondaryController.getQueryList();
+                }
+            });
+
+            //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            advancedFetcherstage = subStage;
+            //subStage.show();
+        } catch (Exception e) {
+            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+        }
+    }
+
+    public void initExcelController(final DataBase db, final Stage stage) {
         this.db = db;
         this.stage = stage;
         TaskState.addListener((observable -> cancelTask()));
-        for (final String dbName : db.keySet()) {
-            DatabaseBox.getItems().add(dbName);
-        }
         try {
             writeSem.acquire();
         } catch (InterruptedException _) {
         }
+        final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
+        final HashMap<String, ArrayList<String>> TablesAndColumnsName = new HashMap<>();
+        for (final String table : db.getTables()) {
+            TablesAndColumns.put(table, db.getColumnsMetadata(table));
+            TablesAndColumnsName.put(table, db.getColumnsName(table));
+        }
+        for (final String table : TablesAndColumns.keySet()) {
+            QueryList.put(table, "SELECT * FROM " + table + ";");
+        }
+
+        this.TablesAndColumns = TablesAndColumns;
+        this.TablesAndColumnsNames = TablesAndColumnsName;
+        loadFetchStage();
     }
 
     @FXML
     private void createBackup() {
-
-        final String dbSelected = DatabaseBox.getValue();
-
-        if (dbSelected == null) {
-            ShowError("No selected", "You need to select Database to make a backup.");
-            DatabaseBox.setStyle("-fx-border-color: red; -fx-border-width: 2px; border-radius: 25px;");
-            return;
-        }
 
         String path = PathBox.getText();
         String name = nameOfFolder.getText();
@@ -142,8 +198,6 @@ public class excelController {
 
         path = removeDot(path);
 
-        final DataBase cursor = db.get(dbSelected);
-
         final String finalPath = path;
         new Thread(()->{
             boolean state = false;
@@ -154,13 +208,12 @@ public class excelController {
 
                 Platform.runLater(this::setLoadingStage);
 
-                final ArrayList<String> tables = cursor.getTables();
+                final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
 
 
+                excel.createWorkbook(db.buffer * 10);
 
-                excel.createWorkbook(cursor.buffer * 10);
-
-                prepareWork(excel, tables, cursor);
+                prepareWork(excel, tables, db);
 
                 state = true;
 
@@ -218,72 +271,89 @@ public class excelController {
             Notification.showErrorNotification("Excel Error", "Error to export Excel");
         }
 
-
     }
 
-    private void prepareWork(final SqlToExcel excel, final ArrayList<String> tables, final DataBase cursor) throws InterruptedException {
+    private void prepareWork(final SqlToExcel excel, final ArrayList<String> tables, final DataBase cursor) throws InterruptedException, IOException {
         final long buffer = cursor.buffer * 10L;
         final double interact = (100.0 / tables.size()) / 100.0;
         for (final String sheetName : tables) {
-            final ArrayList<String> columns = cursor.getColumnsName(sheetName);
-            excel.createSheet(sheetName, columns);
-        //    excel.createColumns(columns, sheetName);
 
-            final Thread writer = new Thread(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
-                    try {
-                        writeSem.acquire();
-                    } catch (InterruptedException e) {
+            final String query = QueryList.get(sheetName);
+            if (!query.isEmpty()) {
+
+                if (MetaBox.isSelected()) createMetadata(excel, sheetName);
+
+                final ArrayList<String> columns = cursor.getColumnsName(sheetName);
+                excel.createSheet(sheetName, columns);
+                //    excel.createColumns(columns, sheetName);
+
+                final Thread writer = new Thread(() -> {
+                    while (!Thread.currentThread().isInterrupted()) {
                         try {
-                            excel.writeData(data);
-                        } catch (Exception _) {
+                            writeSem.acquire();
+                        } catch (InterruptedException e) {
+                            try {
+                                excel.writeData(data);
+                            } catch (Exception _) {
+                            }
+                            data = null;
+                            fetcherSem.release();
+                            break;
                         }
+                        excel.writeData(data);
                         data = null;
                         fetcherSem.release();
-                        break;
                     }
-                    excel.writeData(data);
-                    data = null;
-                    fetcherSem.release();
-                }
-            });
+                });
 
-            final Thread fetcher = new Thread(() -> {
-                long offset = 0;
-                while (true) {
-                    final ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(sheetName, columns, buffer, offset);
-                    if (dataCopy == null || dataCopy.isEmpty()) {
-                      //  writer.interrupt();
-                        break;
+                final Thread fetcher = new Thread(() -> {
+                    long offset = 0;
+                    while (true) {
+                        final ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(query, columns, buffer, offset);
+                        if (dataCopy == null || dataCopy.isEmpty()) {
+                            //  writer.interrupt();
+                            break;
+                        }
+                        final ArrayList<ArrayList<Object>> copy = (ArrayList<ArrayList<Object>>) dataCopy.clone();
+                        try {
+                            fetcherSem.acquire();
+                            data = copy;
+                        } catch (InterruptedException _) {
+                            writer.interrupt();
+                            break;
+                        }
+                        writeSem.release();
+                        offset += buffer;
                     }
-                    final ArrayList<ArrayList<Object>> copy = (ArrayList<ArrayList<Object>>) dataCopy.clone();
-                    try {
-                        fetcherSem.acquire();
-                        data = copy;
-                    } catch (InterruptedException _) {
-                        writer.interrupt();
-                        break;
-                    }
-                    writeSem.release();
-                    offset += buffer;
-                }
-                writer.interrupt();
-            });
-            fetcher.start();
-            writer.start();
+                    writer.interrupt();
+                });
+                fetcher.start();
+                writer.start();
 
-            fetcher.join();
-            writer.join();
+                fetcher.join();
+                writer.join();
 
-         //   excel.Save();
+                //   excel.Save();
 
-            Platform.runLater(()->progress.set(progress.get()+interact));
+                Platform.runLater(() -> progress.set(progress.get() + interact));
 
-         //   excel.closeSheet(sheetName);
+                //   excel.closeSheet(sheetName);
 
-            System.out.println("acabou");
+                System.out.println("acabou");
 
+            }
         }
+    }
+
+    private void createMetadata(final SqlToExcel excel, final String sheetName) {
+        final ArrayList<ColumnMetadata> columns = TablesAndColumns.get(sheetName);
+        //  final ArrayList<String> columns = TablesAndColumns.get(sheetName);
+        excel.createSheet(sheetName+"-metadata", new ArrayList<>(MetadataToMap(columns.getFirst()).keySet()));
+        final ArrayList<ArrayList<Object>> ArrayMeta = new ArrayList<>();
+        for (final ColumnMetadata meta : columns) {
+            ArrayMeta.add(MetadataToArrayList(meta));
+        }
+        excel.writeData(ArrayMeta);
     }
 
     private void PrepareSingle(final SqlToExcel excel, final ArrayList<String> tables, final DataBase cursor) {

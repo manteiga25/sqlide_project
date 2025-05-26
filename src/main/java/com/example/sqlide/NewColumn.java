@@ -1,9 +1,12 @@
 package com.example.sqlide;
 
+import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.Configuration.DatabaseConf;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
+import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -26,17 +29,17 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
 public class NewColumn {
 
     @FXML
-    private JFXTextField IndexText;
+    private JFXTextField IndexText, CheckField;
 
-    Stage window;
+    private Stage window;
 
-    TableInterface ref;
+    private TableInterface ref;
 
-    String TableName, DBName;
+    private String TableName, DBName;
 
-    HashMap<String, ArrayList<String>> KeysForForeign;
+    private HashMap<String, ArrayList<String>> KeysForForeign;
 
-    SQLiteTypes types;
+    private SQLiteTypes types;
 
     private String[] charList;
 
@@ -50,33 +53,37 @@ public class NewColumn {
     private TextField ColumnNameInput, text1, text2, text3;
 
     @FXML
-    Label LabelDB;
+    private Label LabelDB;
 
     @FXML
-    ChoiceBox<String> typeBox, ForeignKeyBox, indexBox;
+    private ChoiceBox<String> typeBox, ForeignKeyBox, indexBox, updateForeignBox, deleteForeignBox;
 
     @FXML
-    HBox BoxOp;
+    private HBox BoxOp;
 
     @FXML
-    CheckBox primaryKeyOption, NotNullOption, ForeignKeyOption, DefaultOption, UniqueOption, FillOption, IndexOption;
+    private CheckBox primaryKeyOption, NotNullOption, ForeignKeyOption, DefaultOption, UniqueOption, FillOption, IndexOption, AutoincrementOption, CheckOption;
 
     @FXML
-    TextField DefaultValueText, SetName;
+    private TextField DefaultValueText, SetName;
 
     @FXML
-    TextField WordBox;
+    private TextField WordBox;
 
     @FXML
-    Button AddButton, EditList;
+    private Button AddButton, EditList;
 
     private final ObservableList<String> setList = FXCollections.observableArrayList();
+
+    private ArrayList<String> foreignModes;
 
     @FXML
     private void AlterForeignBox() {
         if (ForeignKeyOption.isSelected()) {
             ForeignKeyBox.setDisable(false);
             FillOption.setDisable(false);
+            deleteForeignBox.setDisable(false);
+            updateForeignBox.setDisable(false);
             primaryKeyOption.setDisable(true);
             NotNullOption.setDisable(true);
             DefaultOption.setDisable(true);
@@ -90,6 +97,8 @@ public class NewColumn {
         else {
             ForeignKeyBox.setDisable(true);
             FillOption.setDisable(true);
+            deleteForeignBox.setDisable(true);
+            updateForeignBox.setDisable(true);
             primaryKeyOption.setDisable(false);
             NotNullOption.setDisable(false);
             DefaultOption.setDisable(false);
@@ -115,6 +124,12 @@ public class NewColumn {
     }
 
     @FXML
+    private void AlterCheckState() {
+        final boolean state = !CheckOption.isSelected();
+        CheckField.setDisable(state);
+    }
+
+    @FXML
     private void AlterDefaultText() {
         DefaultValueText.setDisable(!DefaultOption.isSelected());
     }
@@ -122,12 +137,12 @@ public class NewColumn {
     @FXML
     public void initialize() {
         typeBox.setValue("INTEGER");
-        typeBox.setOnAction(e->{checkType();});
+        typeBox.setOnAction(_->checkType());
         ForeignKeyBox.setDisable(true);
         DefaultValueText.setDisable(true);
     }
 
-    public void NewColumnWin(final String DBName, final String TableName, final TableInterface ref, final Stage subStage, final HashMap<String, ArrayList<String>> KeysForForeign, final SQLiteTypes types, final String[] list, final String[] charList, final String[] modes) {
+    public void NewColumnWin(final String DBName, final String TableName, final TableInterface ref, final Stage subStage, final HashMap<String, ArrayList<String>> KeysForForeign, final SQLiteTypes types, final String[] list, final String[] charList, final String[] modes, final ArrayList<String> foreignModes) {
         LabelDB.setText("Database " + DBName + "\nTable " + TableName);
         this.TableName = TableName;
         this.DBName = DBName;
@@ -138,6 +153,8 @@ public class NewColumn {
         typeBox.getItems().addAll(list);
         window = subStage;
         initBox();
+        updateForeignBox.getItems().addAll(foreignModes);
+        deleteForeignBox.getItems().addAll(foreignModes);
         if (modes != null) {
             indexBox.getItems().addAll(modes);
         }
@@ -269,7 +286,7 @@ public class NewColumn {
         final boolean IsPrimeKey = primaryKeyOption.isSelected() && !primaryKeyOption.isDisabled();
         final boolean IsNotNull = NotNullOption.isSelected() && !NotNullOption.isDisabled();
         final boolean IsUnique = UniqueOption.isSelected() && !UniqueOption.isDisabled();
-        String[] ForeignKeyValue = new String[2];
+        final ColumnMetadata.Foreign foreign = new ColumnMetadata.Foreign();
         String ForeignKey = "";
         if (ForeignKeyOption.isSelected() && !ForeignKeyOption.isDisabled()) {
             ForeignKey = ForeignKeyBox.getValue();
@@ -278,8 +295,11 @@ public class NewColumn {
                 ShowError("Invalid Value", "please insert target for Foreign Key.");
                 return;
             }
-            ForeignKeyValue[0] = ForeignKey.substring(0, ForeignKey.indexOf(":"));
-            ForeignKeyValue[1] = ForeignKey.substring(ForeignKey.indexOf(" ")+1);
+            foreign.isForeign = true;
+            foreign.tableRef = ForeignKey.substring(0, ForeignKey.indexOf(":"));
+            foreign.columnRef = ForeignKey.substring(ForeignKey.indexOf(" ")+1);
+            foreign.onEliminate = deleteForeignBox.getValue();
+            foreign.onUpdate = updateForeignBox.getValue();
         }
         System.out.println("Gor" + ForeignKey);
 
@@ -356,7 +376,7 @@ public class NewColumn {
             }
         }
 
-        String[] set = {};
+            String[] set = {};
         if (!SetName.isDisabled()) {
             if (!SetName.getText().isEmpty()) {
                 if (!setList.isEmpty()) {
@@ -374,15 +394,28 @@ public class NewColumn {
             }
         }
 
+        String check = "";
+        if (!CheckField.isDisabled()) {
+            check = CheckField.getText();
+            if (check.isEmpty()) {
+                    CheckField.requestFocus();
+                    ShowError("Value error", "You need to insert a values.");
+                    return;
+                }
+        }
+
         System.out.println("is " + IsPrimeKey);
 
-        final ColumnMetadata meta = new ColumnMetadata(IsNotNull, IsPrimeKey, new ColumnMetadata.Foreign(), DefaultValue, len, type, colName, IsUnique, decimal1, decimal2, indexName);
+        final ColumnMetadata meta = new ColumnMetadata(IsNotNull, IsPrimeKey, foreign, DefaultValue, len, type, colName, IsUnique, decimal1, decimal2, indexName);
         meta.indexType = indexType;
         meta.items = new ArrayList<>(List.of(set));
+        meta.check = check;
+     //   meta.autoincrement = autoInit;
 
        // ref.createDBCol(colName, typeBox.getValue(),"0", IsPrimeKey);
         if (Edit) {
           //  ref.AlterFBCol(meta);
+            newTable.EditColumnCallBack(meta);
         } else {
             if (newTable != null) {
                 newTable.PutColumnCallback(meta);
@@ -398,18 +431,33 @@ public class NewColumn {
     public void insertMetadata(final ColumnMetadata metadata) {
         Edit = true;
         ColumnNameInput.setText(metadata.Name);
+        System.out.println(1);
         typeBox.setValue(metadata.Type);
+        System.out.println(1);
         primaryKeyOption.setSelected(metadata.IsPrimaryKey);
+        System.out.println(1);
         NotNullOption.setSelected(metadata.NOT_NULL);
+        System.out.println(1);
         ForeignKeyOption.setSelected(metadata.foreign.isForeign);
+        System.out.println(1);
         DefaultOption.setSelected(metadata.defaultValue != null);
+        System.out.println(1);
         UniqueOption.setSelected(metadata.isUnique);
+        System.out.println(1);
         DefaultValueText.setText(metadata.defaultValue);
+        System.out.println(1);
         AlterForeignBox();
+        System.out.println(1);
+
         ForeignKeyBox.setValue(metadata.foreign.tableRef + ": " + metadata.foreign.columnRef);
-        checkType();
+        System.out.println(1);
+        checkType();System.out.println(1);
+
         text1.setText(String.valueOf(metadata.size));
+        System.out.println(1);
         text2.setText(String.valueOf(metadata.integerDigits));
+        System.out.println(1);
         text3.setText(String.valueOf(metadata.decimalDigits));
+        System.out.println(1);
     }
 }

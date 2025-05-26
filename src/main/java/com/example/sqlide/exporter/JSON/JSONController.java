@@ -1,9 +1,13 @@
 package com.example.sqlide.exporter.JSON;
 
+import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
+import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.exporter.Excel.SqlToExcel;
 import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXCheckBox;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -29,8 +33,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.StringTokenizer;
 import java.util.concurrent.Semaphore;
 
+import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
+import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.ShowConfirmation;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
@@ -40,20 +47,28 @@ public class JSONController {
     private JFXButton folderButton;
 
     @FXML
-    ComboBox<String> DatabaseBox;
+    private JFXCheckBox MetaBox;
 
     @FXML
     TextField PathBox, nameOfFolder;
 
     Stage stage;
 
-    HashMap<String, DataBase> db;
+    DataBase db;
 
     private Stage loadingStage;
+
+    private Stage advancedFetcherstage;
 
     private Thread flushTask;
 
     private String finalPath;
+
+    private HashMap<String, String> QueryList = new HashMap<>();
+
+    private HashMap<String, ArrayList<String>> TablesAndColumnsNames;
+
+    private HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns;
 
     private final BooleanProperty TaskState = new SimpleBooleanProperty(true);
 
@@ -94,24 +109,66 @@ public class JSONController {
         folderButton.setGraphic(view);
     }
 
-    public void initJsonController(final HashMap<String, DataBase> db, final Stage stage) {
+    @FXML
+    private void openFetchStage() {
+        advancedFetcherstage.show();
+    }
+
+    private void loadFetchStage() {
+        try {
+
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedTableSearchStage.fxml"));
+            Parent root = loader.load();
+
+            TableAdvancedSearchController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Send email");
+            subStage.setScene(new Scene(root));
+            secondaryController.setStage(subStage);
+            secondaryController.setTables(TablesAndColumnsNames);
+
+            subStage.showingProperty().addListener(_->{
+                if (secondaryController.isClosedByUser()) {
+                    QueryList = secondaryController.getQueryList();
+                }
+            });
+
+            //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            advancedFetcherstage = subStage;
+            //subStage.show();
+        } catch (Exception e) {
+            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+        }
+    }
+
+    public void initJsonController(final DataBase db, final Stage stage) {
         this.db = db;
         this.stage = stage;
-        for (final String dbName : db.keySet()) {
-            DatabaseBox.getItems().add(dbName);
+        final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
+        final HashMap<String, ArrayList<String>> TablesAndColumnsName = new HashMap<>();
+        for (final String table : db.getTables()) {
+            TablesAndColumns.put(table, db.getColumnsMetadata(table));
+            TablesAndColumnsName.put(table, db.getColumnsName(table));
         }
+        for (final String table : TablesAndColumns.keySet()) {
+            QueryList.put(table, "SELECT * FROM " + table + ";");
+        }
+
+        this.TablesAndColumns = TablesAndColumns;
+        this.TablesAndColumnsNames = TablesAndColumnsName;
+        loadFetchStage();
     }
 
     @FXML
     private void createBackup() {
-
-        final String dbSelected = DatabaseBox.getValue();
-
-        if (dbSelected == null) {
-            ShowError("No selected", "You need to select Database to make a backup.");
-            DatabaseBox.setStyle("-fx-border-color: red; -fx-border-width: 2px; border-radius: 25px;");
-            return;
-        }
 
         String path = PathBox.getText();
         String name = nameOfFolder.getText();
@@ -139,18 +196,16 @@ public class JSONController {
 
         path = removeDot(path);
 
-        final DataBase cursor = db.get(dbSelected);
-
            // PrepareJson(json, tables, cursor);
         String finalPath1 = path + ".json";
         new Thread(()->{
             boolean state = false;
             try {
                 Platform.runLater(this::setLoadingStage);
-                SqlToJson json = new SqlToJson(removeDot(dbSelected), finalPath1);
-                final ArrayList<String> tables = cursor.getTables();
+                SqlToJson json = new SqlToJson(removeDot(""), finalPath1);
+                final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
                 finalPath = finalPath1;
-                prepareWork(json, tables, cursor);
+                prepareWork(json, tables, db);
                 state = true;
             //    if (!json.save(finalPath + ".json")) {
               //      ShowError("Error generate", "Error to generate json file.\n" + json.GetException());
@@ -174,73 +229,93 @@ public class JSONController {
         final long buffer = cursor.buffer * 10L;
         final double interact = (100.0 / tables.size()) / 100.0;
         for (final String sheetName : tables) {
-            json.createJsonArrayTable(sheetName);
-            final ArrayList<String> columns = cursor.getColumnsName(sheetName);
 
-            final Thread writer = new Thread(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
-                    try {
-                        writeSem.acquire();
-                        json.flushData();
-                    } catch (InterruptedException e) {
+            final String query = QueryList.get(sheetName);
+            if (!query.isEmpty()) {
+
+                if (MetaBox.isSelected()) createMetadata(json, sheetName);
+
+                json.createJsonArrayTable(sheetName);
+                final ArrayList<String> columns = TablesAndColumnsNames.get(sheetName);
+
+                final Thread writer = new Thread(() -> {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        try {
+                            writeSem.acquire();
+                            json.flushData();
+                        } catch (InterruptedException e) {
+                            try {
+                                json.write(data);
+                                //   json.flushData();
+                            } catch (Exception _) {
+                            }
+                            data = null;
+                            fetcherSem.release();
+                            break;
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                         try {
                             json.write(data);
-                         //   json.flushData();
-                        } catch (Exception _) {
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
                         }
                         data = null;
                         fetcherSem.release();
-                        break;
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
                     }
-                    try {
-                            json.write(data);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                });
+
+                final Thread fetcher = new Thread(() -> {
+                    long offset = 0;
+                    while (true) {
+                        ArrayList<HashMap<String, String>> dataCopy = cursor.fetchDataMap(query, columns, buffer, offset);
+                        if (dataCopy == null || dataCopy.isEmpty()) {
+                            writer.interrupt();
+                            break;
+                        }
+                        final ArrayList<HashMap<String, String>> copy = (ArrayList<HashMap<String, String>>) dataCopy.clone();
+                        try {
+                            fetcherSem.acquire();
+                            data = copy;
+                        } catch (InterruptedException _) {
+                            break;
+                        }
+                        writeSem.release();
+                        offset += buffer;
                     }
-                    data = null;
-                    fetcherSem.release();
-                }
-            });
+                    writer.interrupt();
+                });
+                fetcher.start();
+                writer.start();
 
-            final Thread fetcher = new Thread(() -> {
-                long offset = 0;
-                while (true) {
-                    ArrayList<HashMap<String, String>> dataCopy = cursor.fetchDataMap(sheetName, columns, buffer, offset);
-                    if (dataCopy == null || dataCopy.isEmpty()) {
-                        writer.interrupt();
-                        break;
-                    }
-                    final ArrayList<HashMap<String, String>> copy = (ArrayList<HashMap<String, String>>) dataCopy.clone();
-                    try {
-                        fetcherSem.acquire();
-                        data = copy;
-                    } catch (InterruptedException _) {
-                        break;
-                    }
-                    writeSem.release();
-                    offset += buffer;
-                }
-                writer.interrupt();
-            });
-            fetcher.start();
-            writer.start();
+                fetcher.join();
+                writer.join();
 
-            fetcher.join();
-            writer.join();
+                //   json.endTable();
 
-         //   json.endTable();
+                json.flushDataAndEndTable();
 
-            json.flushDataAndEndTable();
+                Platform.runLater(() -> progress.set(progress.get() + interact));
 
-            Platform.runLater(()->progress.set(progress.get()+interact));
+                System.out.println("acabou");
 
-            System.out.println("acabou");
-
+            }
         }
         json.EndFetch();
         json.close();
+    }
+
+    private void createMetadata(final SqlToJson json, final String sheetName) throws IOException {
+        final ArrayList<ColumnMetadata> columns = TablesAndColumns.get(sheetName);
+        //  final ArrayList<String> columns = TablesAndColumns.get(sheetName);
+        json.createJsonArrayTable(sheetName+"-metadata");
+        final ArrayList<HashMap<String, String>> ArrayMeta = new ArrayList<>();
+        for (final ColumnMetadata meta : columns) {
+            ArrayMeta.add(MetadataToMap(meta));
+        }
+        json.write(ArrayMeta);
+        json.flushDataAndEndTable();
+     //   json.writeData(ArrayMeta);
     }
 
     private void createNot(final boolean state) {

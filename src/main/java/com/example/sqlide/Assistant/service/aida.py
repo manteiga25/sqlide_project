@@ -2,6 +2,7 @@ from google import genai
 from google.genai import types
 from google.genai.types import Content, Part, GenerateContentResponse, GoogleSearch, Tool
 import json
+from sys import stderr
 
 conversation_history = []
 client = None
@@ -25,18 +26,18 @@ def ShowData(query: str, table: str):
 
     return input()
 
-def GetColumnsMetadata(table: str):
+def GetColumnsMetadata():
     """Request metadata of table to process metadata of columns.
     Args:
-        table (str): The table to execute query.
+
     Return (list(dict[str, str]): the list of metadata
     """
 
     sender = {
     'status': 'request',
     'function': 'GetTableMeta',
-    'parameters': [table],
-    'message': f'Fetching Metadata of {table}'
+    'parameters': [],
+    'message': 'Fetching Metadata of tables'
     }
 
     print(json.dumps(sender))
@@ -104,16 +105,23 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
 
 def main():
     global client
-    client = genai.Client(api_key="")
+    client = genai.Client(api_key="AIzaSyA2OOhuUGZiJe3NQTjQLMXqNur3yLcOf0g")
     while True:
         prompt = input()
         jsonReciver = json.loads(prompt)
-        text = talkToGemini(jsonReciver["content"], jsonReciver["deep"], jsonReciver["search"], jsonReciver["command"])
-           # print(json.dumps(res))
-        resposta = {
-            'status': 'success',
-            'message': text
-        }
-        print(json.dumps(resposta))
+        try:
+            text = talkToGemini(jsonReciver["content"], jsonReciver["deep"], jsonReciver["search"], jsonReciver["command"])
+               # print(json.dumps(res))
+            resposta = {
+                'status': 'success',
+                'message': text
+            }
+            print(json.dumps(resposta))
+        except e:
+            resposta = {
+                 'status': 'success',
+                 'message': f"Error to generate response.\n{e}"
+            }
+            print(json.dumps(resposta), file=stderr)
 
 main()

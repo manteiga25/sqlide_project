@@ -15,9 +15,14 @@
       <JFXButton fx:id="folderButton" layoutX="420.0" layoutY="147.0" mnemonicParsing="false" onAction="#openWindow" prefHeight="27.0" prefWidth="28.0" textFill="WHITE" />
       <Label layoutX="40.0" layoutY="110.0" text="Database:" textFill="#fcfcfc" />
       <JFXTextField fx:id="PathBox" layoutX="92.0" layoutY="143.0" prefHeight="25.0" prefWidth="325.0" promptText="C/...." style="-fx-text-fill: white;" unFocusColor="#3574f0" />
-      <ComboBox fx:id="DatabaseBox" layoutX="100.0" layoutY="106.0" prefHeight="25.0" prefWidth="135.0" stylesheets="@../../../../css/ComboboxModern.css" />
       <JFXButton layoutX="536.0" layoutY="277.0" mnemonicParsing="false" onAction="#createBackup" style="-fx-background-color: #3574f0;" text="Export" textFill="WHITE" />
    <Label layoutX="45.0" layoutY="195.0" text="Name:" textFill="WHITE" />
    <JFXTextField fx:id="nameOfFolder" layoutX="93.0" layoutY="185.0" prefHeight="25.0" prefWidth="164.0" promptText="Folder Name...." style="-fx-text-fill: white;" unFocusColor="#3574f0" />
    <JFXButton layoutX="478.0" layoutY="277.0" mnemonicParsing="false" onAction="#closeWindow" style="-fx-background-color: #3574f0;" text="Cancel" textFill="WHITE" />
+   <JFXCheckBox fx:id="MetaBox" checkedColor="#3574f0" layoutX="40.0" layoutY="232.0" mnemonicParsing="false" text="Metadata" textFill="WHITE" />
+   <JFXButton layoutX="123.0" layoutY="228.0" mnemonicParsing="false" onAction="#openFetchStage" style="-fx-background-color: #3574F0;" text="Advanced search" textFill="WHITE">
+      <font>
+         <Font name="Arial" size="12.0" />
+      </font>
+   </JFXButton>
 </AnchorPane>

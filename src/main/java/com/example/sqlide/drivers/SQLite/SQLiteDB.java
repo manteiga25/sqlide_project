@@ -41,6 +41,7 @@ public class SQLiteDB extends DataBase {
         typesOfDB = new SQLiteTypesList();
         super.idType = "ROWID";
         indexModes = null;
+        foreignModes = new ArrayList<>(List.of("CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"));
         SQLType = SQLTypes.SQLITE;
     }
 
@@ -196,8 +197,8 @@ public class SQLiteDB extends DataBase {
  //       final boolean isForeign = meta.isForeign;
         final String index = meta.index;
         String Type = meta.Type;
-        final String ColumnName = column;
         String PrimaryKey = "";
+        final String check = meta.check.isEmpty() ? "" : " CHECK (" + meta.check + ")";
         //     else if (isForeign) {
        //     ColumnName = "CONSTRAINT fk_h_fgr FOREIGN KEY (" + column + ") REFERENCES(" + ;
      //       ColumnName = "CONSTRAINT idyhgfvduydf FOREIGN KEY (" + "id" + ") REFERENCES " +  meta.ForeignKey[0] + "(" + meta.ForeignKey[1] + "))";
@@ -205,8 +206,8 @@ public class SQLiteDB extends DataBase {
          //   Default = "";
        // }
         try {
-            System.out.println("ALTER TABLE " + table + " ADD " + ColumnName + " " + Type + NotNull + Default + PrimaryKey + ";");
-            statement.execute("ALTER TABLE " + table + " ADD " + ColumnName + " " + Type + NotNull + IsUnique + Default + PrimaryKey + ";");
+            System.out.println("ALTER TABLE " + table + " ADD " + column + " " + Type + NotNull + IsUnique + Default + PrimaryKey + check + ";");
+            statement.execute("ALTER TABLE " + table + " ADD " + column + " " + Type + NotNull + IsUnique + Default + PrimaryKey + check + ";");
         } catch (SQLException e) {
             MsgException = e.getMessage();
             return false;
@@ -718,6 +719,11 @@ public class SQLiteDB extends DataBase {
     }
 
     @Override
+    public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long limit, long offset) {
+        return null;
+    }
+
+   /* @Override
     public synchronized ArrayList<HashMap<String, String>> fetchDataMap(final String Table, final ArrayList<String> Columns, final long limit, final long offset) {
         ArrayList<HashMap<String, String>> data = new ArrayList<>();
         final String command = "SELECT " + " * FROM " + Table + " LIMIT " + limit + " OFFSET " + offset;
@@ -726,6 +732,42 @@ public class SQLiteDB extends DataBase {
             ResultSet rs = statement.executeQuery(command);
             if (!rs.next()) {
                 return null;
+            }
+            do {
+                HashMap<String, String> tmpData = new HashMap<>();
+                for (final String col : Columns) {
+                    System.out.println(col);
+                    Object val = rs.getObject(col);
+                    String valStr = "null";
+                    if (val != null) {
+                        valStr = val.toString();
+                    }
+                    System.out.println(valStr);
+                    tmpData.put(col, valStr);
+                }
+                data.add(tmpData);
+            } while (rs.next());
+            return data;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    } */
+
+    @Override
+    public synchronized ArrayList<HashMap<String, String>> fetchDataMap(final String Command, final long limit, final long offset) {
+        ArrayList<HashMap<String, String>> data = new ArrayList<>();
+        final String command = Command + " LIMIT " + limit + " OFFSET " + offset;
+        System.out.println("command " + command);
+        try {
+            ResultSet rs = statement.executeQuery(command);
+            if (!rs.next()) {
+                return null;
+            }
+            ResultSetMetaData metaData = rs.getMetaData();
+
+            ArrayList<String> Columns = new ArrayList<>();
+            for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                Columns.add(metaData.getColumnName(i));
             }
             do {
                 HashMap<String, String> tmpData = new HashMap<>();
@@ -800,14 +842,9 @@ public class SQLiteDB extends DataBase {
     }
 
     @Override
-    synchronized public ArrayList<ArrayList<Object>> fetchDataBackupObject(final String Table, final ArrayList<String> Columns, final long limit, long offset) {
+    synchronized public ArrayList<ArrayList<Object>> fetchDataBackupObject(final String Command, final ArrayList<String> Columns, final long limit, long offset) {
         ArrayList<ArrayList<Object>> data = new ArrayList<>();
-        String cols = "";
-        for (final String col : Columns) {
-            cols += col + ", ";
-        }
-        cols = cols.substring(0, cols.lastIndexOf(", "));
-        final String command = "SELECT " + cols + " FROM " + Table + " LIMIT " + limit + " OFFSET " + offset;
+        final String command = Command + " LIMIT " + limit + " OFFSET " + offset;
         System.out.println("command " + command);
         try {
             ResultSet rs = statement.executeQuery(command);
@@ -1181,18 +1218,34 @@ public class SQLiteDB extends DataBase {
         return ColumnsUnique;
     }
 
+    private String ruleToString(short rule) {
+        return switch (rule) {
+            case DatabaseMetaData.importedKeyCascade   -> "CASCADE";
+            case DatabaseMetaData.importedKeyRestrict  -> "RESTRICT";
+            case DatabaseMetaData.importedKeySetNull   -> "SET NULL";
+            case DatabaseMetaData.importedKeyNoAction  -> "NO ACTION";
+            case DatabaseMetaData.importedKeySetDefault-> "SET DEFAULT";
+            default                                     -> "UNKNOWN";
+        };
+    }
+
     @Override
-    protected HashMap<String, String[]> getForeign(final String Table) {
-        HashMap<String, String[]> ColumnForeign = new HashMap<>();
+    protected HashMap<String, ColumnMetadata.Foreign> getForeign(final String Table) {
+        HashMap<String, ColumnMetadata.Foreign> ColumnForeign = new HashMap<>();
         try {
             ResultSet foreignKeys = connection.getMetaData().getImportedKeys(null, null, Table);
             while (foreignKeys.next()) {
-                String[] foreignMeta = new String[2];
+                ColumnMetadata.Foreign foreign = new ColumnMetadata.Foreign();
                 final String fkColumnName = foreignKeys.getString("FKCOLUMN_NAME");
-                    foreignMeta[0] = foreignKeys.getString("PKTABLE_NAME");
-                    foreignMeta[1] = foreignKeys.getString("PKCOLUMN_NAME");
-                    ColumnForeign.put(fkColumnName, foreignMeta);
-                System.out.println(fkColumnName);
+                foreign.isForeign = true;
+                    foreign.tableRef = foreignKeys.getString("PKTABLE_NAME");
+                    foreign.columnRef = foreignKeys.getString("PKCOLUMN_NAME");
+                short updateRule  = foreignKeys.getShort("UPDATE_RULE");
+                short deleteRule  = foreignKeys.getShort("DELETE_RULE");
+                foreign.onEliminate = ruleToString(deleteRule);
+                foreign.onUpdate = ruleToString(updateRule);
+                    ColumnForeign.put(fkColumnName, foreign);
+                System.out.println("asdcsda " + fkColumnName);
                 }
         } catch (Exception e) {
             System.out.println("kdjcflskdjoiwdhfoewhf " + e.getMessage());
@@ -1227,22 +1280,48 @@ public class SQLiteDB extends DataBase {
         return allowedValues;
     }
 
+    private HashMap<String, String> getCheck(final String table) {
+        final HashMap<String, String> check = new HashMap<>();
+        String query =
+                "SELECT COLUMN_NAME, CONSTRAINT_NAME, CHECK_CLAUSE " +
+                        "FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS " +
+                        "WHERE TABLE_NAME = ?";
+
+        try {
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setString(1, table);
+            ResultSet checkConstraints = stmt.executeQuery();
+
+            while (checkConstraints.next()) {
+                String columnName = checkConstraints.getString("COLUMN_NAME");
+                String checkClause = checkConstraints.getString("CHECK_CLAUSE");
+                check.put(columnName, checkClause);
+            }
+        } catch (Exception e) {
+            System.out.println("kdjcflskdjoiwdhfoewhf " + e.getMessage());
+            return null;
+        }
+        return check;
+    }
+
     @Override
     public ArrayList<ColumnMetadata> getColumnsMetadata(final String Table) {
         ArrayList<ColumnMetadata> ColumnsMetadata = new ArrayList<>();
         final ArrayList<String> PrimaryKeyList = PrimaryKeyList(Table);
-        final HashMap<String, String[]> ForeignKeyList = getForeign(Table);
+        final HashMap<String, ColumnMetadata.Foreign> ForeignKeyList = getForeign(Table);
+        final HashMap<String, String> CheckList = getCheck(Table);
         HashMap<String, Boolean> uniqueColumns = isUnique(Table);
-        String[] foreign = new String[2];
         try {
             ResultSet columns = connection.getMetaData().getColumns(null, null, Table, null);
             while (columns.next()) {
-                boolean isForeign = false;
+                ColumnMetadata.Foreign foreign = new ColumnMetadata.Foreign();
                 final String name = columns.getString("COLUMN_NAME");
                 final String Type = columns.getString("TYPE_NAME");
-                final String Default = columns.getString("COLUMN_DEF");
+                System.out.println(Type);
+                final String Default = columns.getString("COLUMN_DEF") == null ? "" : columns.getString("COLUMN_DEF");
                 final int size = columns.getInt("COLUMN_SIZE");
                 final String index = indexName(Table, name);
+                String check = "";
                 System.out.println(index);
                 final boolean notnull = columns.getInt("NULLABLE") == DatabaseMetaData.columnNullable;
            //     final boolean nonUnique = columns.getBoolean("NON_UNIQUE");
@@ -1269,15 +1348,21 @@ public class SQLiteDB extends DataBase {
                 }
                 for (final String key : ForeignKeyList.keySet()) {
                     if (key.equals(name)) {
-                        foreign = ForeignKeyList.get(key);
-                        ForeignKeyList.remove(key);
-                        isForeign = true;
+                        foreign = ForeignKeyList.remove(key);
                         break;
                     }
                 }
+                for (final String key : CheckList.keySet()) {
+                    if (key.equals(name)) {
+                        check = CheckList.remove(key);
+                        break;
+                    }
+                }
+                System.out.println("check " + check);
                 // para mudar
-                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, new ColumnMetadata.Foreign(), Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);
+                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, foreign, Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);
            //     TmpCol.items = checks;
+                TmpCol.check = check;
 
                 ColumnsMetadata.add(TmpCol);
             }
@@ -1365,6 +1450,55 @@ public class SQLiteDB extends DataBase {
         final String prime = rowid ? "" : "PRIMARY KEY";
         try {
             statement.execute("CREATE " + Temporary + "TABLE " + table + " (id INT " + prime + ") " + Rowid + ";");
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean createTable(String table, boolean temporary, boolean rowid, final ArrayList<ColumnMetadata> columnMetadata) {
+        final String Temporary = temporary ? "TEMPORARY " : "";
+        final String Rowid = rowid ? "" : " WITHOUT ROWID ";
+      //  final String prime = rowid ? "" : "PRIMARY KEY";
+        StringBuilder command = new StringBuilder("CREATE " + Temporary + "TABLE " + table + " (");
+
+        for (final ColumnMetadata column : columnMetadata) {
+            final String NotNull = column.NOT_NULL ? " NOT NULL" : "";
+            final String Default = !Objects.equals(column.defaultValue, "") && !Objects.equals(column.defaultValue, "null") ? " DEFAULT " + column.defaultValue : "";
+            final String IsUnique = column.isUnique ? " UNIQUE " : "";
+            //   String Default = "";
+            final boolean isForeign = column.foreign.isForeign;
+            //      final String ForeignTable = column.ForeignKey == null || Objects.equals(column.ForeignKey[0], "") ? "REFERENCES " + column.ForeignKey[0] + "(" + column.ForeignKey[1] + ")" : "";
+            //   final String[] ForeignTable = column.ForeignKey;
+            String Type = column.Type;
+            String ColumnName = "";
+            String prime = "";
+            if (column.IsPrimaryKey) {
+                //   ColumnName = "PRIMARY KEY (" + column.Name + ")";
+                //     ColumnName = column.Name + " " + Type + " " + NotNull + " PRIMARY KEY";
+                ColumnName = column.Name;
+                prime = " PRIMARY KEY ";
+            }
+            else if (isForeign) {
+                final String onUpdate = column.foreign.onUpdate.isEmpty() ? "" : " ON UPDATE " + column.foreign.onUpdate;
+                final String onDelete = column.foreign.onEliminate.isEmpty() ? "" : " ON DELETE " + column.foreign.onEliminate;
+                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.foreign.tableRef + "(" + column.foreign.columnRef + ")" + onUpdate + onDelete;
+                Type = "";
+            }
+            else {
+                ColumnName = column.Name;
+            }
+            command.append(ColumnName).append(" ").append(Type).append(NotNull).append(prime).append(IsUnique).append(Default).append(", ");
+        }
+
+        final int strSize = command.length();
+
+        command.delete(strSize-3, strSize).append(")").append(Rowid).append(";");
+        try {
+            System.out.println(command);
+            statement.execute(command.toString());
         } catch (SQLException e) {
             MsgException = e.getMessage();
             return false;

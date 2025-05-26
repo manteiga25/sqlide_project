@@ -105,18 +105,18 @@ public class TableAdvancedSearchController {
         }
     }
 
-    public HashMap<String, ArrayList<String>> getSelected() {
+ /*   public HashMap<String, ArrayList<String>> getSelected() {
         final HashMap<String, ArrayList<String>> selected = new HashMap<>();
         for (final String controllerName : controllers.keySet()) {
             selected.put(controllerName, controllers.get(controllerName).isDisabled() ? null : controllers.get(controllerName).getSelected());
         }
         return selected;
-    }
+    } */
 
     @FXML
     private void close() {
 
-        queryList.replaceAll((table, _) -> controllers.get(table).getQuery());
+        queryList.replaceAll((table, _) -> controllers.get(table).isDisabled() ? "" : controllers.get(table).getQuery());
 
         ClosedByUser = true;
         stage.close();

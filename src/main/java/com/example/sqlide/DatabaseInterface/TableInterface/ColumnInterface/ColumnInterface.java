@@ -155,7 +155,7 @@ public class ColumnInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Remove Column");
             subStage.setScene(new Scene(root));
-            secondaryController.NewColumnWin(Database.getDatabaseName(), context.TableName.get(), context, subStage, context.getAllPrimaryKeys(), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes());
+            secondaryController.NewColumnWin(Database.getDatabaseName(), context.TableName.get(), context, subStage, context.getAllPrimaryKeys(), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes());
             secondaryController.insertMetadata(Metadata);
 
             // Opcional: definir a modalidade da subjanela

@@ -2,6 +2,7 @@ package com.example.sqlide.drivers.MySQL;
 
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
+import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.TypesModelList;
 
@@ -9,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.*;
+import java.time.LocalTime;
 import java.util.*;
 
 public class MySQLDB extends DataBase {
@@ -235,6 +237,11 @@ public class MySQLDB extends DataBase {
     }
 
     @Override
+    public ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset) {
+        return null;
+    }
+
+    @Override
     public ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset) {
         return null;
     }
@@ -251,7 +258,27 @@ public class MySQLDB extends DataBase {
 
     @Override
     public boolean insertData(String Table, HashMap<String, String> data) {
-        return false;
+        StringBuilder command = new StringBuilder("INSERT INTO " + Table + " (");
+        for (final String column : data.keySet()) {
+            command.append(column).append(", ");
+        }
+        command.replace(command.length()-2, command.length(), "");
+        command.append(") VALUES (");
+        for (final String column : data.values()) {
+            command.append("'").append(column).append("'").append(", ");
+        }
+        command.replace(command.length()-2, command.length(), "");
+        command.append(");");
+        System.out.println(command);
+        final String query = command.toString();
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.execute();
+            putMessage(new Logger(getUsername(), query, pstmt.getWarnings() != null ? pstmt.getWarnings().getMessage() : "", LocalTime.now()));
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -449,17 +476,32 @@ public class MySQLDB extends DataBase {
         return ColumnsUnique;
     }
 
+    private String ruleToString(short rule) {
+        return switch (rule) {
+            case DatabaseMetaData.importedKeyCascade   -> "CASCADE";
+            case DatabaseMetaData.importedKeyRestrict  -> "RESTRICT";
+            case DatabaseMetaData.importedKeySetNull   -> "SET NULL";
+            case DatabaseMetaData.importedKeyNoAction  -> "NO ACTION";
+            case DatabaseMetaData.importedKeySetDefault-> "SET DEFAULT";
+            default                                     -> "UNKNOWN";
+        };
+    }
+
     @Override
-    protected HashMap<String, String[]> getForeign(String Table) {
-        HashMap<String, String[]> ColumnForeign = new HashMap<>();
+    protected HashMap<String, ColumnMetadata.Foreign> getForeign(String Table) {
+        HashMap<String, ColumnMetadata.Foreign> ColumnForeign = new HashMap<>();
         try {
-            ResultSet foreignKeys = connection.getMetaData().getImportedKeys(databaseName, databaseName, Table);
+            ResultSet foreignKeys = connection.getMetaData().getImportedKeys(null, null, Table);
             while (foreignKeys.next()) {
-                String[] foreignMeta = new String[2];
+                ColumnMetadata.Foreign foreign = new ColumnMetadata.Foreign();
                 final String fkColumnName = foreignKeys.getString("FKCOLUMN_NAME");
-                foreignMeta[0] = foreignKeys.getString("PKTABLE_NAME");
-                foreignMeta[1] = foreignKeys.getString("PKCOLUMN_NAME");
-                ColumnForeign.put(fkColumnName, foreignMeta);
+                foreign.tableRef = foreignKeys.getString("PKTABLE_NAME");
+                foreign.columnRef = foreignKeys.getString("PKCOLUMN_NAME");
+                short updateRule  = foreignKeys.getShort("UPDATE_RULE");
+                short deleteRule  = foreignKeys.getShort("DELETE_RULE");
+                foreign.onEliminate = ruleToString(deleteRule);
+                foreign.onUpdate = ruleToString(updateRule);
+                ColumnForeign.put(fkColumnName, foreign);
                 System.out.println(fkColumnName);
             }
         } catch (Exception e) {
@@ -473,13 +515,12 @@ public class MySQLDB extends DataBase {
     public ArrayList<ColumnMetadata> getColumnsMetadata(String Table) {
         ArrayList<ColumnMetadata> ColumnsMetadata = new ArrayList<>();
         final ArrayList<String> PrimaryKeyList = PrimaryKeyList(Table);
-        final HashMap<String, String[]> ForeignKeyList = getForeign(Table);
+        final HashMap<String, ColumnMetadata.Foreign> ForeignKeyList = getForeign(Table);
         HashMap<String, Boolean> uniqueColumns = isUnique(Table);
-        String[] foreign = new String[2];
         try {
             ResultSet columns = connection.getMetaData().getColumns(databaseName, databaseName, Table, null);
             while (columns.next()) {
-                boolean isForeign = false;
+                ColumnMetadata.Foreign foreign = new ColumnMetadata.Foreign();
                 final String name = columns.getString("COLUMN_NAME");
                 String Type = columns.getString("TYPE_NAME");
                 ArrayList<String> checkValues = new ArrayList<>();
@@ -509,9 +550,7 @@ public class MySQLDB extends DataBase {
                 }
                 for (final String key : ForeignKeyList.keySet()) {
                     if (key.equals(name)) {
-                        foreign = ForeignKeyList.get(key);
-                        ForeignKeyList.remove(key);
-                        isForeign = true;
+                        foreign = ForeignKeyList.remove(key);
                         break;
                     }
                 }
@@ -523,7 +562,7 @@ public class MySQLDB extends DataBase {
                          //   Type = "ENUM";
                 }
                 // para mudar
-                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, new ColumnMetadata.Foreign(), Default, size, Type, name, nonUnique, integerDigits, decimalDigits, name);
+                ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, foreign, Default, size, Type, name, nonUnique, integerDigits, decimalDigits, name);
                 TmpCol.items = checkValues;
                 //     TmpCol.items = checks;
 
@@ -631,7 +670,19 @@ public class MySQLDB extends DataBase {
 
     @Override
     public long totalPages(String table, String column, String condition) {
-        return 0;
+        try {
+            System.out.println("SELECT COUNT(" + column + ") FROM " + table + " " + condition + ";");
+            //  ResultSet ret = statement.executeQuery("SELECT COUNT(" + cols.substring(0, cols.length()-2) + ") FROM " + table + " " + condition + ";");
+            ResultSet ret = statement.executeQuery("SELECT COUNT(" + column + ") FROM " + table + " " + condition + ";");
+            if (ret.next()) {
+                System.out.println("total " + (long) Math.ceil((double) ret.getLong(1) / buffer));
+                return (long) Math.ceil((double) ret.getLong(1) / buffer);
+            }
+            return 0;
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return -1;
+        }
     }
 
     @Override
@@ -717,6 +768,11 @@ public class MySQLDB extends DataBase {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public boolean createTable(String table, boolean temporary, boolean rowid, ArrayList<ColumnMetadata> columnMetadata) {
+        return false;
     }
 
     @Override

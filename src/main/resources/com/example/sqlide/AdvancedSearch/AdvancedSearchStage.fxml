@@ -98,7 +98,7 @@
       </VBox>
    </left>
    <center>
-      <VBox fx:id="ConditionBox" prefHeight="200.0" style="-fx-border-color: black; -fx-border-radius: 5px;" BorderPane.alignment="CENTER">
+      <VBox fx:id="ConditionBox" style="-fx-border-color: black; -fx-border-radius: 5px;" BorderPane.alignment="CENTER">
          <children>
             <HBox spacing="5.0">
                <children>

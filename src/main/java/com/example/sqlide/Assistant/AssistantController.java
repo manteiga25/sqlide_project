@@ -1,6 +1,5 @@
 package com.example.sqlide.Assistant;
 
-import com.example.sqlide.Assistant.service.AssistantRequest;
 import com.example.sqlide.Container.Assistant.AssistantBoxCode;
 import com.example.sqlide.requestInterface;
 import javafx.application.Platform;
@@ -33,8 +32,6 @@ public class AssistantController {
 
     @FXML
     private TextArea MessageBox;
-
-    private AssistantRequest request;
 
     private BufferedReader processOutput, processErr;
     private BufferedWriter processInput;
@@ -96,7 +93,7 @@ public class AssistantController {
                                         break;
 
                                     case "GetTableMeta":
-                                        final ArrayList<HashMap<String, String>> meta = AssistantFunctionsInterface.getTableMetadata(parameters.getString(0));
+                                        final HashMap<String, ArrayList<HashMap<String, String>>> meta = AssistantFunctionsInterface.getTableMetadata();
                                         sender.put(meta.toString());
                                         break;
 
@@ -316,7 +313,6 @@ public class AssistantController {
         if (function.get()) {
             FuncButton.setId("sel");
             search.set(false);
-            deep.set(false);
         } else {
             FuncButton.setId("");
         }
@@ -334,7 +330,6 @@ public class AssistantController {
     private void setDeepButton() {
         if (deep.get()) {
             DeepButton.setId("sel");
-            function.set(false);
         } else {
             DeepButton.setId("");
         }

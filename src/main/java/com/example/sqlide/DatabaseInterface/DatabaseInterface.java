@@ -195,24 +195,27 @@ public class DatabaseInterface {
         }
     }
 
-    @FXML
-    public boolean createDBTable(final String Table, final boolean temporary, final boolean rowid) throws SQLException {
-        if (!DatabaseSeted.createTable(Table, temporary, rowid)) {
+    public boolean createDBTable(final String Table, final boolean temporary, final boolean rowid, final ArrayList<ColumnMetadata> columnMetadata) {
+        final Stage loading = LoadingStage("Creating Table", "This operation can execute long time.");
+        if (!DatabaseSeted.createTable(Table, temporary, rowid, columnMetadata)) {
+            loading.close();
             ShowError("SQL Error", "Error to create Table on Database " + dbName + "\n" + DatabaseSeted.GetException());
             return false;
         }
-        createDBTab(Table, !rowid);
+        createDBTab(Table);
+        loading.close();
         return true;
     }
 
     @FXML
-    public void createDBTab(final String TableName, final boolean rowid) {
+    public void createDBTab(final String TableName) {
         TableInterface table = new TableInterface(DatabaseSeted, TableName, DBTabContainer, this);
-        table.createDatabaseTab();
-        table.createDBcolContainer(new ColumnMetadata(false, rowid, new ColumnMetadata.Foreign(), null, 0, "INTEGER", "id", false, 0, 0, null));
+      //  table.createDatabaseTab();
+        table.readColumns();
+      /*  table.createDBcolContainer(new ColumnMetadata(false, rowid, new ColumnMetadata.Foreign(), null, 0, "INTEGER", "id", false, 0, 0, null));
         if (rowid) {
             table.createRowId();
-        }
+        } */
         TableInterfaceList.add(table);
     }
 
@@ -253,6 +256,12 @@ public class DatabaseInterface {
             }
         }
         return null;
+    }
+
+    public HashMap<String, ArrayList<HashMap<String, String>>> getTables() {
+        final HashMap<String, ArrayList<HashMap<String, String>>> meta = new HashMap<>();
+            for (final TableInterface tableInterface : TableInterfaceList) meta.put(tableInterface.TableName.get(), tableInterface.getColumnsMetadataMap());
+            return meta;
     }
 
     public void refreshSearch() {

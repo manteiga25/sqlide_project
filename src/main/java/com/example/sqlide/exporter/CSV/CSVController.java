@@ -1,10 +1,13 @@
 package com.example.sqlide.exporter.CSV;
 
+import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
+import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.EventLayout.EventController;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -28,20 +31,25 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
+import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
+import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
 public class CSVController {
 
     @FXML
+    private JFXCheckBox MetaBox;
+    @FXML
     private JFXButton folderButton;
 
     @FXML
-    ComboBox<String> DatabaseBox, ComboMode;
+    ComboBox<String> ComboMode;
 
     @FXML
     TextField FileName;
@@ -57,11 +65,19 @@ public class CSVController {
 
     private final BooleanProperty TaskState = new SimpleBooleanProperty(true);
 
-    HashMap<String, DataBase> db;
+    private DataBase db;
 
     private final DoubleProperty progress = new SimpleDoubleProperty(0);
 
     private ArrayList<ArrayList<Object>> data = new ArrayList<>();
+
+    private HashMap<String, String> QueryList = new HashMap<>();
+
+    private HashMap<String, ArrayList<String>> TablesAndColumnsNames;
+
+    private HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns;
+
+    private Stage advancedFetcherstage;
 
     private final Semaphore fetcherSem = new Semaphore(1);
     private final Semaphore writeSem = new Semaphore(1);
@@ -95,29 +111,80 @@ public class CSVController {
         view.setPreserveRatio(true);
         folderButton.setPadding(Insets.EMPTY);
         folderButton.setGraphic(view);
+
     }
 
-    public void initCSVController(final HashMap<String, DataBase> db, final Stage stage) {
+    public void setTablesAndColumns(final HashMap<String, ArrayList<String>> TablesAndColumns) {
+      // this.TablesAndColumns = TablesAndColumns;
+        for (final String table : TablesAndColumns.keySet()) {
+            QueryList.put(table, "SELECT * FROM " + table + ";");
+        }
+        //loadFetchStage();
+    }
+
+    @FXML
+    private void openFetchStage() {
+        advancedFetcherstage.show();
+    }
+
+    private void loadFetchStage() {
+        try {
+
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedTableSearchStage.fxml"));
+            Parent root = loader.load();
+
+            TableAdvancedSearchController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Send email");
+            subStage.setScene(new Scene(root));
+            secondaryController.setStage(subStage);
+            secondaryController.setTables(TablesAndColumnsNames);
+
+            subStage.showingProperty().addListener(_->{
+                if (secondaryController.isClosedByUser()) {
+                    QueryList = secondaryController.getQueryList();
+                }
+            });
+
+            //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            advancedFetcherstage = subStage;
+            //subStage.show();
+        } catch (Exception e) {
+            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+        }
+    }
+
+    public void initCSVController(final DataBase db, final Stage stage) {
         this.db = db;
         this.stage = stage;
         TaskState.addListener((observable -> cancelTask()));
-        for (final String dbName : db.keySet()) {
-            DatabaseBox.getItems().add(dbName);
+        final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
+        final HashMap<String, ArrayList<String>> TablesAndColumnsName = new HashMap<>();
+        for (final String table : db.getTables()) {
+            TablesAndColumns.put(table, db.getColumnsMetadata(table));
+            TablesAndColumnsName.put(table, db.getColumnsName(table));
         }
+        for (final String table : TablesAndColumns.keySet()) {
+            QueryList.put(table, "SELECT * FROM " + table + ";");
+        }
+
+        this.TablesAndColumns = TablesAndColumns;
+        this.TablesAndColumnsNames = TablesAndColumnsName;
+        loadFetchStage();
     }
 
     @FXML
     private void createBackup() throws IOException {
 
-        final String dbSelected = DatabaseBox.getValue();
-
         final int CSVmode = ComboMode.getSelectionModel().getSelectedIndex();
-
-        if (dbSelected == null) {
-            ShowError("No selected", "You need to select Database to make a backup.");
-            DatabaseBox.setStyle("-fx-border-color: red; -fx-border-width: 2px; border-radius: 25px;");
-            return;
-        }
 
         String path = PathBox.getText();
         String name = FileName.getText();
@@ -146,8 +213,6 @@ public class CSVController {
 
         closeWindow();
 
-        final DataBase cursor = db.get(dbSelected);
-
         String finalPath = path;
         main = new Thread(()->{
             boolean state = false;
@@ -155,9 +220,9 @@ public class CSVController {
 
                 Platform.runLater(this::setLoadingStage);
 
-                final ArrayList<String> tables = cursor.getTables();
+               // final ArrayList<String> tables = cursor.getTables();
 
-                prepareWork(finalPath, tables, cursor, CSVmode);
+                prepareWork(finalPath, db, CSVmode);
                 state = true;
                 ShowSucess("Exporting csv", "Success to export database to CSV.");
             } catch (Exception e) {
@@ -174,13 +239,22 @@ public class CSVController {
         });
         main.start();
     }
-    private void prepareWork(String Path, final ArrayList<String> tables, final DataBase cursor, final int CSVmode) throws InterruptedException, IOException {
+
+    private void prepareWork(String Path, final DataBase cursor, final int CSVmode) throws InterruptedException, IOException {
         final long buffer = cursor.buffer * 10L;
-        final double interact = (100.0 / tables.size()) / 100.0;
-        for (final String sheetName : tables) {
+        final double interact = (100.0 / TablesAndColumns.size()) / 100.0;
+        for (final String sheetName : TablesAndColumns.keySet()) {
+
+            final String query = QueryList.get(sheetName);
+            if (!query.isEmpty()) {
+
+            if (MetaBox.isSelected()) createMetadata(Path, sheetName, CSVmode);
+
             final SqlToCSV csv = new SqlToCSV();
+
             csv.createCSV(Path + "\\" + sheetName + ".csv", CSVmode);
-            final ArrayList<String> columns = cursor.getColumnsName(sheetName);
+            //   final ArrayList<String> columns = cursor.getColumnsName(sheetName);
+            final ArrayList<String> columns = TablesAndColumnsNames.get(sheetName);
             csv.createCSVHeader(columns);
 
             writer = new Thread(() -> {
@@ -209,7 +283,7 @@ public class CSVController {
             fetcher = new Thread(() -> {
                 long offset = 0;
                 while (true) {
-                    ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(sheetName, columns, buffer, offset);
+                    ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(query, columns, buffer, offset);
                     if (dataCopy == null || dataCopy.isEmpty()) {
                         break;
                     }
@@ -231,10 +305,10 @@ public class CSVController {
             fetcher.join();
             writer.join();
 
-            final Thread flusherTask = new Thread(()->{
+            final Thread flusherTask = new Thread(() -> {
                 try {
                     csv.SaveAndClose();
-                    Platform.runLater(()->progress.set(progress.get()+interact));
+                    Platform.runLater(() -> progress.set(progress.get() + interact));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 } finally {
@@ -248,6 +322,21 @@ public class CSVController {
 
 
         }
+        }
+    }
+
+    private void createMetadata(String Path, final String sheetName, final int CSVmode) throws IOException {
+        final SqlToCSV csv = new SqlToCSV();
+        csv.createCSV(Path + "\\" + sheetName + "-metadata.csv", CSVmode);
+        final ArrayList<ColumnMetadata> columns = TablesAndColumns.get(sheetName);
+      //  final ArrayList<String> columns = TablesAndColumns.get(sheetName);
+        csv.createCSVHeader(new ArrayList<>(MetadataToMap(columns.getFirst()).keySet()));
+        final ArrayList<ArrayList<Object>> ArrayMeta = new ArrayList<>();
+        for (final ColumnMetadata meta : columns) {
+            ArrayMeta.add(MetadataToArrayList(meta));
+        }
+        csv.writeCSVData(ArrayMeta);
+        csv.SaveAndClose();
     }
 
     private void createNot(final boolean state) {
