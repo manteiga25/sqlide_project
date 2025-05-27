@@ -1,6 +1,8 @@
 package com.example.sqlide.AdvancedSearch;
 
 import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.Report.ReportController;
+import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.XML.xmlController;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
@@ -42,6 +44,9 @@ public class AdvancedSearchController {
 
      @FXML
     private JFXTextField QueryField;
+
+    @FXML // Added for Part 2
+    private JFXButton generateReportButton;
 
      private HashMap<String, ArrayList<String>> AllColumns;
 
@@ -193,6 +198,50 @@ public class AdvancedSearchController {
             TableJoinBox.getItems().add(Table);
         }
     }
+
+    @FXML
+    private void handleGenerateReport() {
+
+        String currentQuery = getQuery();
+        ArrayList<String> availableColumns = getSelected(); // This gets columns selected for output
+
+        if (currentQuery.isEmpty() || availableColumns.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("No Query/Columns");
+            alert.setHeaderText("Cannot Generate Report");
+            alert.setContentText("Please define a query and select columns first.");
+            alert.showAndWait();
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Report.fxml"));
+            Parent root = loader.load();
+
+            ReportController dialogController = loader.getController();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Configure Report");
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+            if (generateReportButton != null && generateReportButton.getScene() != null) {
+                dialogStage.initOwner(generateReportButton.getScene().getWindow());
+            }
+
+         //   dialogController.initializeDialog(availableColumns, currentQuery, db, dialogStage);
+
+            dialogStage.setScene(new Scene(root));
+            dialogStage.showAndWait();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Load Error");
+            alert.setHeaderText("Could not load report configuration dialog.");
+            alert.setContentText("Error: " + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
 
     @FXML
     private void addConditionRow() {

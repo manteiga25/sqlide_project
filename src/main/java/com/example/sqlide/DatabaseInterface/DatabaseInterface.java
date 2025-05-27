@@ -3,6 +3,7 @@ package com.example.sqlide.DatabaseInterface;
 import com.example.sqlide.*;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.Email.EmailController;
+import com.example.sqlide.Report.ReportController;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
 import com.jfoenix.controls.JFXButton;
@@ -20,6 +21,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTCol;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -86,6 +88,7 @@ public class DatabaseInterface {
             subStage.setTitle("Send email");
             subStage.setScene(new Scene(root));
             secondaryController.setText(content);
+            secondaryController.setDb(DatabaseSeted);
             secondaryController.setTablesAndColumns(getColumnsNames());
             //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
 
@@ -96,6 +99,37 @@ public class DatabaseInterface {
             subStage.show();
         } catch (Exception e) {
             ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+        }
+    }
+
+    private void openReportStage() {
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Report.fxml"));
+            Parent root = loader.load();
+
+            ReportController dialogController = loader.getController();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Configure Report");
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+          /*  if (generateReportButton != null && generateReportButton.getScene() != null) {
+                dialogStage.initOwner(generateReportButton.getScene().getWindow());
+            } */
+
+            dialogController.initializeDialog(DatabaseSeted, dialogStage);
+            dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
+
+            dialogStage.setScene(new Scene(root));
+            dialogStage.showAndWait();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Load Error");
+            alert.setHeaderText("Could not load report configuration dialog.");
+            alert.setContentText("Error: " + e.getMessage());
+            alert.showAndWait();
         }
     }
 
@@ -135,7 +169,7 @@ public class DatabaseInterface {
         save.setOnAction(e -> commit());
 
         JFXButton createTab = new JFXButton("create table");
-        createTab.setOnAction(e -> createDBTabInterface());
+        createTab.setOnAction(e -> createDBTabInterface(null));
 
         JFXButton deleteTab = new JFXButton("Delete table");
         deleteTab.setOnAction(e -> deleteDBTab());
@@ -143,7 +177,10 @@ public class DatabaseInterface {
         JFXButton SendEmailButton = new JFXButton("Send email");
         SendEmailButton.setOnAction(e -> openEmailStage(""));
 
-        ButtonsLine.getChildren().addAll(createTab, deleteTab, SendEmailButton);
+        JFXButton ReportButton = new JFXButton("Create Report");
+        ReportButton.setOnAction(e -> openReportStage());
+
+        ButtonsLine.getChildren().addAll(createTab, deleteTab, SendEmailButton, ReportButton);
 
         DBTabContainer = new TabPane();
         VBox.setVgrow(DBTabContainer, Priority.ALWAYS);
@@ -169,7 +206,7 @@ public class DatabaseInterface {
         }
     }
 
-    private void createDBTabInterface() {
+    public void createDBTabInterface(final ArrayList<HashMap<String, String>> column) {
         try {
             // Carrega o arquivo FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/newTable.fxml"));
@@ -184,6 +221,7 @@ public class DatabaseInterface {
             subStage.setResizable(false);
             subStage.setScene(new Scene(root));
             secondaryController.NewTableWin(dbName, this, DatabaseSeted,subStage);
+            secondaryController.setColumns(column);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
