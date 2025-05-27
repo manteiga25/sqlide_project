@@ -26,11 +26,30 @@ def ShowData(query: str, table: str):
 
     return input()
 
+def RequestData(query: str, table: str):
+    """Show data for user from a SQL query.
+    Args:
+        query (str): Generate the query to execute fetch.
+        table (str): The table to execute query.
+    Return (list(dict[str, str])): the list of data
+    """
+
+    sender = {
+    'status': 'request',
+    'function': 'Request_Data',
+    'parameters': [query, table],
+    'message': f'Fetching data of {table}'
+    }
+
+    print(json.dumps(sender))
+
+    return input()
+
 def GetColumnsMetadata():
     """Request metadata of table to process metadata of columns.
     Args:
 
-    Return (list(dict[str, str]): the list of metadata
+    Return (list[dict[str, str]]: the list of metadata
     """
 
     sender = {
@@ -47,6 +66,10 @@ def GetColumnsMetadata():
 def sendEmail(body: str):
     """Generate and send a html email body ex: <html dir="ltr"><head></head><body contenteditable="true"><span style="font-family: &quot;&quot;;">Olá&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=user:Name/&gt;</span><span style="font-family: &quot;&quot;;">, parabéns foi selecionado como candidato para o prémio por ter completado os seus&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=user:age/&gt; de idade, vá para a lojá maos proxima e use o seguinte código&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=product:id/&gt; para receber o prémio, obrigado.&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=worker:Name/&gt;.</span></body></html>
         use GetColumnsMetadata function to get information odf tables to insert data tag to email ex: <DataSrc='table':'column'/>.
+        Args:
+            body: (str): The html content of email.
+
+        Return None:
     """
 
     sender = {
@@ -58,6 +81,28 @@ def sendEmail(body: str):
 
     print(json.dumps(sender))
 
+    return input()
+
+def createTable(tableName: str, meta: list[dict[str, str]]):
+    """Create a sql table, if not specified from user try to generate.
+        Args:
+            tableName (str): The name of table.
+            meta (list[dict[str, str]]): the little metadata (columns) of table (Name: 'column_name', Type: 'type of column', Key: 'Primary key = 'PRIMARY KEY', foreign key = 'FOREIGN KEY', No key = 'NO KEY', NotNull: 'true' 'false' ).
+
+        Return None:
+    """
+
+    sender = {
+            'status': 'request',
+            'function': 'CreateTable',
+            'parameters': [tableName, meta],
+            'message': ''
+            }
+
+    print(json.dumps(sender))
+
+    return input()
+
 def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
     global conversation_history
     global client
@@ -68,7 +113,7 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
         google_search = GoogleSearch()
     )
 
-    func_tools = [ShowData, GetColumnsMetadata, sendEmail]
+    func_tools = [ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable]
 
     tools = None
 
@@ -117,7 +162,7 @@ def main():
                 'message': text
             }
             print(json.dumps(resposta))
-        except e:
+        except Exception as e:
             resposta = {
                  'status': 'success',
                  'message': f"Error to generate response.\n{e}"

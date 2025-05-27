@@ -584,7 +584,7 @@ public class SQLiteDB extends DataBase {
             ArrayList<String> validColumns = new ArrayList<>(realColumns);
 
             // 3. Lógica de chave primária
-            String keyToCheck = primeKey.isEmpty() ? "ROWID" : primeKey;
+            String keyToCheck = "ROWID";
             boolean keyExists = realColumns.contains(keyToCheck);
 
             // 4. Adicionar chave se necessário
@@ -756,7 +756,7 @@ public class SQLiteDB extends DataBase {
     @Override
     public synchronized ArrayList<HashMap<String, String>> fetchDataMap(final String Command, final long limit, final long offset) {
         ArrayList<HashMap<String, String>> data = new ArrayList<>();
-        final String command = Command + " LIMIT " + limit + " OFFSET " + offset;
+        final String command = Command + " LIMIT " + limit + " OFFSET " + offset + ";";
         System.out.println("command " + command);
         try {
             ResultSet rs = statement.executeQuery(command);
@@ -778,7 +778,7 @@ public class SQLiteDB extends DataBase {
                     if (val != null) {
                         valStr = val.toString();
                     }
-                    System.out.println(valStr);
+                //    System.out.println(valStr);
                     tmpData.put(col, valStr);
                 }
                 data.add(tmpData);
@@ -1309,7 +1309,7 @@ public class SQLiteDB extends DataBase {
         ArrayList<ColumnMetadata> ColumnsMetadata = new ArrayList<>();
         final ArrayList<String> PrimaryKeyList = PrimaryKeyList(Table);
         final HashMap<String, ColumnMetadata.Foreign> ForeignKeyList = getForeign(Table);
-        final HashMap<String, String> CheckList = getCheck(Table);
+       // final HashMap<String, String> CheckList = getCheck(Table);
         HashMap<String, Boolean> uniqueColumns = isUnique(Table);
         try {
             ResultSet columns = connection.getMetaData().getColumns(null, null, Table, null);
@@ -1352,12 +1352,12 @@ public class SQLiteDB extends DataBase {
                         break;
                     }
                 }
-                for (final String key : CheckList.keySet()) {
+              /*  for (final String key : CheckList.keySet()) {
                     if (key.equals(name)) {
                         check = CheckList.remove(key);
                         break;
                     }
-                }
+                } */
                 System.out.println("check " + check);
                 // para mudar
                 ColumnMetadata TmpCol = new ColumnMetadata(notnull, isPrimeKey, foreign, Default, size, Type, name, nonUnique, integerDigits, decimalDigits, index);

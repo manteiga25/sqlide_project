@@ -136,6 +136,16 @@ public class mainController implements requestInterface {
     }
 
     @Override
+    public boolean createTable(String table, ArrayList<HashMap<String, String>> meta) {
+        final DatabaseInterface db = DBopened.get(currentDB.get());
+        if (db != null) {
+            Platform.runLater(()->db.createDBTabInterface(meta));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public HashMap<String, ArrayList<HashMap<String, String>>> getTableMetadata() {
         final DatabaseInterface db = DBopened.get(currentDB.get());
         HashMap<String, ArrayList<HashMap<String, String>>> meta = null;
@@ -489,7 +499,7 @@ public class mainController implements requestInterface {
                             DatabasesName.clear();
                             DatabasesOpened.addAll(DatabaseOpened.values());
                             DatabasesName.addAll(DatabaseOpened.keySet());
-                            DatabaseToClose.closeInterface();
+                            if (DatabaseToClose != null) DatabaseToClose.closeInterface();
                         } catch (SQLException e) {
                             ShowError("Error SQL", "Error to close database");
                         }

@@ -87,7 +87,7 @@ public class AssistantController {
                                         sender.put(String.valueOf(status));
                                     break;
 
-                                    case "FetchData":
+                                    case "Request_Data":
                                         final HashMap<String, ArrayList<Object>> data = AssistantFunctionsInterface.getData(parameters.getString(0), parameters.getString(1));
                                         sender.put(data.toString());
                                         break;
@@ -96,6 +96,16 @@ public class AssistantController {
                                         final HashMap<String, ArrayList<HashMap<String, String>>> meta = AssistantFunctionsInterface.getTableMetadata();
                                         sender.put(meta.toString());
                                         break;
+
+                                case "CreateTable":
+
+                                 //   final ArrayList<HashMap<String, String>> Table = parameters.getJSONArray(1);
+
+                                    System.out.println(parameters.getJSONObject(1));
+
+                                   // final boolean staus = AssistantFunctionsInterface.createTable(parameters.getString(0), parameters.getJSONObject(1));
+                                    sender.put(Boolean.toString(true));
+                                    break;
 
                                 case "sendEmail":
                                     sender.put(String.valueOf(AssistantFunctionsInterface.sendEmail(parameters.getString(0))));

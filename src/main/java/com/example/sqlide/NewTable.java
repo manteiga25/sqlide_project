@@ -178,6 +178,17 @@ public class NewTable {
         window.close();
     }
 
+    public void setColumns(final ArrayList<HashMap<String, String>> columns) {
+
+        if (columns != null) {
+            items.clear();
+            for (final HashMap<String, String> column : columns) {
+                items.add(new TableColumnMeta(column));
+            }
+        }
+
+    }
+
 
     private static class TableColumnMeta {
 

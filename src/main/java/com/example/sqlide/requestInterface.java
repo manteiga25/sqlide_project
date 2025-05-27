@@ -13,4 +13,6 @@ public interface requestInterface {
 
     public abstract HashMap<String, ArrayList<Object>> getData(final String query, final String table);
 
+    public abstract boolean createTable(final String table, final ArrayList<HashMap<String, String>> meta);
+
 }

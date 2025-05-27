@@ -26,6 +26,9 @@ module com.example.sqlide {
     requires org.docx4j.openxml_objects;
     requires docx4j_ImportXHTML;
     requires org.docx4j.core;
+    requires org.apache.pdfbox;
+    requires ch.qos.logback.classic;
+    requires jakarta.mail;
 
     opens com.example.sqlide to javafx.fxml;
     opens com.example.sqlide.exporter.Excel to javafx.fxml;
@@ -53,6 +56,7 @@ module com.example.sqlide {
     opens com.example.sqlide.loading to javafx.fxml;
     opens com.example.sqlide.Console to javafx.fxml;
     opens com.example.sqlide.Email to javafx.fxml;
+    opens com.example.sqlide.Report to javafx.fxml;
 
     exports com.example.sqlide;
     exports com.example.sqlide.exporter.Excel;
@@ -80,5 +84,6 @@ module com.example.sqlide {
     exports com.example.sqlide.loading;
     exports com.example.sqlide.Console;
     exports com.example.sqlide.Email;
+    exports com.example.sqlide.Report;
 
 }

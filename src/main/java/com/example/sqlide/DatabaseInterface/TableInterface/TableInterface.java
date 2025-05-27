@@ -32,6 +32,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -240,36 +241,60 @@ public class TableInterface {
     private JFXButton createReloadButton() {
         JFXButton Reload = new JFXButton("Reload");
         Reload.setOnAction(e->prepareFetch());
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.REFRESH);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        Reload.setGraphic(icon);
         return Reload;
     }
 
     private JFXButton createColumnButton() {
         JFXButton createColumn = new JFXButton("create column");
         createColumn.setOnAction(e-> createDBColInterface());
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.CREATIVE_COMMONS);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        createColumn.setGraphic(icon);
         return createColumn;
     }
 
     private JFXButton createDeleteButton() {
         JFXButton deleteCol = new JFXButton("Delete column");
         deleteCol.setOnAction(e-> DeleteColumnInterface());
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.REMOVE);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        deleteCol.setGraphic(icon);
         return deleteCol;
     }
 
     private JFXButton createAddButton() {
         JFXButton AddData = new JFXButton("Insert data");
         AddData.setOnAction(e-> NewRowInterface());
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.CREATIVE_COMMONS);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        AddData.setGraphic(icon);
         return AddData;
     }
 
     private JFXButton createDelButton() {
         JFXButton DelData = new JFXButton("Delete data");
         DelData.setOnAction(e-> removeItem());
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.TRASH);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        DelData.setGraphic(icon);
         return DelData;
     }
 
     private JFXButton createAdvDelButton() {
         JFXButton AdvancedDelete = new JFXButton("Advanced delete");
         AdvancedDelete.setOnAction(e->loadAdvancedWin("DELETE"));
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.TRASH_ALT);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        AdvancedDelete.setGraphic(icon);
         return AdvancedDelete;
     }
 
@@ -348,7 +373,6 @@ public class TableInterface {
     private Label createLabelPageInfo() {
         pageLabel = new Label();
         pageLabel.setTextFill(Color.WHITE);
-      //  pageLabel.setPrefWidth(50);
         return pageLabel;
     }
 
