@@ -263,7 +263,7 @@ public class NewRow {
                 case DateTimePicker w -> {
                     final ColumnMetadata meta = type.get(w.getId());
                     LocalDateTime date;
-                    if (meta != null && !meta.defaultValue.equals("null")) {
+                    if (meta != null && meta.defaultValue != null) {
                         date = LocalDateTime.from(LocalTime.parse(meta.defaultValue));
                     } else {
                         date = LocalDateTime.now();

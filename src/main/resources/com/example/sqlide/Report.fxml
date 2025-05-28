@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import com.jfoenix.controls.*?>
+<?import java.net.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
@@ -19,7 +20,11 @@
         <VBox spacing="5.0">
             <children>
                 <Label text="Report Title:" textFill="WHITE" />
-                <JFXTextField fx:id="reportTitleField" promptText="Enter report title" styleClass="text-field" stylesheets="@../../../css/TextFieldStyle.css" />
+                <JFXTextField fx:id="reportTitleField" promptText="Enter report title" styleClass="text-field">
+               <stylesheets>
+                  <URL value="@../../../css/TextFieldStyle.css" />
+                  <URL value="@../../../css/ContextMenuStyle.css" />
+               </stylesheets></JFXTextField>
             </children>
         </VBox>
         <VBox spacing="5.0">
