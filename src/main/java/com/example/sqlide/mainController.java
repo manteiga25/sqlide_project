@@ -124,14 +124,11 @@ public class mainController implements requestInterface {
     }
 
     @Override
-    public HashMap<String, ArrayList<Object>> getData(final String query, final String table) {
-
-        final ArrayList<String> columns = new ArrayList<>();
+    public ArrayList<HashMap<String, String>> getData(final String query, final String table) {
 
         final DataBase db = DatabaseOpened.get(currentDB.get());
-        ArrayList<DataForDB> data = db.fetchData(query , columns, table);
 
-        return null;
+        return db.fetchDataMap(query, db.buffer, 0);
 
     }
 
@@ -139,7 +136,7 @@ public class mainController implements requestInterface {
     public boolean createTable(String table, ArrayList<HashMap<String, String>> meta) {
         final DatabaseInterface db = DBopened.get(currentDB.get());
         if (db != null) {
-            Platform.runLater(()->db.createDBTabInterface(meta));
+            Platform.runLater(()->db.createDBTabInterface(table, meta));
             return true;
         }
         return false;
@@ -399,7 +396,7 @@ public class mainController implements requestInterface {
                 Platform.runLater(this::setDividerSpace);
                 Platform.runLater(this::setHDividerSpace);
 
-                consoleController.addData(DBName, sender);
+                Platform.runLater(()->consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType()));
             DatabaseOpened.put(DBName, db);
             DBopened.put(DBName, openDB);
                 DatabasesOpened.add(db);

@@ -18,6 +18,7 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -88,7 +89,7 @@ public class AssistantController {
                                     break;
 
                                     case "Request_Data":
-                                        final HashMap<String, ArrayList<Object>> data = AssistantFunctionsInterface.getData(parameters.getString(0), parameters.getString(1));
+                                        final ArrayList<HashMap<String, String>> data = AssistantFunctionsInterface.getData(parameters.getString(0), parameters.getString(1));
                                         sender.put(data.toString());
                                         break;
 
@@ -99,12 +100,21 @@ public class AssistantController {
 
                                 case "CreateTable":
 
-                                 //   final ArrayList<HashMap<String, String>> Table = parameters.getJSONArray(1);
+                                    final ArrayList<HashMap<String, String>> Table = new ArrayList<>();
+                                    final JSONArray jsonArray = parameters.getJSONArray(1);
 
-                                    System.out.println(parameters.getJSONObject(1));
+                                    for (int i = 0; i < jsonArray.length(); i++) {
+                                        final JSONObject obj = jsonArray.getJSONObject(i);
+                                        final HashMap<String, String> map = new HashMap<>();
 
-                                   // final boolean staus = AssistantFunctionsInterface.createTable(parameters.getString(0), parameters.getJSONObject(1));
-                                    sender.put(Boolean.toString(true));
+                                        for (String key : obj.keySet()) {
+                                            map.put(key, obj.getString(key));
+                                        }
+
+                                        Table.add(map);
+                                    }
+
+                                    sender.put(Boolean.toString(AssistantFunctionsInterface.createTable(parameters.getString(0), Table)));
                                     break;
 
                                 case "sendEmail":
@@ -295,12 +305,22 @@ public class AssistantController {
         final TextArea messageBox = new TextArea();
         messageBox.setEditable(false);
         messageBox.setPrefRowCount(2);
-        messageBox.setPrefHeight(lines * 20.0 + 14);
-        messageBox.setPrefWidth(lines * 20.0 + 14);
+        messageBox.setPrefHeight(lines * 20.0 + 14 + 12);
+        messageBox.setPrefWidth(lines * 20.0 + 14 + 12);
         messageBox.setText("User:\n" + message);
         VBox.setMargin(messageBox, new Insets(0, 0, 0, 100));
+        messageBox.setPadding(new Insets(10, 12, 10, 12));
         VBox.setVgrow(messageBox, Priority.ALWAYS);
-        messageBox.setStyle("-fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #3A3A3A; -fx-border-width: 5; -fx-control-inner-background: #3A3A3A; -fx-background-color: #3A3A3A;");
+        messageBox.setStyle("-fx-control-inner-background: #424242; " +
+                "-fx-border-color: #505050; " +
+                "-fx-border-width: 1px; " +
+                "-fx-border-radius: 12px; " +
+                "-fx-background-radius: 12px; " +
+                "-fx-region-background: #424242; " +
+                "-fx-text-fill: #ECECEC; " +
+                "-fx-focus-color: transparent; " +
+                "-fx-faint-focus-color: transparent; " +
+                "-fx-display-caret: false;");
         return messageBox;
     }
 

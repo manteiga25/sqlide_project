@@ -3,17 +3,45 @@
     -fx-text-fill: white;
     -fx-font-family: "JetBrains Mono Medium" !important;
     -fx-font-size: 14px;
+    -fx-background-insets: 0;
+    -fx-background-color: transparent, transparent, transparent, transparent;
 }
 
 .text-area .content {
     -fx-padding: 3px 0; /* Ajuste para controlar a altura da linha */
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
 }
 
 .text-area:focused {
-    -fx-background-color: #1E1F22;
-}
-
-.text-area:focused {
+    -fx-background-color: transparent;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
+}
+
+.text-area .scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-pane .content {
+    -fx-background-color: transparent;
+}
+
+.text-area .scroll-bar:vertical {
+    -fx-opacity: 0;
+    -fx-pref-width: 0;
+    -fx-min-width: 0;
+    -fx-max-width: 0;
+}
+
+/* Ocultar completamente a scrollbar horizontal */
+.text-area .scroll-bar:horizontal {
+    -fx-opacity: 0;
+    -fx-pref-height: 0;
+    -fx-min-height: 0;
+    -fx-max-height: 0;
 }

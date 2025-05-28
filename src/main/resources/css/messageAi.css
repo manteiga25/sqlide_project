@@ -29,3 +29,21 @@
 .copy-button:hover {
     -fx-background-color: #3C3C3C;
 }
+
+/* Ocultar completamente a scrollbar vertical */
+.message-text-area .scroll-bar:vertical,
+.code-text-area .scroll-bar:vertical {
+    -fx-opacity: 0;
+    -fx-pref-width: 0;
+    -fx-min-width: 0;
+    -fx-max-width: 0;
+}
+
+/* Ocultar completamente a scrollbar horizontal */
+.message-text-area .scroll-bar:horizontal,
+.code-text-area .scroll-bar:horizontal {
+    -fx-opacity: 0;
+    -fx-pref-height: 0;
+    -fx-min-height: 0;
+    -fx-max-height: 0;
+}

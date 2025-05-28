@@ -169,7 +169,7 @@ public class DatabaseInterface {
         save.setOnAction(e -> commit());
 
         JFXButton createTab = new JFXButton("create table");
-        createTab.setOnAction(e -> createDBTabInterface(null));
+        createTab.setOnAction(e -> createDBTabInterface("", null));
 
         JFXButton deleteTab = new JFXButton("Delete table");
         deleteTab.setOnAction(e -> deleteDBTab());
@@ -206,7 +206,7 @@ public class DatabaseInterface {
         }
     }
 
-    public void createDBTabInterface(final ArrayList<HashMap<String, String>> column) {
+    public void createDBTabInterface(final String Table, final ArrayList<HashMap<String, String>> column) {
         try {
             // Carrega o arquivo FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/newTable.fxml"));
@@ -221,6 +221,7 @@ public class DatabaseInterface {
             subStage.setResizable(false);
             subStage.setScene(new Scene(root));
             secondaryController.NewTableWin(dbName, this, DatabaseSeted,subStage);
+            secondaryController.setTable(Table);
             secondaryController.setColumns(column);
 
             // Opcional: definir a modalidade da subjanela

@@ -89,7 +89,7 @@ def createTable(tableName: str, meta: list[dict[str, str]]):
             tableName (str): The name of table.
             meta (list[dict[str, str]]): the little metadata (columns) of table (Name: 'column_name', Type: 'type of column', Key: 'Primary key = 'PRIMARY KEY', foreign key = 'FOREIGN KEY', No key = 'NO KEY', NotNull: 'true' 'false' ).
 
-        Return None:
+        Return (bool): true success, false error.
     """
 
     sender = {
