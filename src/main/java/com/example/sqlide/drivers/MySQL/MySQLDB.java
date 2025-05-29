@@ -732,8 +732,18 @@ public class MySQLDB extends DataBase {
     }
 
     @Override
-    public boolean connect(String url, String userName, String password) {
-        return false;
+    public boolean CreateSchema(String url, final String name, String userName, String password) {
+        final String completeURL = "jdbc:mysql://" + url + name;
+        try {
+            connection = DriverManager.getConnection(completeURL, userName, password);
+            statement = connection.createStatement();
+            super.databaseName = connection.getMetaData().getDatabaseProductName();
+            //  FormatDBCreation(formatData);
+            return true;
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
     }
 
     @Override

@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import de.jensd.fx.glyphs.fontawesome.*?>
+<?import java.lang.*?>
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<VBox fx:id="ContainerSize" style="-fx-background-color: #2C2C2C;" stylesheets="@../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.CreateDatabaseSelectedController">
+
+    <children>
+        <!-- Header -->
+        <VBox alignment="CENTER" VBox.vgrow="ALWAYS">
+            <Label alignment="CENTER" text="Create SQL Database" textAlignment="CENTER" textFill="WHITE">
+                <font>
+                    <Font name="System Bold" size="28.0" />
+                </font>
+            </Label>
+            <Label text="Configure your database settings" textFill="#E0E0E0">
+                <font>
+                    <Font name="System" size="14.0" />
+                </font>
+            </Label>
+        </VBox>
+
+        <!-- Main Content Container -->
+        <ScrollPane layoutX="20.0" layoutY="100.0" style="-fx-background: transparent; -fx-background-color: transparent;" stylesheets="@../../../css/ScrollHbarStyle.css">
+            <VBox spacing="25.0" style="-fx-padding: 20;">
+
+                <!-- Basic Settings Section -->
+                <VBox spacing="15.0" style="-fx-background-color: #333333; -fx-background-radius: 10; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 2);">
+                    <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Basic Settings" textFill="WHITE" />
+
+                    <GridPane hgap="20.0" vgap="15.0">
+                        <columnConstraints>
+                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="120.0" minWidth="120.0" />
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="300.0" />
+                        </columnConstraints>
+                        <rowConstraints>
+                            <RowConstraints minHeight="35.0" vgrow="SOMETIMES" />
+                            <RowConstraints minHeight="35.0" vgrow="SOMETIMES" />
+                     <RowConstraints minHeight="35.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                     <RowConstraints minHeight="35.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        </rowConstraints>
+
+                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Database Name:" textFill="WHITE" />
+                        <JFXTextField fx:id="TextDBName" promptText="Enter database name..." style="-fx-prompt-text-fill: #888888; -fx-text-fill: white; -fx-background-color: #404040; -fx-background-radius: 5;" GridPane.columnIndex="1" />
+
+                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Url:" textFill="WHITE" GridPane.rowIndex="1" />
+                        <JFXTextField fx:id="UrlField" promptText="Enter URL..." style="-fx-prompt-text-fill: #888888; -fx-text-fill: white; -fx-background-color: #404040; -fx-background-radius: 5;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                  <Label text="Port:" textFill="WHITE" GridPane.rowIndex="2">
+                     <font>
+                        <Font name="System Bold" size="14.0" />
+                     </font>
+                  </Label>
+                  <HBox alignment="CENTER" spacing="10.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                     <children>
+                        <JFXTextField fx:id="PortField" promptText="Port..." style="-fx-prompt-text-fill: #888888; -fx-text-fill: white; -fx-background-color: #404040; -fx-background-radius: 5;" HBox.hgrow="ALWAYS" />
+                        <Label text="Password:" textFill="WHITE">
+                           <font>
+                              <Font name="System Bold" size="14.0" />
+                           </font></Label>
+                        <JFXTextField fx:id="PasswordField" promptText="Password..." style="-fx-prompt-text-fill: #888888; -fx-text-fill: white; -fx-background-color: #404040; -fx-background-radius: 5;" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+                  <Label text="User name:" textFill="WHITE" GridPane.rowIndex="3">
+                     <font>
+                        <Font name="System Bold" size="14.0" />
+                     </font>
+                  </Label>
+                  <JFXTextField fx:id="userField" promptText="Enter user name..." style="-fx-prompt-text-fill: #888888; -fx-text-fill: white; -fx-background-color: #404040; -fx-background-radius: 5;" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                    </GridPane>
+                </VBox>
+
+                <!-- Advanced Options and Cache Settings in HBox -->
+                <HBox spacing="20.0">
+
+                    <!-- Advanced Options Section -->
+                    <VBox spacing="15.0" style="-fx-background-color: #333333; -fx-background-radius: 10; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 2);" HBox.hgrow="ALWAYS">
+                        <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Advanced Options" textFill="WHITE" />
+
+                        <GridPane hgap="15.0" vgap="12.0">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="140.0" minWidth="140.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="200.0" />
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="40.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                            </rowConstraints>
+
+                            <Label style="-fx-font-size: 12px;" text="Character Format:" textFill="WHITE" />
+                            <ChoiceBox fx:id="CharMode" prefWidth="180.0" style="-fx-background-color: #404040; -fx-background-radius: 5;" value="UTF-8" GridPane.columnIndex="1">
+                                <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                        <String fx:value="UTF-8" />
+                                        <String fx:value="UTF-16" />
+                                        <String fx:value="UTF-16le" />
+                                        <String fx:value="UTF-16be" />
+                                    </FXCollections>
+                                </items>
+                            </ChoiceBox>
+
+                            <Label style="-fx-font-size: 12px;" text="Journal Mode:" textFill="WHITE" GridPane.rowIndex="1" />
+                            <ChoiceBox fx:id="JournalMode" prefWidth="180.0" style="-fx-background-color: #404040; -fx-background-radius: 5;" value="DELETE" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                        <String fx:value="DELETE" />
+                                        <String fx:value="TRUNCATE" />
+                                        <String fx:value="PERSIST" />
+                                        <String fx:value="MEMORY" />
+                                        <String fx:value="WAL" />
+                                        <String fx:value="OFF" />
+                                    </FXCollections>
+                                </items>
+                            </ChoiceBox>
+
+                            <Label style="-fx-font-size: 12px;" text="Synchronous:" textFill="WHITE" GridPane.rowIndex="2" />
+                            <ChoiceBox fx:id="syncBox" prefWidth="180.0" style="-fx-background-color: #404040; -fx-background-radius: 5;" value="NORMAL" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                        <String fx:value="OFF" />
+                                        <String fx:value="NORMAL" />
+                                        <String fx:value="FULL" />
+                                        <String fx:value="EXTRA" />
+                                    </FXCollections>
+                                </items>
+                            </ChoiceBox>
+
+                            <Label style="-fx-font-size: 12px;" text="Execute Script:" textFill="WHITE" GridPane.rowIndex="3" />
+                            <HBox spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                                <JFXTextField fx:id="ScriptPath" promptText="Optional SQL script..." style="-fx-prompt-text-fill: #888888; -fx-text-fill: white; -fx-background-color: #404040; -fx-background-radius: 5;" HBox.hgrow="ALWAYS" />
+                                <JFXButton mnemonicParsing="false" onAction="#openFile" style="-fx-background-color: #3574F0; -fx-background-radius: 5;">
+                                    <graphic>
+                                        <FontAwesomeIconView fill="WHITE" glyphName="FILE" size="16.0" />
+                                    </graphic>
+                                </JFXButton>
+                            </HBox>
+
+                            <Label style="-fx-font-size: 12px;" text="Lock Mode:" textFill="WHITE" GridPane.rowIndex="4" />
+                            <HBox spacing="15.0" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                                <JFXRadioButton fx:id="normalMode" mnemonicParsing="false" onAction="#switchRadioSyncNormal" selected="true" text="Normal" textFill="WHITE">
+                                    <selectedColor>
+                                        <Color red="0.2078431397676468" green="0.45490196347236633" blue="0.9411764740943909" />
+                                    </selectedColor>
+                                </JFXRadioButton>
+                                <JFXRadioButton fx:id="ExclusiveMode" mnemonicParsing="false" onAction="#switchRadioSyncExclusive" text="Exclusive" textFill="WHITE">
+                                    <selectedColor>
+                                        <Color red="0.2078431397676468" green="0.45490196347236633" blue="0.9411764740943909" />
+                                    </selectedColor>
+                                </JFXRadioButton>
+                            </HBox>
+                        </GridPane>
+                    </VBox>
+
+                    <!-- Cache Options Section -->
+                    <VBox spacing="15.0" style="-fx-background-color: #333333; -fx-background-radius: 10; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 2);" stylesheets="@../../../css/SpinnerStyle.css" HBox.hgrow="ALWAYS">
+                        <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Cache Options" textFill="WHITE" />
+
+                        <GridPane hgap="15.0" vgap="12.0">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" maxWidth="100.0" minWidth="100.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="150.0" />
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                            </rowConstraints>
+
+                            <Label style="-fx-font-size: 12px;" text="Cache Mode:" textFill="WHITE" />
+                            <HBox spacing="15.0" GridPane.columnIndex="1">
+                                <JFXRadioButton fx:id="sharedMode" mnemonicParsing="false" onAction="#switchRadioShared" selected="true" text="Shared" textFill="WHITE">
+                                    <selectedColor>
+                                        <Color red="0.2078431397676468" green="0.45490196347236633" blue="0.9411764740943909" />
+                                    </selectedColor>
+                                </JFXRadioButton>
+                                <JFXRadioButton fx:id="privateMode" mnemonicParsing="false" onAction="#switchRadioPrivate" text="Private" textFill="WHITE">
+                                    <selectedColor>
+                                        <Color red="0.2078431397676468" green="0.45490196347236633" blue="0.9411764740943909" />
+                                    </selectedColor>
+                                </JFXRadioButton>
+                            </HBox>
+
+                            <Label style="-fx-font-size: 12px;" text="Cache Size:" textFill="WHITE" GridPane.rowIndex="1" />
+                            <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Spinner fx:id="cacheSize" editable="true" initialValue="4096" style="-fx-background-color: #404040; -fx-background-radius: 5;" />
+                                <Label style="-fx-font-size: 12px;" text="KB" textFill="WHITE" />
+                            </HBox>
+
+                            <Label style="-fx-font-size: 12px;" text="Page Size:" textFill="WHITE" GridPane.rowIndex="2" />
+                            <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                <Spinner fx:id="Pagesize" editable="true" initialValue="4096" style="-fx-background-color: #404040; -fx-background-radius: 5;" />
+                                <Label style="-fx-font-size: 12px;" text="Bytes" textFill="WHITE" />
+                            </HBox>
+
+                            <Label style="-fx-font-size: 12px;" text="Map Size:" textFill="WHITE" GridPane.rowIndex="3" />
+                            <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                                <Spinner fx:id="mapSpinner" style="-fx-background-color: #404040; -fx-background-radius: 5;" />
+                                <Label style="-fx-font-size: 12px;" text="Bytes" textFill="WHITE" />
+                            </HBox>
+                        </GridPane>
+                    </VBox>
+                </HBox>
+            </VBox>
+        </ScrollPane>
+
+        <!-- Action Buttons -->
+        <HBox alignment="CENTER_RIGHT" layoutX="20.0" layoutY="510.0" spacing="5.0">
+            <JFXButton style="-fx-background-color: transparent; -fx-border-color: #666666; -fx-border-radius: 5; -fx-background-radius: 5;" text="Cancel" textFill="#CCCCCC">
+                <font>
+                    <Font name="System" size="14.0" />
+                </font>
+            </JFXButton>
+            <JFXButton mnemonicParsing="false" onAction="#createDB" style="-fx-background-color: #3574F0; -fx-background-radius: 5; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 3, 0, 0, 1);" text="Create Database" textFill="WHITE">
+                <font>
+                    <Font name="System Bold" size="14.0" />
+                </font>
+            </JFXButton>
+         <VBox.margin>
+            <Insets bottom="5.0" right="5.0" />
+         </VBox.margin>
+        </HBox>
+    </children>
+</VBox>

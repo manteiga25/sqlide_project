@@ -289,6 +289,32 @@ public class mainController implements requestInterface {
     }
 
     @FXML
+    private void createDBInterface() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("createDatabase.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            CreateDatabaseController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Subjanela");
+            subStage.setScene(new Scene(root));
+            secondaryController.initWin(this, subStage);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            subStage.show();
+        } catch (Exception e) {
+            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+        }
+    }
+
+    @FXML
     public void SQLiteInterface() {
 
         try {
@@ -416,6 +442,66 @@ public class mainController implements requestInterface {
         });
         open.setDaemon(true);
         open.start();
+    }
+
+    public void createDB(final DataBase db, final String url, final String DBName, final String user, final String pass, final Map<String, String> modes) throws IOException {
+        //   Map<String, String> modes = new HashMap<>();
+
+    /*    modes.put("encoding", "'" + CharMode.getValue() + "'");
+        modes.put("journal_mode", JournalMode.getValue());
+        final String innit = ScriptPath.getText();
+        if (!innit.isEmpty()) {
+            modes.put("innit", ScriptPath.getText());
+        }
+        modes.put("cache_spill", sharedMode.isSelected() ? "SHARED" : "PRIVATE");
+        modes.put("cache_size", cacheSize.getValue().toString()); */
+        //   modes.put("page_size", Pagesize.getValue().toString());
+
+        final boolean hasScript = modes.containsKey("innit");
+
+        if (!db.CreateSchema(url, DBName, user, pass)) {
+
+        }
+
+        if (!db.connect(DBName, modes)) {
+            ShowError("Error SQL", "Error to create Database " + DBName + "\n" + db.GetException());
+            return;
+        }
+        // db.setMessager(sender);
+        //if (db.Connect(DBName + ".db", modes)) {
+        //  System.out.println("sucess");
+        //if (!created) {
+        createContainerDB();
+        db.buffer = buffer;
+        //}
+        //    createTabDB(DBName);
+
+        DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
+
+        if (consoleController == null) Platform.runLater(this::loadConsole);
+
+        setDividerSpace();
+
+        if (hasScript) {
+            try {
+                openDB.readTables();
+            } catch (Exception e) {
+                try {
+                    openDB.closeInterface();
+                    db.disconnect();
+                } catch (SQLException _) {
+                }
+                ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
+                return;
+            }
+        }
+
+        DatabaseOpened.put(DBName, db);
+        DBopened.put(DBName, openDB);
+        DatabasesOpened.add(db);
+        DatabasesName.add(DBName);
+        currentDB.set(DBName);
+
     }
 
     @FXML

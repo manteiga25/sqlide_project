@@ -17,7 +17,7 @@
          <menus>
             <Menu mnemonicParsing="false" text="Database ▼">
               <items>
-                <MenuItem mnemonicParsing="false" onAction="#SQLiteInterface" text="New Database">
+                <MenuItem mnemonicParsing="false" onAction="#createDBInterface" text="New Database">
                 </MenuItem>
                   <MenuItem mnemonicParsing="false" onAction="#openDBWindow" text="Open Database" />
                   <Menu fx:id="backupMenu" disable="true" mnemonicParsing="false" text="Backup/Export">
