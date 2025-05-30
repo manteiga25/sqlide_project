@@ -318,6 +318,7 @@ public class excelController {
                         try {
                             fetcherSem.acquire();
                             data = copy;
+                            if (data.size() < buffer) break;
                         } catch (InterruptedException _) {
                             writer.interrupt();
                             break;

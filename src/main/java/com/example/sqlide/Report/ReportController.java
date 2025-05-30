@@ -3,38 +3,40 @@ package com.example.sqlide.Report;
 import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.drivers.model.DataBase;
-import com.example.sqlide.mainController;
 import com.jfoenix.controls.JFXCheckBox;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.Alert;
+import javafx.scene.control.*;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.checkerframework.checker.units.qual.C;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
-import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
 
 public class ReportController {
 
     @FXML
     private Pane TempPane;
     @FXML
-    private VBox rootVBox; // Optional: if needed for dynamic sizing or access
+    private VBox rootVBox, StyleBox; // Optional: if needed for dynamic sizing or access
 
     @FXML
     private TextField reportTitleField;
@@ -51,20 +53,199 @@ public class ReportController {
     private List<String> allAvailableColumns;
     private final List<JFXCheckBox> columnCheckBoxes = new ArrayList<>();
     private String sourceQuery;
- //   private mainController mainCtrlRef; // To store reference to mainController
+    //   private mainController mainCtrlRef; // To store reference to mainController
     private Stage dialogStage;
     private DataBase db;
 
+    // UI Controls for Styling
+    private ComboBox<String> titleFontFamilyComboBox;
+    private Spinner<Double> titleFontSizeSpinner;
+    private ColorPicker titleColorPicker;
+
+    private ComboBox<String> headerFontFamilyComboBox;
+    private Spinner<Double> headerFontSizeSpinner;
+    private ColorPicker headerTextColorPicker;
+    private ColorPicker headerBackgroundColorPicker;
+
+    private ComboBox<String> dataFontFamilyComboBox;
+    private Spinner<Double> dataFontSizeSpinner;
+    private ColorPicker dataTextColorPicker;
+
+    private ColorPicker alternatingRowBackgroundColorPicker;
+
+    private ComboBox<String> pageNumberFontFamilyComboBox;
+    private Spinner<Double> pageNumberFontSizeSpinner;
+    private ColorPicker pageNumberColorPicker;
+
+    private Spinner<Double> pageMarginSpinner;
+    private Spinner<Double> cellPaddingSpinner;
+
+
     public void initializeDialog(DataBase db, Stage stage) {
         this.db = db;
-   //     this.mainCtrlRef = mainCtrl; // Store mainController reference
         this.dialogStage = stage;
-
-       // columnsVBox.getChildren().clear(); // Clear any previous checkboxes
-
-        // Set default title if needed
         reportTitleField.setText("Report");
+
+        VBox styleControlsVBox = createStyleControlsNode();
+        styleControlsVBox.setStyle("-fx-background-color: #2C2C2C;");
+        ScrollPane scrollableStyleControls = new ScrollPane(styleControlsVBox);
+        scrollableStyleControls.getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm(),
+                Objects.requireNonNull(getClass().getResource("/css/ComboboxModern.css")).toExternalForm(),
+                Objects.requireNonNull(getClass().getResource("/css/SpinnerStyle.css")).toExternalForm(),
+                Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
+        scrollableStyleControls.setStyle("-fx-background-color: #2C2C2C;");
+        scrollableStyleControls.setFitToWidth(true);
+        scrollableStyleControls.setPrefHeight(200); // Adjust as needed, or let it grow
+
+        final Label styleLabel = new Label("Report Style:");
+        styleLabel.setTextFill(Color.WHITE);
+        styleLabel.setFont(Font.font(20));
+        styleLabel.setAlignment(Pos.BASELINE_LEFT);
+
+       /* int tempPaneIndex = rootVBox.getChildren().indexOf(TempPane);
+        if (tempPaneIndex != -1) {
+            rootVBox.getChildren().add(tempPaneIndex-1, styleLabel);
+            rootVBox.getChildren().add(tempPaneIndex, scrollableStyleControls);
+        } else {
+            int lastElementIndex = rootVBox.getChildren().size() - 1;
+            if (lastElementIndex > 0) {
+                rootVBox.getChildren().add(lastElementIndex, scrollableStyleControls);
+            } else {
+                rootVBox.getChildren().add(scrollableStyleControls);
+            }
+        } */
+        StyleBox.getChildren().addFirst(styleLabel);
+        StyleBox.getChildren().add(1, scrollableStyleControls);
     }
+
+    private VBox createStyleControlsNode() {
+        VBox mainStyleVBox = new VBox(15); // Spacing between sections
+        mainStyleVBox.setStyle("-fx-padding: 10;"); // Padding around the style controls
+
+        ReportStyleConfig defaults = new ReportStyleConfig(); // To get default values
+
+        // Font names for ComboBoxes
+        List<String> fontNames = Arrays.stream(Standard14Fonts.FontName.values())
+                .map(Enum::name)
+                .collect(Collectors.toList());
+
+        // Title Styling
+        titleFontFamilyComboBox = createFontComboBox(fontNames, defaults.getTitleFontFamily());
+        titleFontSizeSpinner = createFontSizeSpinner(defaults.getTitleFontSize(), 8, 30);
+        titleColorPicker = createColorPicker(Color.BLACK);
+        mainStyleVBox.getChildren().add(createStyledSection("Title Styling",
+                createControlGroup("Font:", titleFontFamilyComboBox),
+                createControlGroup("Size:", titleFontSizeSpinner),
+                createControlGroup("Color:", titleColorPicker)
+        ));
+
+        // Header Styling
+        headerFontFamilyComboBox = createFontComboBox(fontNames, defaults.getHeaderFontFamily());
+        headerFontSizeSpinner = createFontSizeSpinner(defaults.getHeaderFontSize(), 7, 20);
+        headerTextColorPicker = createColorPicker(Color.BLACK);
+        headerBackgroundColorPicker = createColorPicker(Color.WHITE);
+        mainStyleVBox.getChildren().add(createStyledSection("Header Styling",
+                createControlGroup("Font:", headerFontFamilyComboBox),
+                createControlGroup("Size:", headerFontSizeSpinner),
+                createControlGroup("Text Color:", headerTextColorPicker),
+                createControlGroup("Background Color:", headerBackgroundColorPicker)
+        ));
+
+        // Data Cell Styling
+        dataFontFamilyComboBox = createFontComboBox(fontNames, defaults.getDataFontFamily());
+        dataFontSizeSpinner = createFontSizeSpinner(defaults.getDataFontSize(), 6, 16);
+        dataTextColorPicker = createColorPicker(Color.BLACK);
+        mainStyleVBox.getChildren().add(createStyledSection("Data Cell Styling",
+                createControlGroup("Font:", dataFontFamilyComboBox),
+                createControlGroup("Size:", dataFontSizeSpinner),
+                createControlGroup("Text Color:", dataTextColorPicker)
+        ));
+
+        // Row Styling
+        alternatingRowBackgroundColorPicker = createColorPicker(Color.GRAY);
+        mainStyleVBox.getChildren().add(createStyledSection("Row Styling",
+                createControlGroup("Alt. Row Background:", alternatingRowBackgroundColorPicker)
+        ));
+
+        // Page Number Styling
+        pageNumberFontFamilyComboBox = createFontComboBox(fontNames, defaults.getPageNumberFontFamily());
+        pageNumberFontSizeSpinner = createFontSizeSpinner(defaults.getPageNumberFontSize(), 6, 12);
+        pageNumberColorPicker = createColorPicker(Color.BLACK);
+        mainStyleVBox.getChildren().add(createStyledSection("Page Number Styling",
+                createControlGroup("Font:", pageNumberFontFamilyComboBox),
+                createControlGroup("Size:", pageNumberFontSizeSpinner),
+                createControlGroup("Color:", pageNumberColorPicker)
+        ));
+
+        // Layout Configuration
+        pageMarginSpinner = createLayoutSpinner(defaults.getPageMargin(), 10, 100);
+        cellPaddingSpinner = createLayoutSpinner(defaults.getCellPadding(), 0, 20);
+        mainStyleVBox.getChildren().add(createStyledSection("Layout Configuration",
+                createControlGroup("Page Margin:", pageMarginSpinner),
+                createControlGroup("Cell Padding:", cellPaddingSpinner)
+        ));
+
+        return mainStyleVBox;
+    }
+
+    private VBox createStyledSection(String title, Node... children) {
+        VBox sectionVBox = new VBox(5);
+        Label sectionTitle = new Label(title);
+        sectionTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: white;");
+        sectionVBox.getChildren().add(sectionTitle);
+        for (Node child : children) {
+            sectionVBox.getChildren().add(child);
+        }
+        return sectionVBox;
+    }
+
+    private HBox createControlGroup(String labelText, Node control) {
+        HBox hbox = new HBox(10);
+        Label label = new Label(labelText);
+        label.setTextFill(Color.WHITE);
+        label.setMinWidth(150); // Align controls
+        control.setStyle("-fx-pref-width: 200;"); // Set preferred width for controls
+        hbox.getChildren().addAll(label, control);
+        return hbox;
+    }
+
+    private ComboBox<String> createFontComboBox(List<String> fontNames, String defaultFont) {
+        ComboBox<String> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(fontNames);
+        comboBox.setValue(defaultFont);
+        return comboBox;
+    }
+
+    private Spinner<Double> createFontSizeSpinner(double defaultValue, double min, double max) {
+        Spinner<Double> spinner = new Spinner<>(min, max, defaultValue, 0.5); // Step 0.5
+        spinner.setEditable(true);
+        return spinner;
+    }
+
+    private Spinner<Double> createLayoutSpinner(double defaultValue, double min, double max) {
+        Spinner<Double> spinner = new Spinner<>(min, max, defaultValue, 1.0); // Step 1.0
+        spinner.setEditable(true);
+        return spinner;
+    }
+
+    private ColorPicker createColorPicker(Color defaultColor) {
+        ColorPicker colorPicker = new ColorPicker(defaultColor);
+        return colorPicker;
+    }
+
+    private java.awt.Color convertToAwtColor(javafx.scene.paint.Color fxColor) {
+        if (fxColor == null) return null; // Handle null for no background color
+        return new java.awt.Color((float) fxColor.getRed(),
+                (float) fxColor.getGreen(),
+                (float) fxColor.getBlue(),
+                (float) fxColor.getOpacity());
+    }
+
+    private Color convertToFxColor(Color awtColor) {
+        if (awtColor == null) return null;
+        return javafx.scene.paint.Color.rgb((int) awtColor.getRed(), (int) awtColor.getGreen(), (int) awtColor.getBlue(), (int) awtColor.getOpacity() / 255.0);
+    }
+
 
     public void setTable(final String table, final HashMap<String, ArrayList<String>> ColumnNames) {
         this.table = table;
@@ -85,7 +266,7 @@ public class ReportController {
             secondaryController.setCode("SELECT");
             secondaryController.setTable(table);
             secondaryController.setColumns(ColumnsNames);
-          //  secondaryController.setStage(subStage);
+            //  secondaryController.setStage(subStage);
             secondaryController.removeBottomContainer();
 
             VBox.setVgrow(root, Priority.ALWAYS);
@@ -103,10 +284,10 @@ public class ReportController {
             }); */
 
             // Opcional: definir a modalidade da subjanela
-           // subStage.initModality(Modality.APPLICATION_MODAL);
+            // subStage.initModality(Modality.APPLICATION_MODAL);
 
             // Mostrar a subjanela
-           // subStage.show();
+            // subStage.show();
         } catch (Exception e) {
             ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
         }
@@ -141,7 +322,7 @@ public class ReportController {
                 showAlert(Alert.AlertType.ERROR, "Database Error", "No active database selected or available.");
                 return;
             } */
-        //    currentDB = mainCtrlRef.DatabaseOpened.get(mainCtrlRef.currentDB.get());
+            //    currentDB = mainCtrlRef.DatabaseOpened.get(mainCtrlRef.currentDB.get());
             if (db == null) {
                 showAlert(Alert.AlertType.ERROR, "Database Error", "Could not retrieve the current database connection.");
                 return;
@@ -183,15 +364,39 @@ public class ReportController {
 
         // 6. Generate PDF
         ReportService reportService = new ReportService();
-        ReportData reportData = new ReportData(title, selectedReportColumns, dataRows);
-            Thread.ofVirtual().start(()-> {
-                    try {
+
+        ReportStyleConfig styleConfig = new ReportStyleConfig();
+        styleConfig.setTitleFontFamily(titleFontFamilyComboBox.getValue());
+        styleConfig.setTitleFontSize(titleFontSizeSpinner.getValue().floatValue());
+        styleConfig.setTitleColor(convertToAwtColor(titleColorPicker.getValue()));
+
+        styleConfig.setHeaderFontFamily(headerFontFamilyComboBox.getValue());
+        styleConfig.setHeaderFontSize(headerFontSizeSpinner.getValue().floatValue());
+        styleConfig.setHeaderTextColor(convertToAwtColor(headerTextColorPicker.getValue()));
+        styleConfig.setHeaderBackgroundColor(convertToAwtColor(headerBackgroundColorPicker.getValue()));
+
+        styleConfig.setDataFontFamily(dataFontFamilyComboBox.getValue());
+        styleConfig.setDataFontSize(dataFontSizeSpinner.getValue().floatValue());
+        styleConfig.setDataTextColor(convertToAwtColor(dataTextColorPicker.getValue()));
+
+        styleConfig.setAlternatingRowBackgroundColor(convertToAwtColor(alternatingRowBackgroundColorPicker.getValue()));
+
+        styleConfig.setPageNumberFontFamily(pageNumberFontFamilyComboBox.getValue());
+        styleConfig.setPageNumberFontSize(pageNumberFontSizeSpinner.getValue().floatValue());
+        styleConfig.setPageNumberColor(convertToAwtColor(pageNumberColorPicker.getValue()));
+
+        styleConfig.setPageMargin(pageMarginSpinner.getValue().floatValue());
+        styleConfig.setCellPadding(cellPaddingSpinner.getValue().floatValue());
+
+        ReportData reportData = new ReportData(title, selectedReportColumns, dataRows, styleConfig);
+        Thread.ofVirtual().start(()-> {
+            try {
                 reportService.generatePdfReport(reportData, file.getAbsolutePath());
             } catch (IOException e) {
                 showAlert(Alert.AlertType.ERROR, "PDF Generation Error", "Failed to generate PDF report: " + e.getMessage());
                 e.printStackTrace(); // For logging
             }
-            });
+        });
 
         // 7. Show Success Message and Close Dialog
         showAlert(Alert.AlertType.INFORMATION, "Success", "Report generated successfully at:\n" + file.getAbsolutePath());

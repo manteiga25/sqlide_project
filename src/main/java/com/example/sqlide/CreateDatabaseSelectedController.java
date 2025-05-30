@@ -3,6 +3,7 @@ package com.example.sqlide;
 import com.example.sqlide.drivers.MySQL.MySQLDB;
 import com.example.sqlide.drivers.PostegreSQL.PostreSQLDB;
 import com.example.sqlide.drivers.model.DataBase;
+import com.jfoenix.controls.JFXPasswordField;
 import com.jfoenix.controls.JFXTextField;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -21,7 +22,10 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 public class CreateDatabaseSelectedController {
 
     @FXML
-    JFXTextField TextDBName, UrlField, PortField, PasswordField, userField, ScriptPath;
+    private JFXTextField TextDBName, UrlField, PortField, userField, ScriptPath;
+
+    @FXML
+    private JFXPasswordField PasswordField;
 
     @FXML
     private RadioButton sharedMode, privateMode, normalMode, ExclusiveMode;
@@ -34,7 +38,7 @@ public class CreateDatabaseSelectedController {
 
     private DataBase dataBase;
 
-    mainController ref;
+    private mainController ref;
 
     private Stage stage;
 
@@ -74,7 +78,7 @@ public class CreateDatabaseSelectedController {
     }
 
     @FXML
-    public void initialize() {
+    private void initialize() {
         SpinnerValueFactory.IntegerSpinnerValueFactory cacheFactory =
                 new SpinnerValueFactory.IntegerSpinnerValueFactory(-2147483648, 2147483647, 10, 4);
 
@@ -103,7 +107,7 @@ public class CreateDatabaseSelectedController {
 
     @FXML
     public void createDB() throws IOException {
-        Map<String, String> modes = new HashMap<>();
+        HashMap<String, String> modes = new HashMap<>();
 
         modes.put("encoding", "'" + CharMode.getValue() + "'");
         modes.put("journal_mode", JournalMode.getValue());
@@ -121,7 +125,7 @@ public class CreateDatabaseSelectedController {
 
       //  dataBase.CreateSchema(UrlField.getText()+PortField.getText(), TextDBName.getText(), userField.getText(), PasswordField.getText());
 
-        ref.createDB(dataBase, UrlField.getText()+PortField.getText(), TextDBName.getText(), userField.getText(), PasswordField.getText(), modes);
+        ref.createDB(dataBase, UrlField.getText()+":"+PortField.getText(), TextDBName.getText(), userField.getText(), PasswordField.getText(), modes);
 
         //   modes.put("page_size", Pagesize.getValue().toString());
 

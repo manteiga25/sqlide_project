@@ -1,5 +1,8 @@
 package com.example.sqlide;
 
+import com.example.sqlide.drivers.MySQL.MySQLDB;
+import com.example.sqlide.drivers.PostegreSQL.PostreSQLDB;
+import com.example.sqlide.drivers.model.DataBase;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -79,7 +82,7 @@ public class CreateDatabaseController {
             case 0:
                 try {
                     // Carrega o arquivo FXML
-                    FXMLLoader loader = new FXMLLoader(getClass().getResource("DBLiteInterface.fxml"));
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("CreateSqliteDb.fxml"));
                     //    VBox miniWindow = loader.load();
                     Parent root = loader.load();
 
@@ -102,7 +105,7 @@ public class CreateDatabaseController {
                 closeWindow();
                 break;
             default:
-
+                loadCreateDatabaseServer(cellRef);
                 closeWindow();
                 break;
         }
@@ -111,17 +114,26 @@ public class CreateDatabaseController {
     private void loadCreateDatabaseServer(final int dbIndex) {
         try {
             // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("openDatabaseServer.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("CreateServerDbStage.fxml"));
             //    VBox miniWindow = loader.load();
             Parent root = loader.load();
 
-            OpenDatabaseSelectedController secondaryController = loader.getController();
+            CreateDatabaseSelectedController secondaryController = loader.getController();
+
+            DataBase dataBase = null;
+
+            if (dbIndex == 1) {
+                dataBase = new MySQLDB();
+            } else if (dbIndex == 2) {
+                dataBase = new PostreSQLDB();
+            }
 
             // Criar um novo Stage para a subjanela
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initialize(context, cellRef, subStage);
+            secondaryController.initWin(context, dataBase, subStage);
+           // secondaryController.initialize(context, cellRef, subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);

@@ -732,13 +732,22 @@ public class MySQLDB extends DataBase {
     }
 
     @Override
-    public boolean CreateSchema(String url, final String name, String userName, String password) {
-        final String completeURL = "jdbc:mysql://" + url + name;
+    public boolean connect(String url, String userName, String password) {
+        return false;
+    }
+
+    @Override
+    public boolean CreateSchema(String url, final String name, String userName, String password, Map<String, String> modes) {
+        final String completeURL = "jdbc:mysql://" + url;
+        System.out.println(completeURL);
         try {
             connection = DriverManager.getConnection(completeURL, userName, password);
             statement = connection.createStatement();
-            super.databaseName = connection.getMetaData().getDatabaseProductName();
-            //  FormatDBCreation(formatData);
+            super.databaseName = name;
+            statement.execute("CREATE DATABASE " + name + ";");
+            FormatDBCreation(modes);
+            connection = DriverManager.getConnection(completeURL + "/" + name, userName, password);
+            statement = connection.createStatement();
             return true;
         } catch (SQLException e) {
             MsgException = e.getMessage();
@@ -746,9 +755,29 @@ public class MySQLDB extends DataBase {
         }
     }
 
+    private void FormatDBCreation(final Map<String, String> formatData) throws SQLException {
+        final boolean script = formatData.containsKey("innit");
+        String scriptPath = "";
+        if (script) {
+            scriptPath = formatData.get("innit");
+            formatData.remove("innit");
+        }
+        for (final String feature : formatData.keySet()) {
+            System.out.println(formatData.get(feature));
+          //  statement.executeUpdate("PRAGMA " + feature + " = " + formatData.get(feature) + ";");
+        }
+        // statement.executeUpdate("PRAGMA foreign_keys = ON;");
+        try {
+            executeScript(scriptPath);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     @Override
     public boolean connect(String url, final String name, String userName, String password) {
         final String completeURL = "jdbc:mysql://" + url + name;
+        System.out.println(completeURL);
         try {
             connection = DriverManager.getConnection(completeURL, userName, password);
             statement = connection.createStatement();
@@ -782,7 +811,51 @@ public class MySQLDB extends DataBase {
 
     @Override
     public boolean createTable(String table, boolean temporary, boolean rowid, ArrayList<ColumnMetadata> columnMetadata) {
-        return false;
+        final String Temporary = temporary ? "TEMPORARY " : "";
+      //  final String Rowid = rowid ? "" : " WITHOUT ROWID ";
+        //  final String prime = rowid ? "" : "PRIMARY KEY";
+        StringBuilder command = new StringBuilder("CREATE " + Temporary + "TABLE " + table + " (");
+
+        for (final ColumnMetadata column : columnMetadata) {
+            final String NotNull = column.NOT_NULL ? " NOT NULL" : "";
+            final String Default = !Objects.equals(column.defaultValue, "") && !Objects.equals(column.defaultValue, "null") ? " DEFAULT " + column.defaultValue : "";
+            final String IsUnique = column.isUnique ? " UNIQUE " : "";
+            //   String Default = "";
+            final boolean isForeign = column.foreign.isForeign;
+            //      final String ForeignTable = column.ForeignKey == null || Objects.equals(column.ForeignKey[0], "") ? "REFERENCES " + column.ForeignKey[0] + "(" + column.ForeignKey[1] + ")" : "";
+            //   final String[] ForeignTable = column.ForeignKey;
+            String Type = column.Type;
+            String ColumnName = "";
+            String prime = "";
+            if (column.IsPrimaryKey) {
+                //   ColumnName = "PRIMARY KEY (" + column.Name + ")";
+                //     ColumnName = column.Name + " " + Type + " " + NotNull + " PRIMARY KEY";
+                ColumnName = column.Name;
+                prime = " PRIMARY KEY ";
+            }
+            else if (isForeign) {
+                final String onUpdate = column.foreign.onUpdate.isEmpty() ? "" : " ON UPDATE " + column.foreign.onUpdate;
+                final String onDelete = column.foreign.onEliminate.isEmpty() ? "" : " ON DELETE " + column.foreign.onEliminate;
+                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.foreign.tableRef + "(" + column.foreign.columnRef + ")" + onUpdate + onDelete;
+                Type = "";
+            }
+            else {
+                ColumnName = column.Name;
+            }
+            command.append(ColumnName).append(" ").append(Type).append(NotNull).append(prime).append(IsUnique).append(Default).append(", ");
+        }
+
+        final int strSize = command.length();
+
+        command.delete(strSize-3, strSize).append(");");
+        try {
+            System.out.println(command);
+            statement.execute(command.toString());
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
     }
 
     @Override

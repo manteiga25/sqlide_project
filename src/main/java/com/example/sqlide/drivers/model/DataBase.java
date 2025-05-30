@@ -271,7 +271,7 @@ public abstract class DataBase {
 
     public abstract boolean connect(String url, String userName, String password);
 
-    public abstract boolean CreateSchema(String url, String name, String userName, String password);
+    public abstract boolean CreateSchema(String url, String name, String userName, String password, Map<String, String> modes);
 
     public abstract boolean connect(String url, String name, String userName, String password);
 

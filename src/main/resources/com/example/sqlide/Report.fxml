@@ -19,7 +19,10 @@
         </Label>
         <VBox spacing="5.0">
             <children>
-                <Label text="Report Title:" textFill="WHITE" />
+                <Label text="Report Title:" textFill="WHITE">
+               <font>
+                  <Font size="18.0" />
+               </font></Label>
                 <JFXTextField fx:id="reportTitleField" promptText="Enter report title" styleClass="text-field">
                <stylesheets>
                   <URL value="@../../../css/TextFieldStyle.css" />
@@ -27,9 +30,12 @@
                </stylesheets></JFXTextField>
             </children>
         </VBox>
-        <VBox spacing="5.0">
+        <VBox fx:id="StyleBox" spacing="5.0">
          <children>
-                <Label text="Select columns for the report:" textFill="WHITE" />
+                <Label text="Select columns for the report:" textFill="WHITE">
+               <font>
+                  <Font size="18.0" />
+               </font></Label>
          </children></VBox>
       <Pane fx:id="TempPane" />
         <HBox alignment="CENTER_RIGHT" spacing="10.0">

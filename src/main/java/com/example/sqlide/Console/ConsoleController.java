@@ -26,7 +26,7 @@ public class ConsoleController {
 
     private final HashMap<String, BlockingQueue<Logger>> senders = new HashMap<>();
 
-    private final HashMap<String, Node> tables = new HashMap<>(), SQLConsole = new HashMap<>();
+    private final HashMap<String, Node> tables = new HashMap<>(), SQLConsole = new HashMap<>(), SystemConsole = new HashMap<>();
 
     private final HashMap<String, String> paths = new HashMap<>();
 
@@ -56,6 +56,8 @@ public class ConsoleController {
                     Container.getChildren().add(SQLConsole.get(currentDB.get()));
                     break;
                 case 2:
+                    if (SystemConsole.get(currentDB.get()) == null) loadSystemStage();
+                    Container.getChildren().add(SystemConsole.get(currentDB.get()));
                     break;
             }
         });
@@ -84,6 +86,20 @@ public class ConsoleController {
             SQLcontroller.load(types.get(currentDB.get()), paths.get(currentDB.get()));
             SQLConsole.put(currentDB.get(), SQLcontroller.getContainer());
             VBox.setVgrow(SQLConsole.get(currentDB.get()), Priority.ALWAYS);
+
+            // Criar um novo Stage para a subjanela
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadSystemStage() {
+        try {
+            // Carrega o arquivo FXML
+            SystemTerminalController SQLcontroller = new SystemTerminalController();
+          //  SQLcontroller.load(types.get(currentDB.get()), paths.get(currentDB.get()));
+            SystemConsole.put(currentDB.get(), SQLcontroller.getContainer());
+            VBox.setVgrow(SystemConsole.get(currentDB.get()), Priority.ALWAYS);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {

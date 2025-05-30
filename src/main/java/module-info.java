@@ -29,6 +29,7 @@ module com.example.sqlide {
     requires org.apache.pdfbox;
     requires ch.qos.logback.classic;
     requires jakarta.mail;
+    requires org.checkerframework.checker.qual;
 
     opens com.example.sqlide to javafx.fxml;
     opens com.example.sqlide.exporter.Excel to javafx.fxml;

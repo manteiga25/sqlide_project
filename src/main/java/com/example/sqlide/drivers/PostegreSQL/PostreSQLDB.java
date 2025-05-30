@@ -4,7 +4,6 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.TypesModelList;
-import org.apache.poi.ss.formula.functions.T;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -968,6 +967,11 @@ public class PostreSQLDB extends DataBase {
             MsgException = e.getMessage();
             return false;
         }
+    }
+
+    @Override
+    public boolean CreateSchema(String url, String name, String userName, String password, Map<String, String> modes) {
+        return false;
     }
 
     @Override

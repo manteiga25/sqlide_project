@@ -1434,6 +1434,11 @@ public class SQLiteDB extends DataBase {
     }
 
     @Override
+    public boolean CreateSchema(String url, String name, String userName, String password, Map<String, String> modes) {
+        return false;
+    }
+
+    @Override
     public boolean connect(String url, String name, String userName, String password) {
         return false;
     }

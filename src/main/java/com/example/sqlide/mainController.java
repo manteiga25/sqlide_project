@@ -459,11 +459,7 @@ public class mainController implements requestInterface {
 
         final boolean hasScript = modes.containsKey("innit");
 
-        if (!db.CreateSchema(url, DBName, user, pass)) {
-
-        }
-
-        if (!db.connect(DBName, modes)) {
+        if (!db.CreateSchema(url, DBName, user, pass, modes)) {
             ShowError("Error SQL", "Error to create Database " + DBName + "\n" + db.GetException());
             return;
         }
@@ -471,6 +467,9 @@ public class mainController implements requestInterface {
         //if (db.Connect(DBName + ".db", modes)) {
         //  System.out.println("sucess");
         //if (!created) {
+        final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
+
+        db.setMessager(sender);
         createContainerDB();
         db.buffer = buffer;
         //}
@@ -478,29 +477,33 @@ public class mainController implements requestInterface {
 
         DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
 
-        if (consoleController == null) Platform.runLater(this::loadConsole);
+        if (consoleController == null) loadConsole();
 
         setDividerSpace();
 
         if (hasScript) {
-            try {
-                openDB.readTables();
-            } catch (Exception e) {
+            Thread init = new Thread(()-> {
                 try {
-                    openDB.closeInterface();
-                    db.disconnect();
-                } catch (SQLException _) {
+                    openDB.readTables();
+                    Platform.runLater(()->consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType()));
+                    DatabaseOpened.put(DBName, db);
+                    DBopened.put(DBName, openDB);
+                    DatabasesOpened.add(db);
+                    DatabasesName.add(DBName);
+                    currentDB.set(DBName);
+                } catch (Exception e) {
+                    try {
+                        openDB.closeInterface();
+                        db.disconnect();
+                    } catch (SQLException _) {
+                    }
+                    ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
                 }
-                ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
-                return;
-            }
-        }
+            });
+            init.setDaemon(true);
+            init.start();
 
-        DatabaseOpened.put(DBName, db);
-        DBopened.put(DBName, openDB);
-        DatabasesOpened.add(db);
-        DatabasesName.add(DBName);
-        currentDB.set(DBName);
+        }
 
     }
 
@@ -529,6 +532,9 @@ public class mainController implements requestInterface {
         //if (db.Connect(DBName + ".db", modes)) {
         //  System.out.println("sucess");
         //if (!created) {
+        final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
+
+        db.setMessager(sender);
         createContainerDB();
         db.buffer = buffer;
         //}
@@ -541,24 +547,30 @@ public class mainController implements requestInterface {
         setDividerSpace();
 
         if (hasScript) {
-            try {
-                openDB.readTables();
-            } catch (Exception e) {
+            Thread init = new Thread(()->{
                 try {
-                    openDB.closeInterface();
-                    db.disconnect();
-                } catch (SQLException _) {
+                    openDB.readTables();
+                    Platform.runLater(()->consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType()));
+                    DatabaseOpened.put(DBName, db);
+                    DBopened.put(DBName, openDB);
+                    DatabasesOpened.add(db);
+                    DatabasesName.add(DBName);
+                    currentDB.set(DBName);
+                } catch (Exception e) {
+                    try {
+                        openDB.closeInterface();
+                        db.disconnect();
+                    } catch (SQLException _) {
+                    }
+                    ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
                 }
-                ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
-                return;
-            }
+            });
+            init.setDaemon(true);
+            init.start();
+
         }
 
-        DatabaseOpened.put(DBName, db);
-        DBopened.put(DBName, openDB);
-        DatabasesOpened.add(db);
-        DatabasesName.add(DBName);
-        currentDB.set(DBName);
+
 
     }
 
