@@ -4,6 +4,7 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
 
 import java.io.BufferedReader;
@@ -21,6 +22,8 @@ public class MySQLDB extends DataBase {
 
     public MySQLDB() {
         typesOfDB = new MySQLTypesList();
+        foreignModes = new ArrayList<>(List.of("CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"));
+        SQLType = SQLTypes.MYSQL;
     }
 
     @Override
@@ -186,7 +189,13 @@ public class MySQLDB extends DataBase {
 
     @Override
     public boolean deleteColumn(String column, String table) {
-        return false;
+        try {
+            statement.execute("ALTER TABLE " + table + " DROP COLUMN " + column + ";");
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -238,6 +247,11 @@ public class MySQLDB extends DataBase {
 
     @Override
     public ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset) {
+        return null;
+    }
+
+    @Override
+    public ArrayList<Long> fetchDataMap(String Command) {
         return null;
     }
 
@@ -827,6 +841,7 @@ public class MySQLDB extends DataBase {
             String Type = column.Type;
             String ColumnName = "";
             String prime = "";
+            final String comment = column.comment.isEmpty() ? "" : " COMMENT " + column.comment;
             if (column.IsPrimaryKey) {
                 //   ColumnName = "PRIMARY KEY (" + column.Name + ")";
                 //     ColumnName = column.Name + " " + Type + " " + NotNull + " PRIMARY KEY";
@@ -836,7 +851,7 @@ public class MySQLDB extends DataBase {
             else if (isForeign) {
                 final String onUpdate = column.foreign.onUpdate.isEmpty() ? "" : " ON UPDATE " + column.foreign.onUpdate;
                 final String onDelete = column.foreign.onEliminate.isEmpty() ? "" : " ON DELETE " + column.foreign.onEliminate;
-                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.foreign.tableRef + "(" + column.foreign.columnRef + ")" + onUpdate + onDelete;
+                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.foreign.tableRef + "(" + column.foreign.columnRef + ")" + onUpdate + onDelete + comment;
                 Type = "";
             }
             else {

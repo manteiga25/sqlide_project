@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.net.*?>
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<BorderPane fx:id="view" prefHeight="700.0" prefWidth="900.0" style="-fx-background-color: linear-gradient(to bottom, #2C2C2C, #1E1E1E);" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.NeuralNetConfigController">
+
+    <padding>
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+    </padding>
+
+    <!-- Top Section: Global Network Settings -->
+    <top>
+        <VBox spacing="10.0" style="-fx-background-color: #333333; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 2);">
+            <padding>
+                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+            </padding>
+
+            <Label fx:id="globalTitle" style="-fx-font-weight: bold; -fx-font-size: 18px;" text="Global Network Settings" textFill="WHITE" />
+
+            <GridPane fx:id="globalSettingsGrid" hgap="15.0" vgap="10.0">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="150.0" />
+                    <ColumnConstraints hgrow="SOMETIMES" minWidth="200.0" />
+                    <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="150.0" />
+                    <ColumnConstraints hgrow="SOMETIMES" minWidth="200.0" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints minHeight="35.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="35.0" vgrow="SOMETIMES" />
+                </rowConstraints>
+
+                <!-- Learning Rate -->
+                <Label style="-fx-font-size: 14px;" text="Learning Rate:" textFill="WHITE" />
+                <Spinner fx:id="learningRateSpinner" amountToStepBy="0.0001" editable="true" initialValue="0.01" max="0.1" min="1.0E-5" style="-fx-background-color: #404040; -fx-background-radius: 5;" GridPane.columnIndex="1" />
+
+                <!-- Optimizer -->
+                <Label style="-fx-font-size: 14px;" text="Optimizer:" textFill="WHITE" GridPane.columnIndex="2" />
+                <ChoiceBox fx:id="optimizerComboBox" prefWidth="180.0" style="-fx-background-color: #404040; -fx-background-radius: 5; -fx-border-radius: 5;" value="ADAM" GridPane.columnIndex="3">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="ADAM" />
+                            <String fx:value="SGD" />
+                            <String fx:value="RMSPROP" />
+                            <String fx:value="NESTEROVS" />
+                        </FXCollections>
+                    </items>
+                </ChoiceBox>
+
+                <!-- Number of Epochs -->
+                <Label style="-fx-font-size: 14px;" text="Number of Epochs:" textFill="WHITE" GridPane.rowIndex="1" />
+                <Spinner fx:id="numberOfEpochsSpinner" editable="true" initialValue="100" max="1000" min="1" style="-fx-background-color: #404040; -fx-background-radius: 5;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                <!-- Seed -->
+                <Label style="-fx-font-size: 14px;" text="Seed:" textFill="WHITE" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                <Spinner fx:id="seedSpinner" editable="true" initialValue="12345" max="9223372036854775807" min="0" style="-fx-background-color: #404040; -fx-background-radius: 5;" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+            </GridPane>
+        </VBox>
+    </top>
+
+    <!-- Center Section: Network Layers -->
+    <center>
+        <VBox spacing="10.0" style="-fx-background-color: #333333; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 2);">
+            <padding>
+                <Insets bottom="10.0" left="0.0" right="0.0" top="10.0" />
+            </padding>
+
+            <Label fx:id="layersTitle" style="-fx-font-weight: bold; -fx-font-size: 18px;" text="Network Layers" textFill="WHITE" />
+
+            <ListView fx:id="layerListView" prefHeight="200.0" style="-fx-background-color: #404040; -fx-background-radius: 5; -fx-border-radius: 5;" />
+
+            <!-- Layer Management Buttons -->
+            <HBox fx:id="layerButtonsBox" alignment="CENTER" spacing="10.0">
+                <Button fx:id="addLayerButton" mnemonicParsing="false" onAction="#addNewLayer" style="-fx-background-color: #4A90E2; -fx-background-radius: 5;" text="Add Layer" textFill="WHITE">
+                    <font>
+                        <Font name="System" size="12.0" />
+                    </font>
+                </Button>
+                <Button fx:id="removeLayerButton" mnemonicParsing="false" onAction="#removeSelectedLayer" style="-fx-background-color: #E74C3C; -fx-background-radius: 5;" text="Remove Selected" textFill="WHITE">
+                    <font>
+                        <Font name="System" size="12.0" />
+                    </font>
+                </Button>
+                <Button fx:id="moveUpButton" mnemonicParsing="false" onAction="#moveLayerUp" style="-fx-background-color: #27AE60; -fx-background-radius: 5;" text="Move Up" textFill="WHITE">
+                    <font>
+                        <Font name="System" size="12.0" />
+                    </font>
+                </Button>
+                <Button fx:id="moveDownButton" mnemonicParsing="false" onAction="#moveLayerDown" style="-fx-background-color: #F39C12; -fx-background-radius: 5;" text="Move Down" textFill="WHITE">
+                    <font>
+                        <Font name="System" size="12.0" />
+                    </font>
+                </Button>
+            </HBox>
+        </VBox>
+    </center>
+
+    <!-- Right Section: Layer Editor -->
+    <right>
+        <GridPane fx:id="layerEditorPane" hgap="10.0" minWidth="280.0" style="-fx-background-color: #333333; -fx-background-radius: 10; -fx-border-color: #555555; -fx-border-width: 1; -fx-border-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 2);" vgap="8.0">
+            <padding>
+                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+            </padding>
+
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="120.0" minWidth="120.0" />
+                <ColumnConstraints hgrow="ALWAYS" minWidth="140.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints minHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="35.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="35.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="35.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="35.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="40.0" vgrow="SOMETIMES" />
+            </rowConstraints>
+
+            <!-- Editor Title -->
+            <Label fx:id="layerEditorTitle" style="-fx-font-weight: bold; -fx-font-size: 16px;" text="Edit Layer" textFill="WHITE" GridPane.columnSpan="2" />
+
+            <!-- Layer Type -->
+            <Label style="-fx-font-size: 12px;" text="Layer Type:" textFill="WHITE" GridPane.rowIndex="1" />
+            <ChoiceBox fx:id="layerTypeEditorComboBox" maxWidth="1.7976931348623157E308" style="-fx-background-color: #404040; -fx-background-radius: 5; -fx-border-radius: 5;" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                <items>
+                    <FXCollections fx:factory="observableArrayList">
+                        <String fx:value="DenseLayer" />
+                        <String fx:value="OutputLayer" />
+                    </FXCollections>
+                </items>
+            </ChoiceBox>
+
+            <!-- Inputs (nIn) -->
+            <Label style="-fx-font-size: 12px;" text="Inputs (nIn):" textFill="WHITE" GridPane.rowIndex="2" />
+            <Spinner fx:id="nInEditorSpinner" editable="true" initialValue="0" max="10000" maxWidth="1.7976931348623157E308" min="0" style="-fx-background-color: #404040; -fx-background-radius: 5;" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+            <!-- Outputs (nOut) -->
+            <Label style="-fx-font-size: 12px;" text="Outputs (nOut):" textFill="WHITE" GridPane.rowIndex="3" />
+            <Spinner fx:id="nOutEditorSpinner" editable="true" initialValue="1" max="10000" maxWidth="1.7976931348623157E308" min="1" style="-fx-background-color: #404040; -fx-background-radius: 5;" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+            <!-- Activation Function -->
+            <Label style="-fx-font-size: 12px;" text="Activation:" textFill="WHITE" GridPane.rowIndex="4" />
+            <ChoiceBox fx:id="activationEditorComboBox" maxWidth="1.7976931348623157E308" value="RELU" style="-fx-background-color: #404040; -fx-background-radius: 5; -fx-border-radius: 5;" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                <items>
+                    <FXCollections fx:factory="observableArrayList">
+                        <String fx:value="RELU" />
+                        <String fx:value="SIGMOID" />
+                        <String fx:value="SOFTMAX" />
+                        <String fx:value="TANH" />
+                        <String fx:value="IDENTITY" />
+                        <String fx:value="LEAKYRELU" />
+                    </FXCollections>
+                </items>
+            </ChoiceBox>
+
+            <!-- Apply Changes Button -->
+            <HBox alignment="CENTER_RIGHT" GridPane.columnSpan="2" GridPane.rowIndex="5">
+                <Button fx:id="saveLayerChangesButton" mnemonicParsing="false" onAction="#saveLayerChanges" style="-fx-background-color: linear-gradient(to right, #3574F0, #4A90E2); -fx-background-radius: 5;" text="Apply Changes" textFill="WHITE">
+                    <font>
+                        <Font name="System Bold" size="12.0" />
+                    </font>
+                </Button>
+            </HBox>
+        </GridPane>
+    </right>
+
+    <!-- Bottom Section: Action Buttons -->
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10.0" style="-fx-padding: 10 0 0 0;">
+            <Button style="-fx-background-color: transparent; -fx-border-color: #666666; -fx-border-radius: 5; -fx-background-radius: 5;" text="Reset to Default" textFill="#CCCCCC">
+                <font>
+                    <Font name="System" size="12.0" />
+                </font>
+            </Button>
+            <Button style="-fx-background-color: #6C7B7F; -fx-background-radius: 5;" text="Load Configuration" textFill="WHITE">
+                <font>
+                    <Font name="System" size="12.0" />
+                </font>
+            </Button>
+            <Button style="-fx-background-color: #27AE60; -fx-background-radius: 5;" text="Save Configuration" textFill="WHITE">
+                <font>
+                    <Font name="System" size="12.0" />
+                </font>
+            </Button>
+            <Button style="-fx-background-color: linear-gradient(to right, #3574F0, #4A90E2); -fx-background-radius: 5; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 3, 0, 0, 1);" text="Train Network" textFill="WHITE">
+                <font>
+                    <Font name="System Bold" size="14.0" />
+                </font>
+            </Button>
+        </HBox>
+    </bottom>
+   <stylesheets>
+      <URL value="@../../../../css/SpinnerStyle.css" />
+      <URL value="@../../../../css/ChoiceBoxModern.css" />
+   </stylesheets>
+</BorderPane>

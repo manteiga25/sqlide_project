@@ -45,8 +45,19 @@ abstract public class handleWindow {
         return result.filter(buttonType -> buttonType == buttonOk).isPresent();
     }
 
+    public static void ShowError(final String title, final String message, final String extra) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(message);
+            alert.setContentText(extra);
+            alert.show();
+        });
+    }
+
     public static void ShowError(final String title, final String message) {
-        Platform.runLater(() -> {Alert alert = new Alert(Alert.AlertType.ERROR);
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle(title);
             alert.setHeaderText(null);
             alert.setContentText(message);

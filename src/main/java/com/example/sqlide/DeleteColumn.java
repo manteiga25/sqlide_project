@@ -47,9 +47,8 @@ public class DeleteColumn {
             return;
         }
         final int col = choice.getItems().indexOf(column);
-        if (ref.deleteColumn(Table, column, col)) {
-            closeWindow();
-        }
+        ref.deleteColumn(Table, column, col);
+        closeWindow();
     }
 
     @FXML

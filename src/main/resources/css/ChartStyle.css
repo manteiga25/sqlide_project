@@ -1,0 +1,68 @@
+.chart {
+    -fx-background-color: transparent;
+    -fx-plot-background-color: rgba(69, 71, 90, 0.3);
+    -fx-background-radius: 8;
+    -fx-border-color: #585b70;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.chart-title {
+    -fx-text-fill: #cdd6f4;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.chart-legend {
+    -fx-background-color: rgba(69, 71, 90, 0.8);
+    -fx-background-radius: 6;
+    -fx-padding: 8;
+}
+
+.axis {
+    -fx-tick-label-fill: #a6adc8;
+    -fx-font-size: 11px;
+}
+
+.axis-label {
+    -fx-text-fill: #cdd6f4;
+    -fx-font-weight: bold;
+}
+
+/* Chart Series Colors */
+
+.text-field {
+    -fx-background-color:  #2E2E2E;
+    -fx-border-color:  GRAY;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: white;
+}
+
+.toggle-button {
+    -fx-background-color: #45475a;
+    -fx-text-fill: #cdd6f4;
+    -fx-border-color: #585b70;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+/* Toggle Button States */
+.toggle-button:selected {
+    -fx-background-color: #89b4fa !important;
+    -fx-text-fill: #1e1e2e !important;
+    -fx-border-color: transparent;
+}
+
+.toggle-button:hover {
+    -fx-background-color: rgba(137, 180, 250, 0.1);
+    -fx-border-color: #89b4fa;
+}
+
+/* TextField Focus Effects */
+.text-field:focused {
+    -fx-border-color: #89b4fa;
+    -fx-effect: dropshadow(gaussian, rgba(137, 180, 250, 0.3), 6, 0, 0, 1);
+}

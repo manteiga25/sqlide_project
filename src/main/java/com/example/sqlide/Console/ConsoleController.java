@@ -113,4 +113,20 @@ public class ConsoleController {
         types.put(name, sql);
         ModeBox.getSelectionModel().select(0);
     }
+
+    @FXML
+    private void delete() {
+        if (tables.get(currentDB.get()) != null) {
+            TableView<?> tab = (TableView<?>) tables.get(currentDB.get());
+            tab.getItems().clear();
+        }
+        if (SQLConsole.get(currentDB.get()) != null) {
+            VBox box = (VBox) SQLConsole.get(currentDB.get());
+            box.getChildren().clear();
+        }
+        if (SystemConsole.get(currentDB.get()) != null) {
+            VBox box = (VBox) SystemConsole.get(currentDB.get());
+            box.getChildren().clear();
+        }
+    }
 }

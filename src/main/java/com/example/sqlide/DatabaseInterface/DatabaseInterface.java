@@ -6,6 +6,7 @@ import com.example.sqlide.Email.EmailController;
 import com.example.sqlide.Report.ReportController;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.neural.NeuralController;
 import com.jfoenix.controls.JFXButton;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -121,15 +122,36 @@ public class DatabaseInterface {
             dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
 
             dialogStage.setScene(new Scene(root));
-            dialogStage.showAndWait();
+            dialogStage.show();
 
         } catch (IOException e) {
-            e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Load Error");
-            alert.setHeaderText("Could not load report configuration dialog.");
-            alert.setContentText("Error: " + e.getMessage());
-            alert.showAndWait();
+            ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
+        }
+    }
+
+    private void openTrainStage() {
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NeuralEngine/NeuralEngineStage.fxml"));
+            Parent root = loader.load();
+
+            NeuralController dialogController = loader.getController();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Configure Report");
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+          /*  if (generateReportButton != null && generateReportButton.getScene() != null) {
+                dialogStage.initOwner(generateReportButton.getScene().getWindow());
+            } */
+
+         //   dialogController.initializeDialog(DatabaseSeted, dialogStage);
+           // dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
+
+            dialogStage.setScene(new Scene(root));
+            dialogStage.show();
+
+        } catch (IOException e) {
+            ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
         }
     }
 
@@ -165,7 +187,7 @@ public class DatabaseInterface {
         HBox ButtonsLine = new HBox(5);
         ButtonsLine.setPadding(new Insets(5,0,5,5));
 
-        JFXButton save = new JFXButton("create table");
+        JFXButton save = new JFXButton("Save");
         save.setOnAction(e -> commit());
 
         JFXButton createTab = new JFXButton("create table");
@@ -180,7 +202,10 @@ public class DatabaseInterface {
         JFXButton ReportButton = new JFXButton("Create Report");
         ReportButton.setOnAction(e -> openReportStage());
 
-        ButtonsLine.getChildren().addAll(createTab, deleteTab, SendEmailButton, ReportButton);
+        JFXButton TrainButton = new JFXButton("Create Model");
+        TrainButton.setOnAction(e -> openTrainStage());
+
+        ButtonsLine.getChildren().addAll(save, createTab, deleteTab, SendEmailButton, ReportButton, TrainButton);
 
         DBTabContainer = new TabPane();
         VBox.setVgrow(DBTabContainer, Priority.ALWAYS);
@@ -263,14 +288,18 @@ public class DatabaseInterface {
         final int indexTab = DBTabContainer.getSelectionModel().getSelectedIndex();
         final TableInterface TableName = TableInterfaceList.get(indexTab);
 
-        if (!ShowConfirmation("Confirmation", "Are you sure to delete Table " + TableName.TableName + "?")) {
+        if (!ShowConfirmation("Confirmation", "Are you sure to delete Table " + TableName.TableName.get() + "?")) {
             return;
         }
 
+        final Stage loader = LoadingStage("Delete Table", "Deleting Table " + TableName.TableName.get());
+
         if (!DatabaseSeted.deleteTable(TableName.TableName.get())) {
-            ShowError("ERROR SQL", "Error to delete table " + TableName.TableName + "\n" + DatabaseSeted.GetException());
+            ShowError("ERROR SQL", "Error to delete table " + TableName.TableName.get(), DatabaseSeted.GetException());
+            loader.close();
             return;
         }
+        loader.close();
         DBTabContainer.getTabs().remove(indexTab);
         TableInterfaceList.remove(indexTab);
     }

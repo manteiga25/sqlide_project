@@ -1,29 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import atlantafx.base.controls.*?>
 <?import com.jfoenix.controls.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<VBox prefHeight="663.0" prefWidth="712.0" spacing="5.0" style="-fx-background-color: #3C3C3C;" stylesheets="@../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewColumn">
+<VBox alignment="CENTER" spacing="5.0" style="-fx-background-color: #3C3C3C;" stylesheets="@../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewColumn">
    <children>
-      <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" prefHeight="63.0" prefWidth="714.0" style="-fx-text-fill: white;" textAlignment="CENTER">
+      <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" style="-fx-text-fill: white;">
          <font>
             <Font name="Arial" size="18.0" />
          </font></Label>
-      <HBox alignment="CENTER" prefHeight="51.0">
+      <HBox alignment="CENTER" prefHeight="51.0" spacing="5.0">
          <children>
-            <Label alignment="CENTER" prefHeight="103.0" prefWidth="86.0" text="Table Name:" textAlignment="CENTER" textFill="WHITE">
+            <Label alignment="CENTER" text="Table Name:" textAlignment="CENTER" textFill="WHITE">
                <font>
                   <Font name="Arial" size="12.0" />
                </font></Label>
-            <JFXTextField fx:id="ColumnNameInput" prefHeight="18.0" prefWidth="149.0" promptText="Name...." style="-fx-text-fill: white; -fx-prompt-text-fill: #bcbcbc;" unFocusColor="WHITE">
+            <JFXTextField fx:id="ColumnNameInput" promptText="Name...." style="-fx-text-fill: white; -fx-prompt-text-fill: #bcbcbc;" unFocusColor="WHITE">
                <HBox.margin>
                   <Insets />
                </HBox.margin></JFXTextField>
-            <Label prefHeight="50.0" prefWidth="100.0" />
-            <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="106.0" prefWidth="58.0" text="Type:" textAlignment="CENTER" textFill="WHITE">
+            <JFXButton fx:id="CommentButton" mnemonicParsing="false" onAction="#loadComment" style="-fx-background-color: #3574F0;" text="Comment" textFill="WHITE">
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font></JFXButton>
+            <Spacer />
+            <Label alignment="CENTER" contentDisplay="CENTER" text="Type:" textAlignment="CENTER" textFill="WHITE">
                <HBox.margin>
                   <Insets />
                </HBox.margin>
@@ -34,9 +39,12 @@
                <HBox.margin>
                   <Insets />
                </HBox.margin></ChoiceBox>
-         </children></HBox>
+         </children>
+         <VBox.margin>
+            <Insets left="20.0" right="20.0" />
+         </VBox.margin></HBox>
       <HBox>
-      <Label prefHeight="43.0" prefWidth="600.0" text="Options for Column:" textAlignment="CENTER" textFill="WHITE">
+      <Label text="Options for Column:" textAlignment="CENTER" textFill="WHITE">
          <font>
             <Font name="Arial Black" size="14.0" />
          </font>
@@ -44,14 +52,14 @@
                <Insets left="10.0" />
             </HBox.margin>
       </Label>
-         <Label prefHeight="45.0" prefWidth="637.0" text="Size Options:" textFill="WHITE">
+         <Spacer/>
+         <Label text="Size Options:" textFill="WHITE">
             <font>
                <Font name="Arial Black" size="14.0" />
             </font>
          </Label>
       </HBox>
-      <HBox fx:id="BoxOp">
-      <Pane prefHeight="451.0" prefWidth="675.0" style="-fx-background-color: #3C3C3C;" stylesheets="@../../../css/ChoiceBoxModern.css">
+      <Pane style="-fx-background-color: #3C3C3C;" stylesheets="@../../../css/ChoiceBoxModern.css">
                <children>
                   <JFXCheckBox fx:id="primaryKeyOption" checkedColor="#3574f0" layoutX="8.0" layoutY="6.0" mnemonicParsing="false" text="Primary Key" textFill="WHITE" />
                   <JFXCheckBox fx:id="ForeignKeyOption" checkedColor="#3574f0" layoutX="100.0" layoutY="6.0" mnemonicParsing="false" onAction="#AlterForeignBox" text="Foreign Key" textFill="WHITE" />
@@ -126,7 +134,6 @@
                <JFXTextField fx:id="CheckField" disable="true" layoutX="74.0" layoutY="250.0" unFocusColor="WHITE" />
                </children>
       </Pane>
-      </HBox>
       <HBox alignment="TOP_RIGHT" spacing="5.0">
          <children>
             <JFXButton alignment="TOP_LEFT" mnemonicParsing="false" onAction="#closeWindow" style="-fx-background-color: #3574F0;" text="cancel" textFill="WHITE">

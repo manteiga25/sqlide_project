@@ -40,7 +40,7 @@ public class SQLiteDB extends DataBase {
     public SQLiteDB() throws IOException {
         typesOfDB = new SQLiteTypesList();
         super.idType = "ROWID";
-        indexModes = null;
+        indexModes = new String[]{""};
         foreignModes = new ArrayList<>(List.of("CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"));
         SQLType = SQLTypes.SQLITE;
     }
@@ -790,6 +790,30 @@ public class SQLiteDB extends DataBase {
     }
 
     @Override
+    public synchronized ArrayList<Long> fetchDataMap(final String Command) {
+        ArrayList<Long> data = new ArrayList<>();
+       // final String command = Command + " LIMIT " + limit + " OFFSET " + offset + ";";
+        System.out.println("command " + Command);
+        try {
+            ResultSet rs = statement.executeQuery(Command);
+            if (!rs.next()) {
+                return null;
+            }
+            ResultSetMetaData metaData = rs.getMetaData();
+
+            ArrayList<String> Columns = new ArrayList<>();
+            for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                Columns.add(metaData.getColumnName(i));
+            }
+
+            data.add(rs.getLong(Columns.getFirst()));
+            return data;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     synchronized public ArrayList<ArrayList<String>> fetchDataBackup(final String Table, final ArrayList<String> Columns, long offset) {
         ArrayList<ArrayList<String>> data = new ArrayList<>();
         final String command = "SELECT * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
@@ -1532,7 +1556,9 @@ public class SQLiteDB extends DataBase {
 
     @Override
     public void commit() throws SQLException {
-        connection.commit();
+        if (!connection.getAutoCommit()) {
+            connection.commit();
+        }
     }
 
     @Override

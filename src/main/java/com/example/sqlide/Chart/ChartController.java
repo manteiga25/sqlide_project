@@ -1,0 +1,550 @@
+package com.example.sqlide.Chart;
+
+import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
+import com.example.sqlide.Report.ReportController;
+import com.example.sqlide.drivers.model.DataBase;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.collections.*;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.chart.*;
+import javafx.scene.control.*;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.util.StringConverter;
+import org.apache.poi.ss.formula.functions.Na;
+import org.checkerframework.checker.units.qual.N;
+import org.docx4j.wml.Numbering;
+import org.xlsx4j.sml.Col;
+import javafx.scene.chart.ValueAxis;
+
+import java.awt.event.ActionEvent;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.example.sqlide.popupWindow.handleWindow.ShowError;
+import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
+
+public class ChartController {
+    @FXML
+    private CategoryAxis CategoryChart;
+    @FXML
+    private NumberAxis NumberChart;
+    @FXML
+    private ToggleButton BarButton;
+    @FXML
+    private Button EditButton;
+    @FXML
+    private TextField titleField, categoryField, numberField;
+
+    @FXML
+    private VBox ChartBox;
+
+    @FXML
+    private ListView<Label> LabelList;
+   // private ListView<String> LabelList;
+
+    private ToggleButton currentChart;
+
+   // private final ObservableMap<String, String> labelMap = FXCollections.observableHashMap();
+   private final ObservableList<Label> labelMap = FXCollections.observableArrayList();
+
+   private String table;
+
+   private ArrayList<String> columns;
+
+   private DataBase db;
+
+   public void setAttributes(final String table, final ArrayList<String> columns, final DataBase db) {
+       this.table = table;
+       this.columns = columns;
+       this.db = db;
+   }
+
+   private final ArrayList<Stage> searchStage = new ArrayList<>();
+    private final ArrayList<AdvancedSearchController> controllers = new ArrayList<>();
+
+   private int index;
+
+    @FXML
+    private void initialize() {
+     /*   labelMap.addListener((MapChangeListener<String, String>) change -> {
+            if (change.wasAdded()) {
+                LabelList.getItems().add(change.getKey() + ": " + change.getValueAdded());
+            }
+            if (change.wasRemoved()) {
+                LabelList.getItems().removeIf(item ->
+                        item.startsWith(change.getKey() + ": ")
+                );
+            }
+        }); */
+
+        currentChart = BarButton;
+
+        LabelList.setItems(labelMap);
+
+        titleField.setOnKeyReleased(_->{
+            setChartTitle(titleField.getText());
+        });
+        categoryField.setOnKeyReleased(_->{
+            setCategoryTitle(categoryField.getText());
+        });
+        numberField.setOnKeyReleased(_->{
+            setNumberTitle(numberField.getText());
+        });
+
+        labelMap.addListener((ListChangeListener<Label>) change -> {
+            while (change.next()) {
+                if (change.wasAdded()) {
+                    for (Label lbl : change.getAddedSubList()) {
+                        String novaCategoria = lbl.Name.get();
+                        lbl.Query.set(lbl.Query.get()+" FROM " + table + ";");
+                        addLabelCategory(novaCategoria);
+                        searchStage.add(null);
+                        controllers.add(null);
+                    }
+                }
+                // Se houver remoção de labels, você pode também removê-las do eixo:
+                if (change.wasRemoved()) {
+                    for (Label lbl : change.getRemoved()) {
+                        String categoriaRemovida = lbl.Name.get();
+                        removeLabelCategory(categoriaRemovida);
+                        searchStage.remove(index);
+                        controllers.remove(index);
+                    }
+                }
+            }
+        });
+
+    }
+
+    @FXML
+    private void setChart(javafx.event.ActionEvent event) {
+        final ToggleButton button = (ToggleButton) event.getSource();
+
+        if (!button.getText().equals(currentChart.getText())) {
+            currentChart.setSelected(false);
+            switch (button.getText()) {
+                case "Pie":
+                    createPieChart();
+                    break;
+                case "Lines":
+                    createLinesChart();
+                    break;
+                case "Area":
+                    createAreaChart();
+                    break;
+                case "Bar":
+                    createBarChart();
+                    break;
+                case "Bubble":
+                    createBubbleChart();
+                    break;
+                case "Scatter":
+                    createScatterChart();
+                    break;
+                case "Stacked":
+                    createStackedChart();
+                    break;
+                case "Stacked bar":
+                    createStackBarChart();
+                    break;
+            }
+            currentChart = button;
+            VBox.setVgrow(ChartBox.getChildren().get(1), Priority.ALWAYS);
+        } else button.setSelected(true);
+
+    }
+
+    private void createPieChart() {
+        final PieChart chart = new PieChart();
+        ChartBox.getChildren().set(1, chart);
+        setChartTitle(titleField.getText());
+        setCategoryTitle(categoryField.getText());
+        setNumberTitle(numberField.getText());
+    }
+
+    private void createLinesChart() {
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+
+        // Copie as configurações dos eixos originais
+        copyAxisProperties(CategoryChart, xAxis);
+        copyAxisProperties(NumberChart, yAxis);
+        final LineChart<String, Number> chart = new LineChart<String, Number>(xAxis, yAxis);
+        ChartBox.getChildren().set(1, chart);
+        setChartTitle(titleField.getText());
+        setCategoryTitle(categoryField.getText());
+        setNumberTitle(numberField.getText());
+    }
+
+    private void copyAxisProperties(Axis<?> source, Axis<?> target) {
+        target.setLabel(source.getLabel());
+        target.setTickLabelFill(source.getTickLabelFill());
+        target.setTickLabelFont(source.getTickLabelFont());
+        target.setTickLabelGap(source.getTickLabelGap());
+        target.setTickLabelRotation(source.getTickLabelRotation());
+        target.setTickLength(source.getTickLength());
+        target.setTickMarkVisible(source.isTickMarkVisible());
+        // Copie outras propriedades conforme necessário
+    }
+
+    private void createAreaChart() {
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        copyAxisProperties(CategoryChart, xAxis);
+        copyAxisProperties(NumberChart, yAxis);
+        final AreaChart<String, Number> chart = new AreaChart<String, Number>(CategoryChart, yAxis);
+        ChartBox.getChildren().set(1, chart);
+        setChartTitle(titleField.getText());
+        setCategoryTitle(categoryField.getText());
+        setNumberTitle(numberField.getText());
+    }
+
+    private void createBarChart() {
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        copyAxisProperties(CategoryChart, xAxis);
+        copyAxisProperties(NumberChart, yAxis);
+        final BarChart<String, Number> chart = new BarChart<String, Number>(CategoryChart, NumberChart);
+        ChartBox.getChildren().set(1, chart);
+        setChartTitle(titleField.getText());
+        setCategoryTitle(categoryField.getText());
+        setNumberTitle(numberField.getText());
+    }
+
+    private void createBubbleChart() {
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        copyAxisProperties(CategoryChart, xAxis);
+        copyAxisProperties(NumberChart, yAxis);
+        final BubbleChart<Number, Number> chart = new BubbleChart<>(NumberChart, NumberChart);
+        ChartBox.getChildren().set(1, chart);
+        setChartTitle(titleField.getText());
+        setCategoryTitle(categoryField.getText());
+        setNumberTitle(numberField.getText());
+    }
+
+    private void createScatterChart() {
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        copyAxisProperties(CategoryChart, xAxis);
+        copyAxisProperties(NumberChart, yAxis);
+        final ScatterChart<String, Number> chart = new ScatterChart<>(CategoryChart, NumberChart);
+        ChartBox.getChildren().set(1, chart);
+        setChartTitle(titleField.getText());
+        setCategoryTitle(categoryField.getText());
+        setNumberTitle(numberField.getText());
+    }
+
+    private void createStackedChart() {
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        copyAxisProperties(CategoryChart, xAxis);
+        copyAxisProperties(NumberChart, yAxis);
+        final StackedAreaChart<String, Number> chart = new StackedAreaChart<>(CategoryChart, NumberChart);
+        ChartBox.getChildren().set(1, chart);
+        setChartTitle(titleField.getText());
+        setCategoryTitle(categoryField.getText());
+        setNumberTitle(numberField.getText());
+    }
+
+    private void createStackBarChart() {
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        copyAxisProperties(CategoryChart, xAxis);
+        copyAxisProperties(NumberChart, yAxis);
+        final StackedBarChart<String, Number> chart = new StackedBarChart<>(CategoryChart, NumberChart);
+        ChartBox.getChildren().set(1, chart);
+        setChartTitle(titleField.getText());
+        setCategoryTitle(categoryField.getText());
+        setNumberTitle(numberField.getText());
+    }
+
+    private void setChartTitle(final String title) {
+        final Object chartAbstract = ChartBox.getChildren().get(1);
+        switch (chartAbstract) {
+            case BarChart<?, ?> chart -> chart.setTitle(title);
+            case LineChart<?, ?> chart -> chart.setTitle(title);
+            case PieChart chart -> chart.setTitle(title);
+            case AreaChart<?, ?> chart -> chart.setTitle(title);
+            case ScatterChart<?, ?> chart -> chart.setTitle(title);
+            case BubbleChart<?, ?> chart -> chart.setTitle(title);
+            case StackedBarChart<?, ?> chart -> chart.setTitle(title);
+            case StackedAreaChart<?, ?> chart -> chart.setTitle(title);
+            default -> throw new IllegalStateException("Unexpected value: " + chartAbstract);
+        }
+    }
+
+    private void setData(final XYChart.Series series) {
+        final Object chartAbstract = ChartBox.getChildren().get(1);
+        switch (chartAbstract) {
+            case BarChart<?, ?> chart -> chart.getData().add(series);
+            case LineChart<?, ?> chart -> chart.getData().add(series);
+           // case PieChart chart -> chart.getData().add(series);
+            case AreaChart<?, ?> chart -> chart.getData().add(series);
+            case ScatterChart<?, ?> chart -> chart.getData().add(series);
+            case BubbleChart<?, ?> chart -> chart.getData().add(series);
+            case StackedBarChart<?, ?> chart -> chart.getData().add(series);
+            case StackedAreaChart<?, ?> chart -> chart.getData().add(series);
+            default -> throw new IllegalStateException("Unexpected value: " + chartAbstract);
+        }
+    }
+
+    private void refreshData() {
+        final Object chartAbstract = ChartBox.getChildren().get(1);
+        switch (chartAbstract) {
+            case BarChart<?, ?> chart -> chart.getData().clear();
+            case LineChart<?, ?> chart -> chart.getData().clear();
+            // case PieChart chart -> chart.getData().add(series);
+            case AreaChart<?, ?> chart -> chart.getData().clear();
+            case ScatterChart<?, ?> chart -> chart.getData().clear();
+            case BubbleChart<?, ?> chart -> chart.getData().clear();
+            case StackedBarChart<?, ?> chart -> chart.getData().clear();
+            case StackedAreaChart<?, ?> chart -> chart.getData().clear();
+            default -> throw new IllegalStateException("Unexpected value: " + chartAbstract);
+        }
+    }
+
+    private void setCategoryTitle(final String title) {
+        Object chartNode = ChartBox.getChildren().get(1);
+        if (chartNode instanceof XYChart<?, ?> xyChart) {
+            // Configura título do eixo X
+            Axis<?> xAxis = xyChart.getXAxis();
+            xAxis.setLabel(title);
+        }
+    }
+
+    private void addLabelCategory(final String novaCategoria) {
+        Object chartNode = ChartBox.getChildren().get(1);
+
+        if (chartNode instanceof XYChart<?, ?> xyChart) {
+            Axis<?> xAxis = xyChart.getXAxis();
+
+            // Só faz sentido em um eixo de categoria:
+            if (xAxis instanceof CategoryAxis catAxis) {
+                ObservableList<String> categorias = catAxis.getCategories();
+
+                // Verifica se já existe:
+                if (!categorias.contains(novaCategoria)) {
+                    categorias.add(novaCategoria);
+                }
+            }
+            // Em PieChart, não há CategoryAxis—cada fatia é individual.
+        }
+    }
+
+    private void removeLabelCategory(final String categoriaRemovida) {
+        Object chartNode = ChartBox.getChildren().get(1);
+
+        if (chartNode instanceof XYChart<?, ?> xyChart) {
+            Axis<?> xAxis = xyChart.getXAxis();
+
+            if (xAxis instanceof CategoryAxis catAxis) {
+                catAxis.getCategories().remove(categoriaRemovida);
+            }
+        }
+    }
+
+
+    private void setNumberTitle(final String title) {
+        Object chartNode = ChartBox.getChildren().get(1);
+        if (chartNode instanceof XYChart<?, ?> xyChart) {
+            Axis<?> yAxis = xyChart.getYAxis();
+            yAxis.setLabel(title);
+        }
+    }
+
+    @FXML
+    private void loadLabelAdder() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Chart/AddLabel.fxml"));
+            Parent root = loader.load();
+
+            ChartLabel dialogController = loader.getController();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Configure Report");
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+            dialogController.setList(labelMap, columns);
+          /*  if (generateReportButton != null && generateReportButton.getScene() != null) {
+                dialogStage.initOwner(generateReportButton.getScene().getWindow());
+            } */
+
+            dialogStage.setScene(new Scene(root));
+            dialogStage.showAndWait();
+
+
+
+        } catch (IOException e) {
+            ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
+        }
+    }
+
+    @FXML
+    private void openAdvancedSearch() {
+        ObservableList<Integer> ref = LabelList.getSelectionModel().getSelectedIndices();
+        if (!ref.isEmpty()) {
+            final int val = ref.getFirst();
+            if (searchStage.get(val) != null) {
+                searchStage.get(val).show();
+            } else loadAdvancedSearch(val);
+        } else ShowInformation("No selected", "You need to select a row of Table to edit.");
+    }
+
+    private void loadAdvancedSearch(final int val) {
+                try {
+                    // Carrega o arquivo FXML
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedSearchStage.fxml"));
+                    //    VBox miniWindow = loader.load();
+                    Parent root = loader.load();
+
+                    HashMap<String, ArrayList<String>> col = new HashMap<>();
+                    col.put(table, columns);
+
+                    AdvancedSearchController secondaryController = loader.getController();
+
+                    // Criar um novo Stage para a subjanela
+                    Stage subStage = new Stage();
+                    subStage.setTitle("Create Column");
+                    subStage.setScene(new Scene(root));
+                    secondaryController.setCode("SELECT");
+                    secondaryController.setTable(table);
+                    secondaryController.removeLeft();
+                    secondaryController.setColumns(col);
+                    secondaryController.setSelectedColumn(labelMap.get(val).Func.get() + "(" + labelMap.get(val).Column.get() + ")");
+                    secondaryController.setStage(subStage);
+                    //  secondaryController.initWin(ColumnsNames, subStage, this);
+
+                    subStage.showingProperty().addListener(_ -> {
+                        if (secondaryController.isClosedByUser()) {
+                            labelMap.get(val).Query.set(secondaryController.getQuery());
+                        }
+                    });
+
+                    // Opcional: definir a modalidade da subjanela
+                    subStage.initModality(Modality.APPLICATION_MODAL);
+
+                    searchStage.add(val, subStage);
+                    controllers.add(val, secondaryController);
+
+                    // Mostrar a subjanela
+                    subStage.show();
+                } catch (Exception e) {
+                    ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+                }
+            }
+
+    @FXML
+    private void remove() {
+        ObservableList<Integer> ref = LabelList.getSelectionModel().getSelectedIndices();
+        if (!ref.isEmpty()) {
+            final int val = ref.getFirst();
+            index = val;
+            LabelList.getItems().remove(val);
+        } else ShowInformation("No selected", "You need to select a row of Table to remove.");
+    }
+
+    @FXML
+    private void loadLabelEdit() {
+        ObservableList<Integer> ref = LabelList.getSelectionModel().getSelectedIndices();
+        if (!ref.isEmpty()) {
+            final int val = ref.getFirst();
+           // val = val.substring(0, val.indexOf(":"));
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Chart/AddLabel.fxml"));
+                Parent root = loader.load();
+
+                ChartLabel dialogController = loader.getController();
+
+                Stage dialogStage = new Stage();
+                dialogStage.setTitle("Configure Report");
+                dialogStage.initModality(Modality.APPLICATION_MODAL);
+                dialogController.setEditList(labelMap, val, columns);
+          /*  if (generateReportButton != null && generateReportButton.getScene() != null) {
+                dialogStage.initOwner(generateReportButton.getScene().getWindow());
+            } */
+
+                dialogStage.setScene(new Scene(root));
+                dialogStage.showAndWait();
+
+                LabelList.refresh();
+
+                if (controllers.get(val) != null) {
+                    controllers.get(val).setSelectedColumn(labelMap.get(val).Func.get() + "(" + labelMap.get(val).Column.get() + ")");
+                }
+
+            } catch (IOException e) {
+                ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
+            }
+        } else ShowInformation("No selected", "You need to select a row of Table to edit.");
+    }
+
+    @FXML
+    private void create() {
+        if (labelMap.isEmpty()) {
+            ShowInformation("No label", "No labels to generate data.");
+            return;
+        }
+
+        refreshData();
+
+        Thread.ofVirtual().start(()->{
+
+            final ArrayList<Label> LabelCopy = new ArrayList<>(labelMap);
+
+        //    Iterator<Label> LabelIterator = LabelCopy.iterator();
+
+            while (!LabelCopy.isEmpty()) {
+               // final Label label = LabelIterator.next();
+                Label label = LabelCopy.getFirst();
+                XYChart.Series<String, Long> series = new XYChart.Series<String, Long>();
+                series.setName(label.Func.get() + " of " + label.Name.get());
+               // final ArrayList<Long> data = db.fetchDataMap(label.Query.get());
+
+                final List<Label> reduced = labelMap.stream().filter(lab -> lab.Name.get().equals(label.Name.get())).toList();
+               // series.getData().add(new XYChart.Data<String, Long>(label.Name.get(), data.getFirst()));
+
+                for (final Label subLabel : reduced) {
+                    final ArrayList<Long> subData = db.fetchDataMap(subLabel.Query.get());
+                //    series.getData().add(new XYChart.Data<String, Long>(label.Category.get(), subData.getFirst()));
+                    series.getData().add(new XYChart.Data<String, Long>(subLabel.Category.get(), subData.getFirst()));
+                }
+
+                LabelCopy.removeAll(reduced);
+
+              //  System.out.println(data);
+
+
+                Platform.runLater(()->setData(series));
+            }
+        });
+
+    }
+
+    static class Label {
+        public StringProperty Func = new SimpleStringProperty(), Name = new SimpleStringProperty(), Query = new SimpleStringProperty(), Column = new SimpleStringProperty(), Category = new SimpleStringProperty();
+
+        public Label(final String Name, final String Category, final String Func, final String Column, final String Query) {
+            this.Func.set(Func);
+            this.Name.set(Name);
+            this.Category.set(Category);
+            this.Query.set(Query);
+            this.Column.set(Column);
+        }
+
+        @Override
+        public String toString() {
+            return Name.get() + ":" + Func.get()+":"+Column.get();
+        }
+
+    }
+
+}

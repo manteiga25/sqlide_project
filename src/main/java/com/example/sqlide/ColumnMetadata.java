@@ -22,6 +22,7 @@ public class ColumnMetadata {
     public Foreign foreign;
     public String check = "";
     public long autoincrement = -1;
+    public String comment = "";
 
     public ColumnMetadata(final boolean NOT_NULL, final boolean IsPrimaryKey, Foreign foreign, final String defaultValue, final int size, final String Type, final String Name, boolean isUnique, int integerDigits, int decimalDigits, final String index) {
         this.NOT_NULL = NOT_NULL;

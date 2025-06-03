@@ -531,6 +531,11 @@ public class PostreSQLDB extends DataBase {
     }
 
     @Override
+    public ArrayList<Long> fetchDataMap(String Command) {
+        return null;
+    }
+
+    @Override
     public ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset) {
         return null;
     }

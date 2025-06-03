@@ -8,6 +8,8 @@ import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
 import com.jfoenix.controls.RecursiveTreeItem;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
+import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -108,18 +110,20 @@ public class AdvancedSearchController {
             generateQuery();
         });
         TableJoinBox.getSelectionModel().selectedItemProperty().addListener((_, _, text)->{
-            ColumnsContainer.getChildren().removeAll();
-            ColumnsContainer.getChildren().clear();
-            columnSelected.clear();
-            final ArrayList<String> list = new ArrayList<>();
-            for (final String column : columns) {
-                list.add(Table+"."+column);
+            if (!text.isEmpty()) {
+                ColumnsContainer.getChildren().removeAll();
+                ColumnsContainer.getChildren().clear();
+                columnSelected.clear();
+                final ArrayList<String> list = new ArrayList<>();
+                for (final String column : columns) {
+                    list.add(Table + "." + column);
+                }
+                for (final String column : AllColumns.get(text)) {
+                    list.add(text + "." + column);
+                }
+                loadWidgets(list);
+                generateQuery();
             }
-            for (final String column : AllColumns.get(text)) {
-                list.add(text+"."+column);
-            }
-            loadWidgets(list);
-            generateQuery();
         });
 
         loadOrdenateController();
@@ -199,49 +203,11 @@ public class AdvancedSearchController {
         }
     }
 
-    @FXML
-    private void handleGenerateReport() {
-
-        String currentQuery = getQuery();
-        ArrayList<String> availableColumns = getSelected(); // This gets columns selected for output
-
-        if (currentQuery.isEmpty() || availableColumns.isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("No Query/Columns");
-            alert.setHeaderText("Cannot Generate Report");
-            alert.setContentText("Please define a query and select columns first.");
-            alert.showAndWait();
-            return;
-        }
-
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Report.fxml"));
-            Parent root = loader.load();
-
-            ReportController dialogController = loader.getController();
-
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Configure Report");
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
-            if (generateReportButton != null && generateReportButton.getScene() != null) {
-                dialogStage.initOwner(generateReportButton.getScene().getWindow());
-            }
-
-         //   dialogController.initializeDialog(availableColumns, currentQuery, db, dialogStage);
-
-            dialogStage.setScene(new Scene(root));
-            dialogStage.showAndWait();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Load Error");
-            alert.setHeaderText("Could not load report configuration dialog.");
-            alert.setContentText("Error: " + e.getMessage());
-            alert.showAndWait();
-        }
+    public void setSelectedColumn(final String column) {
+        columnSelected.clear();
+        columnSelected.add(column);
+        generateQuery();
     }
-
 
     @FXML
     private void addConditionRow() {
@@ -322,7 +288,8 @@ public class AdvancedSearchController {
 
             ColumnBox = new ComboBox<>(FXCollections.observableArrayList(columnSelected));
             ColumnBox.setPromptText("column");
-            ColumnBox.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
+            ColumnBox.getSelectionModel().selectedItemProperty().addListener(_-> Platform.runLater(()->generateQuery()));
+            //ColumnBox.setOnAction(_->generateQuery());
 
             valueField = new JFXTextField();
             valueField.textProperty().addListener(_->generateQuery());
@@ -338,7 +305,7 @@ public class AdvancedSearchController {
             TypeCombo.getSelectionModel().selectedItemProperty().addListener((_, oldItem, item)->{
                 if (!item.equals(oldItem)) {
                     changeWidget(item);
-                   // generateQuery();
+                    generateQuery();
                 }
             });
 

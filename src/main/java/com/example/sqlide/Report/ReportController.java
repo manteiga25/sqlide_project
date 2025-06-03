@@ -3,23 +3,27 @@ package com.example.sqlide.Report;
 import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.drivers.model.DataBase;
+import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.checkerframework.checker.units.qual.C;
@@ -80,12 +84,16 @@ public class ReportController {
     private Spinner<Double> pageMarginSpinner;
     private Spinner<Double> cellPaddingSpinner;
 
+    private ImageView pdfPreviewImageView;
+    private PdfPreviewService pdfPreviewService;
+
+
 
     public void initializeDialog(DataBase db, Stage stage) {
         this.db = db;
         this.dialogStage = stage;
         reportTitleField.setText("Report");
-
+        this.pdfPreviewService = new PdfPreviewService();
         VBox styleControlsVBox = createStyleControlsNode();
         styleControlsVBox.setStyle("-fx-background-color: #2C2C2C;");
         ScrollPane scrollableStyleControls = new ScrollPane(styleControlsVBox);
@@ -97,10 +105,25 @@ public class ReportController {
         scrollableStyleControls.setFitToWidth(true);
         scrollableStyleControls.setPrefHeight(200); // Adjust as needed, or let it grow
 
+        final JFXButton pageViwerButton = new JFXButton("View Page Style");
+        pageViwerButton.setOnAction(_->loadPage());
+        pageViwerButton.setTextFill(Color.WHITE);
+
         final Label styleLabel = new Label("Report Style:");
         styleLabel.setTextFill(Color.WHITE);
         styleLabel.setFont(Font.font(20));
         styleLabel.setAlignment(Pos.BASELINE_LEFT);
+        styleLabel.setGraphic(pageViwerButton);
+        styleLabel.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+        pdfPreviewImageView = new ImageView();
+       // pdfPreviewImageView.setFitWidth(350); // Adjust as needed
+       // pdfPreviewImageView.setFitHeight(400); // Adjust as needed
+     //   pdfPreviewImageView.maxWidth(Double.MAX_VALUE);
+       // pdfPreviewImageView.maxHeight(Double.MAX_VALUE);
+        pdfPreviewImageView.setPreserveRatio(true);
+    //    pdfPreviewImageView.setSmooth(true);
+        pdfPreviewImageView.setStyle("-fx-border-color: grey; -fx-border-width: 1; -fx-background-color: #E0E0E0;"); // Light grey background
 
        /* int tempPaneIndex = rootVBox.getChildren().indexOf(TempPane);
         if (tempPaneIndex != -1) {
@@ -114,8 +137,11 @@ public class ReportController {
                 rootVBox.getChildren().add(scrollableStyleControls);
             }
         } */
+       // HBox.setHgrow(pdfPreviewImageView, Priority.ALWAYS);
+       // Container.getChildren().add(pdfPreviewImageView);
         StyleBox.getChildren().addFirst(styleLabel);
         StyleBox.getChildren().add(1, scrollableStyleControls);
+     //   Platform.runLater(this::updatePreview);
     }
 
     private VBox createStyleControlsNode() {
@@ -131,8 +157,11 @@ public class ReportController {
 
         // Title Styling
         titleFontFamilyComboBox = createFontComboBox(fontNames, defaults.getTitleFontFamily());
+       // titleFontFamilyComboBox.valueProperty().addListener(_->updatePreview());
         titleFontSizeSpinner = createFontSizeSpinner(defaults.getTitleFontSize(), 8, 30);
+        //titleFontSizeSpinner.valueProperty().addListener(_->updatePreview());
         titleColorPicker = createColorPicker(Color.BLACK);
+        //titleColorPicker.valueProperty().addListener(_->updatePreview());
         mainStyleVBox.getChildren().add(createStyledSection("Title Styling",
                 createControlGroup("Font:", titleFontFamilyComboBox),
                 createControlGroup("Size:", titleFontSizeSpinner),
@@ -141,9 +170,13 @@ public class ReportController {
 
         // Header Styling
         headerFontFamilyComboBox = createFontComboBox(fontNames, defaults.getHeaderFontFamily());
+    //    headerFontFamilyComboBox.valueProperty().addListener(_->updatePreview());
         headerFontSizeSpinner = createFontSizeSpinner(defaults.getHeaderFontSize(), 7, 20);
+      //  headerFontSizeSpinner.valueProperty().addListener(_->updatePreview());
         headerTextColorPicker = createColorPicker(Color.BLACK);
+      //  headerTextColorPicker.valueProperty().addListener(_->updatePreview());
         headerBackgroundColorPicker = createColorPicker(Color.WHITE);
+      //  headerBackgroundColorPicker.valueProperty().addListener(_->updatePreview());
         mainStyleVBox.getChildren().add(createStyledSection("Header Styling",
                 createControlGroup("Font:", headerFontFamilyComboBox),
                 createControlGroup("Size:", headerFontSizeSpinner),
@@ -153,8 +186,11 @@ public class ReportController {
 
         // Data Cell Styling
         dataFontFamilyComboBox = createFontComboBox(fontNames, defaults.getDataFontFamily());
+   //     dataFontFamilyComboBox.valueProperty().addListener(_->updatePreview());
         dataFontSizeSpinner = createFontSizeSpinner(defaults.getDataFontSize(), 6, 16);
+     //   dataFontSizeSpinner.valueProperty().addListener(_->updatePreview());
         dataTextColorPicker = createColorPicker(Color.BLACK);
+       // dataTextColorPicker.valueProperty().addListener(_->updatePreview());
         mainStyleVBox.getChildren().add(createStyledSection("Data Cell Styling",
                 createControlGroup("Font:", dataFontFamilyComboBox),
                 createControlGroup("Size:", dataFontSizeSpinner),
@@ -163,14 +199,18 @@ public class ReportController {
 
         // Row Styling
         alternatingRowBackgroundColorPicker = createColorPicker(Color.GRAY);
+    //    alternatingRowBackgroundColorPicker.valueProperty().addListener(_->updatePreview());
         mainStyleVBox.getChildren().add(createStyledSection("Row Styling",
                 createControlGroup("Alt. Row Background:", alternatingRowBackgroundColorPicker)
         ));
 
         // Page Number Styling
         pageNumberFontFamilyComboBox = createFontComboBox(fontNames, defaults.getPageNumberFontFamily());
+    //    pageNumberFontFamilyComboBox.valueProperty().addListener(_->updatePreview());
         pageNumberFontSizeSpinner = createFontSizeSpinner(defaults.getPageNumberFontSize(), 6, 12);
+      //  pageNumberFontSizeSpinner.valueProperty().addListener(_->updatePreview());
         pageNumberColorPicker = createColorPicker(Color.BLACK);
+        //pageNumberColorPicker.valueProperty().addListener(_->updatePreview());
         mainStyleVBox.getChildren().add(createStyledSection("Page Number Styling",
                 createControlGroup("Font:", pageNumberFontFamilyComboBox),
                 createControlGroup("Size:", pageNumberFontSizeSpinner),
@@ -179,7 +219,9 @@ public class ReportController {
 
         // Layout Configuration
         pageMarginSpinner = createLayoutSpinner(defaults.getPageMargin(), 10, 100);
+    //    pageMarginSpinner.valueProperty().addListener(_->updatePreview());
         cellPaddingSpinner = createLayoutSpinner(defaults.getCellPadding(), 0, 20);
+      //  cellPaddingSpinner.valueProperty().addListener(_->updatePreview());
         mainStyleVBox.getChildren().add(createStyledSection("Layout Configuration",
                 createControlGroup("Page Margin:", pageMarginSpinner),
                 createControlGroup("Cell Padding:", cellPaddingSpinner)
@@ -241,11 +283,96 @@ public class ReportController {
                 (float) fxColor.getOpacity());
     }
 
-    private Color convertToFxColor(Color awtColor) {
-        if (awtColor == null) return null;
-        return javafx.scene.paint.Color.rgb((int) awtColor.getRed(), (int) awtColor.getGreen(), (int) awtColor.getBlue(), (int) awtColor.getOpacity() / 255.0);
+    private void updatePreview() {
+        if (pdfPreviewService == null || pdfPreviewImageView == null) {
+            return; // Not initialized yet
+        }
+
+        ReportStyleConfig styleConfig = new ReportStyleConfig();
+        // Populate styleConfig from UI controls
+        styleConfig.setTitleFontFamily(titleFontFamilyComboBox.getValue());
+        styleConfig.setTitleFontSize(titleFontSizeSpinner.getValue().floatValue());
+        styleConfig.setTitleColor(convertToAwtColor(titleColorPicker.getValue()));
+
+        styleConfig.setHeaderFontFamily(headerFontFamilyComboBox.getValue());
+        styleConfig.setHeaderFontSize(headerFontSizeSpinner.getValue().floatValue());
+        styleConfig.setHeaderTextColor(convertToAwtColor(headerTextColorPicker.getValue()));
+        styleConfig.setHeaderBackgroundColor(convertToAwtColor(headerBackgroundColorPicker.getValue()));
+
+        styleConfig.setDataFontFamily(dataFontFamilyComboBox.getValue());
+        styleConfig.setDataFontSize(dataFontSizeSpinner.getValue().floatValue());
+        styleConfig.setDataTextColor(convertToAwtColor(dataTextColorPicker.getValue()));
+
+        styleConfig.setAlternatingRowBackgroundColor(convertToAwtColor(alternatingRowBackgroundColorPicker.getValue()));
+
+        styleConfig.setPageNumberFontFamily(pageNumberFontFamilyComboBox.getValue());
+        styleConfig.setPageNumberFontSize(pageNumberFontSizeSpinner.getValue().floatValue());
+        styleConfig.setPageNumberColor(convertToAwtColor(pageNumberColorPicker.getValue()));
+
+        styleConfig.setPageMargin(pageMarginSpinner.getValue().floatValue());
+        styleConfig.setCellPadding(cellPaddingSpinner.getValue().floatValue());
+
+        String previewTitle = reportTitleField.getText().isEmpty() ? "Sample Title" : reportTitleField.getText();
+
+        // Use actual selected columns if available, otherwise fallback to sample
+        List<String> currentSelectedColumns = null;
+        if (secondaryController != null && secondaryController.getSelected() != null && !secondaryController.getSelected().isEmpty()) {
+            currentSelectedColumns = new ArrayList<>(secondaryController.getSelected());
+        } else {
+            currentSelectedColumns = List.of("Column 1", "Column 2", "Column 3");
+        }
+        if (currentSelectedColumns.isEmpty()) { // Ensure it's not empty for preview generation
+            currentSelectedColumns = List.of("Preview Column");
+        }
+
+
+        List<List<String>> sampleRows = new ArrayList<>();
+        for (int i = 1; i <= 20; i++) {
+            List<String> row = new ArrayList<>();
+            for (int j = 1; j <= currentSelectedColumns.size(); j++) {
+                row.add("Data " + i + (char)('A' + j - 1));
+            }
+            sampleRows.add(row);
+        }
+
+        ReportData sampleReportData = new ReportData(previewTitle, currentSelectedColumns, sampleRows, styleConfig);
+
+        // Generate and display the image
+        // Consider running this on a background thread if it becomes slow
+        Image previewImage = pdfPreviewService.generatePreviewImage(
+                sampleReportData,
+                (float) 800,
+                (float) 400
+        );
+
+        if (previewImage != null) {
+            pdfPreviewImageView.setImage(previewImage);
+        } else {
+            // Optionally, set a placeholder or error image
+            pdfPreviewImageView.setImage(null); // Clears the image
+            // You could create a simple placeholder graphic or text as an image here
+        }
+
+       // loadPage();
+
     }
 
+    @FXML
+    private void loadPage() {
+
+        updatePreview();
+
+        Pane container = new Pane(pdfPreviewImageView);
+        pdfPreviewImageView.fitWidthProperty().bind(container.widthProperty());
+        pdfPreviewImageView.fitHeightProperty().bind(container.heightProperty());
+
+        Stage pageViewer = new Stage();
+        pageViewer.setTitle("Page");
+        pageViewer.initModality(Modality.APPLICATION_MODAL);
+
+        pageViewer.setScene(new Scene(container));
+        pageViewer.show();
+    }
 
     public void setTable(final String table, final HashMap<String, ArrayList<String>> ColumnNames) {
         this.table = table;

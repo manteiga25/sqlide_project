@@ -2,6 +2,7 @@ package com.example.sqlide.DatabaseInterface.TableInterface;
 
 import com.example.sqlide.*;
 import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
+import com.example.sqlide.Chart.ChartController;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.ColumnInterface;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.drivers.model.DataBase;
@@ -192,7 +193,7 @@ public class TableInterface {
         HBox ButtonsLine = new HBox(8);
         // searchBox.setStyle("-fx-border-color: black; -fx-border-radius: 50;");
 
-        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvDelButton(), createAdvButton(), createCleanButton(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode());
+        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvDelButton(), createAdvButton(), createCleanButton(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode(), createChartButton());
 
         ScrollPane buttonsScroll = new ScrollPane();
         buttonsScroll.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm());
@@ -308,6 +309,16 @@ public class TableInterface {
         JFXButton CleanAdvancedSearch = new JFXButton("Clean Advanced Search");
         CleanAdvancedSearch.setOnAction(e-> resetAdvancedSearch());
         return CleanAdvancedSearch;
+    }
+
+    private JFXButton createChartButton() {
+        JFXButton Chart = new JFXButton("Chart");
+        Chart.setOnAction(e-> loadChart());
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.BAR_CHART_ALT);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        Chart.setGraphic(icon);
+        return Chart;
     }
 
     private Label createLabelPage() {
@@ -650,6 +661,32 @@ public class TableInterface {
         }
     }
 
+    private void loadChart() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Chart/ChartStage.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            ChartController secondaryController = loader.getController();
+            secondaryController.setAttributes(TableName.get(), getColumnsMetadataName(), Database);
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Create Chart");
+            subStage.setScene(new Scene(root));
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            subStage.show();
+
+        } catch (Exception e) {
+            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+        }
+    }
+
     private void createDBColInterface() {
         try {
             // Carrega o arquivo FXML
@@ -663,7 +700,7 @@ public class TableInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Create Column");
             subStage.setScene(new Scene(root));
-            secondaryController.NewColumnWin(Database.getDatabaseName(), TableName.get(), this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes());
+            secondaryController.NewColumnWin(Database.getDatabaseName(), TableName.get(), this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes(), Database.getSQLType());
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -727,21 +764,28 @@ public class TableInterface {
         }
     }
 
-    public boolean deleteColumn(final String Table, final String column, final int id) {
-        if (getColumnsMetadata().get(column).index != null) {
-            try {
-                Database.removeIndex(getColumnsMetadata().get(column).index);
-            } catch (SQLException e) {
-                ShowError("Error SQL", "Error to delete index column " + column + " from Table " + Table + "\n" + Database.GetException());
-                return false;
+    public void deleteColumn(final String Table, final String column, final int id) {
+        final Stage loading = LoadingStage("Deleting column", "This operation can be slower.");
+        Thread.ofVirtual().start(()->{
+            if (getColumnsMetadata().get(column).index != null) {
+                try {
+                    Database.removeIndex(getColumnsMetadata().get(column).index);
+                } catch (SQLException e) {
+                    Platform.runLater(loading::close);
+                    ShowError("Error SQL", "Error to delete index column " + column + " from Table " + Table, Database.GetException());
+                    return ;
+                }
             }
-        }
-        if (!Database.deleteColumn(column, Table)) {
-            ShowError("Error SQL", "Error to delete column " + column + " from Table " + Table + "\n" + Database.GetException());
-            return false;
-        }
-        deleteColumnContainer(column, id);
-        return true;
+            if (!Database.deleteColumn(column, Table)) {
+                Platform.runLater(loading::close);
+                ShowError("Error SQL", "Error to delete column " + column + " from Table " + Table, Database.GetException());
+                return ;
+            }
+            Platform.runLater(()->{
+                deleteColumnContainer(column, id);
+                loading.close();
+            });
+        });
     }
 
     private void deleteColumnContainer(final String Column, final int id) {
@@ -761,18 +805,27 @@ public class TableInterface {
 
     public void createDBCol(final String ColName, final ColumnMetadata meta, final boolean fill) {
 
-        if (!Database.createColumn(TableName.get(), ColName, meta, fill)) {
-            ShowError("Error SQL", "Error to create column " + ColName + " on Table " + TableName + " on Database " + "dbName" + "\n" + Database.GetException());
-            return;
-        }
-        if (meta.index != null) {
-            try {
-                Database.createIndex(TableName.get(), ColName, meta.index, meta.indexType);
-            } catch (SQLException e) {
-                ShowError("Error SQL", "Error to create index for column " + ColName + " on Table " + TableName + " on Database " + Database.getDatabaseName() + "\n" + Database.GetException());
+        final Stage loading = LoadingStage("Creating column", "This operation can be slower.");
+
+        Thread.ofVirtual().start(()->{
+            if (!Database.createColumn(TableName.get(), ColName, meta, fill)) {
+                Platform.runLater(loading::close);
+                ShowError("Error SQL", "Error to create column " + ColName + " on Table " + TableName + " on Database " + "dbName", Database.GetException());
+                return;
             }
-        }
-        createDBcolContainer(meta);
+            if (meta.index != null) {
+                try {
+                    Database.createIndex(TableName.get(), ColName, meta.index, meta.indexType);
+                } catch (SQLException e) {
+                    ShowError("Error SQL", "Error to create index for column " + ColName + " on Table " + TableName + " on Database " + Database.getDatabaseName(), Database.GetException());
+                }
+            }
+            Platform.runLater(()->{
+                loading.close();
+                createDBcolContainer(meta);
+            });
+        });
+
     }
 
     public void createDBcolContainer(final ColumnMetadata meta) {

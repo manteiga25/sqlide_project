@@ -11,7 +11,7 @@
     -fx-text-fill: white;
 
     /* Efeito de suavização na cor de fundo */
-    -fx-background-radius: 999px;
+    -fx-background-radius: 5px;
 
     transition:     -fx-scale-x 0.5s ease,
                     -fx-scale-y 0.5s ease;

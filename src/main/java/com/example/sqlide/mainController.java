@@ -7,6 +7,7 @@ import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.EventLayout.EditEventController;
 import com.example.sqlide.EventLayout.EventController;
+import com.example.sqlide.Import.ImportController;
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.ScriptLayout.SearchScriptController;
 import com.example.sqlide.TriggerLayout.EditTriggerController;
@@ -280,8 +281,8 @@ public class mainController implements requestInterface {
                 divider.setStyle("-fx-background-color: BLACK; -fx-pref-width: 2px");
             }
             HorizontalSplit.getDividers().getFirst().positionProperty().addListener((_, _, newVal) -> {
-                if (newVal.doubleValue() < 0.8) {
-                    HorizontalSplit.setDividerPositions(0.8);
+                if (newVal.doubleValue() < 0.7) {
+                    HorizontalSplit.setDividerPositions(0.7);
                 }
             });
         }
@@ -344,6 +345,7 @@ public class mainController implements requestInterface {
     public void openDB(final DataBase db, final String URL, final String DBName, final String UserName, final String password) {
         if (!db.connect(URL, DBName, UserName, password)) {
             ShowError("Error SQL", "Error to open Database " + URL + "\n" + db.GetException());
+            return;
         }
 
         for (final DataBase dataBase : DatabasesOpened) {
@@ -368,7 +370,9 @@ public class mainController implements requestInterface {
                 if (consoleController == null) Platform.runLater(this::loadConsole);
 
                 Platform.runLater(this::setDividerSpace);
+                Platform.runLater(this::setHDividerSpace);
 
+                Platform.runLater(()->consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType()));
                 DBopened.put(DBName, openDB);
                 DatabasesOpened.add(db);
                 DatabaseOpened.put(DBName, db);
@@ -1095,5 +1099,33 @@ public class mainController implements requestInterface {
     @FXML
     private void createScript() {
         editorController.createScript();
+    }
+
+    @FXML
+    private void openImport() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("Import/ImportDataStage.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            ImportController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Subjanela");
+            subStage.setScene(new Scene(root));
+            secondaryController.setCurrentDb(DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()));
+            secondaryController.setStage(subStage);
+          //  secondaryController.initCSVController(DatabaseOpened.get(currentDB.get()), subStage);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            subStage.show();
+        } catch (Exception e) {
+            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+        }
     }
 }

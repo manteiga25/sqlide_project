@@ -20,6 +20,7 @@
                 <MenuItem mnemonicParsing="false" onAction="#createDBInterface" text="New Database">
                 </MenuItem>
                   <MenuItem mnemonicParsing="false" onAction="#openDBWindow" text="Open Database" />
+                     <MenuItem mnemonicParsing="false" onAction="#openImport" text="Import" />
                   <Menu fx:id="backupMenu" disable="true" mnemonicParsing="false" text="Backup/Export">
                     <items>
                       <MenuItem mnemonicParsing="false" onAction="#initExcelWindow" text="Excel" />

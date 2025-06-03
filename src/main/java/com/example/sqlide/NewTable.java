@@ -105,7 +105,7 @@ public class NewTable {
                 Stage subStage = new Stage();
                 subStage.setTitle("Create Column");
                 subStage.setScene(new Scene(root));
-                secondaryController.NewColumnWin(context.getDatabaseName(), TableNameInput.getText(), this, subStage, ref.getColumnPrimaryKeyName(""), context.types, context.getList(), context.getListChars(), context.getIndexModes());
+                secondaryController.NewColumnWin(context.getDatabaseName(), TableNameInput.getText(), this, subStage, ref.getColumnPrimaryKeyName(""), context.types, context.getList(), context.getListChars(), context.getIndexModes(), context.getSQLType());
                 secondaryController.insertMetadata(columnsMetadata.get(TableColumns.getSelectionModel().getSelectedIndex()));
                 //       secondaryController.NewColumnWin("", "", this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes());
 
@@ -148,7 +148,7 @@ public class NewTable {
             //  subStage.setMaxWidth(620);
             //subStage.setMaxHeight(420);
         //    secondaryController.NewColumnWin(context.getDatabaseName(), TableNameInput.getText(), this, subStage, ref.getColumnPrimaryKeyName(""), context.types, context.getList(), context.getListChars(), context.getIndexModes(), context.getSQLType(), context.getForeignModes());
-            secondaryController.NewColumnWin(context.getDatabaseName(), TableNameInput.getText(), this, subStage, ref.getColumnPrimaryKeyName(""), context.types, context.getList(), context.getListChars(), context.getIndexModes());
+            secondaryController.NewColumnWin(context.getDatabaseName(), TableNameInput.getText(), this, subStage, ref.getColumnPrimaryKeyName(""), context.types, context.getList(), context.getListChars(), context.getIndexModes(), context.getSQLType());
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);

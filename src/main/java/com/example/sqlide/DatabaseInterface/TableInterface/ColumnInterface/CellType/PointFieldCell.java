@@ -35,7 +35,7 @@ public abstract class PointFieldCell {
                             if (!Database.updateData(TableName.get(), Metadata.Name, newValue, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
                                 //  if (!Database.updateData(TableName, ColName, valueFormated, index, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
                                 //   if (!Database.updateData(TableName, ColName, valueFormated, pageNum.get()*tab.getSelectionModel().getSelectedIndex()+1, tablePrimeKey.get(), getTableRow().getItem().GetData(tablePrimeKey.get()))) {
-                                ShowError("Error SQL", "Error to update data\n" + Database.GetException());
+                                ShowError("Error SQL", "Error to update data", Database.GetException());
                                 return;
                             }
                             item.SetData("ROWID", indexStr[0]);

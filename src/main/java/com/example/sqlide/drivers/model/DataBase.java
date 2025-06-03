@@ -212,6 +212,8 @@ public abstract class DataBase {
 
     public abstract ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset);
 
+    public abstract ArrayList<Long> fetchDataMap(String Command);
+
     public abstract ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset);
 
     public abstract ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long offset);
@@ -356,4 +358,8 @@ public abstract class DataBase {
     public abstract void createIndex(String table, String column, String indexName, String mode) throws SQLException;
 
     public abstract void removeIndex(String indexName) throws SQLException;
+
+    public Connection getConnection() {
+        return connection;
+    }
 }

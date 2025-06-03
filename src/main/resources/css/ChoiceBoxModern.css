@@ -1,7 +1,8 @@
 .choice-box {
     -fx-background-color: #3C3C3C;
     -fx-border-color: #3574F0;
-    -fx-border-radius: 15px;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
     -fx-text-fill: white
 }
 

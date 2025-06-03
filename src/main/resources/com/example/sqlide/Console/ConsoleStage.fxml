@@ -17,7 +17,7 @@
                 </Label>
                 <ChoiceBox fx:id="ModeBox" prefWidth="150.0" style="-fx-background-color: #2C2C2C;" stylesheets="@../../../../css/ChoiceBoxModern.css" />
                 <JFXButton mnemonicParsing="false" style="-fx-background-color: #3574F0; -fx-background-radius: 5px;" text="Export" textFill="WHITESMOKE" />
-                <JFXButton mnemonicParsing="false" style="-fx-background-color: #D21209; -fx-background-radius: 5px;" text="Delete" textFill="WHITESMOKE" />
+                <JFXButton mnemonicParsing="false" onAction="#delete" style="-fx-background-color: #D21209; -fx-background-radius: 5px;" text="Delete" textFill="WHITESMOKE" />
             </items>
         </ToolBar>
         <Separator style="-fx-base: black;" />

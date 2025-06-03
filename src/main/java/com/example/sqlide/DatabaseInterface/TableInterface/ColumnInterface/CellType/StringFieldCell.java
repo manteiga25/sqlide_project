@@ -7,6 +7,7 @@ import com.example.sqlide.drivers.model.DataBase;
 import javafx.beans.property.StringProperty;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.TextFieldTableCell;
+import org.controlsfx.control.tableview2.TableColumn2;
 
 import java.util.Objects;
 
@@ -16,7 +17,6 @@ public abstract class StringFieldCell {
 
     public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DataBase Database, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, final CellFormater format) {
         ColumnCellType.setCellFactory(TextFieldTableCell.forTableColumn());
-             final boolean[] updateByUser = {false};
        /* ColumnCellType.setCellFactory(new Callback<TableColumn<DataForDB, String>, TableCell<DataForDB, String>>() {
             @Override
             public javafx.scene.control.TableCell<DataForDB, String> call(TableColumn<DataForDB, String> param) {

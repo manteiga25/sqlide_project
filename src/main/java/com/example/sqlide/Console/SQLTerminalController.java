@@ -37,6 +37,7 @@ public class SQLTerminalController {
     public SQLTerminalController() {
         container.setStyle("-fx-background-color: #2C2C2C;");
         driverPath.put(SQLTypes.SQLITE, "sqlite3.exe");
+        addLine("SQL> ");
      //   initializeQueue();
     }
 
@@ -44,7 +45,7 @@ public class SQLTerminalController {
         System.out.println(database);
       //  ProcessBuilder pb = new ProcessBuilder("DriverCLI/" + driverPath.get(type), " --opt --user=" + database.getUsername() + " --password=" + database.getPassword() + " --databases " + database.getDatabaseName() + " > " + database.getUrl());
         //  pb.directory(new File(System.getProperty("user.dir")));
-        ProcessBuilder pb = new ProcessBuilder("DriverCLI/" + driverPath.get(type), database.substring(database.indexOf("C")));
+        ProcessBuilder pb = new ProcessBuilder("DriverCLI//" + driverPath.get(type), "-header", "-line", "-bail", database.substring(database.indexOf("C")));
         Process process = pb.start();
         initializeErr(process);
         initializeOutput(process);
@@ -130,7 +131,7 @@ public class SQLTerminalController {
         textLine.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
         textLine.setDisableAnimation(false);
 
-        final JFXTextField newLine = new JFXTextField();
+        final JFXTextField newLine = new JFXTextField("SQL> ");
         textLine.setStyle("-fx-background-color: transparent;");
         textLine.setDisableAnimation(false);
         textLine.setOnAction(_-> {

@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<Pane prefHeight="288.0" prefWidth="302.0" style="-fx-background-color: #2B2D30; -fx-border-insets: #2B2D38; -fx-background-insets: #2B2D38; -fx-border-color: #2B2D38;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.OpenDatabaseSelectedController">
+<Pane prefHeight="288.0" prefWidth="302.0" style="-fx-background-color: #2B2D30; -fx-border-insets: #2B2D38; -fx-background-insets: #2B2D38; -fx-border-color: #2B2D38;" stylesheets="@../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.OpenDatabaseSelectedController">
    <children>
       <Label fx:id="DatabaseLabel" alignment="CENTER" contentDisplay="CENTER" layoutY="14.0" prefHeight="25.0" prefWidth="302.0" textAlignment="CENTER" textFill="WHITE">
          <font>

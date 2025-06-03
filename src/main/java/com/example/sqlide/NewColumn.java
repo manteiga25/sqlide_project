@@ -4,9 +4,11 @@ import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.Configuration.DatabaseConf;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
+import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
+import com.jfoenix.controls.JFXTextArea;
 import com.jfoenix.controls.JFXTextField;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,19 +17,24 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
 
 public class NewColumn {
 
+    @FXML
+    private JFXButton CommentButton;
     @FXML
     private JFXTextField IndexText, CheckField;
 
@@ -59,9 +66,6 @@ public class NewColumn {
     private ChoiceBox<String> typeBox, ForeignKeyBox, indexBox, updateForeignBox, deleteForeignBox;
 
     @FXML
-    private HBox BoxOp;
-
-    @FXML
     private CheckBox primaryKeyOption, NotNullOption, ForeignKeyOption, DefaultOption, UniqueOption, FillOption, IndexOption, AutoincrementOption, CheckOption;
 
     @FXML
@@ -76,6 +80,8 @@ public class NewColumn {
     private final ObservableList<String> setList = FXCollections.observableArrayList();
 
     private ArrayList<String> foreignModes;
+
+    private String comment = "";
 
     @FXML
     private void AlterForeignBox() {
@@ -142,7 +148,7 @@ public class NewColumn {
         DefaultValueText.setDisable(true);
     }
 
-    public void NewColumnWin(final String DBName, final String TableName, final TableInterface ref, final Stage subStage, final HashMap<String, ArrayList<String>> KeysForForeign, final SQLiteTypes types, final String[] list, final String[] charList, final String[] modes, final ArrayList<String> foreignModes) {
+    public void NewColumnWin(final String DBName, final String TableName, final TableInterface ref, final Stage subStage, final HashMap<String, ArrayList<String>> KeysForForeign, final SQLiteTypes types, final String[] list, final String[] charList, final String[] modes, final ArrayList<String> foreignModes, SQLTypes sql) {
         LabelDB.setText("Database " + DBName + "\nTable " + TableName);
         this.TableName = TableName;
         this.DBName = DBName;
@@ -153,15 +159,20 @@ public class NewColumn {
         typeBox.getItems().addAll(list);
         window = subStage;
         initBox();
+        System.out.println("c");
         updateForeignBox.getItems().addAll(foreignModes);
         deleteForeignBox.getItems().addAll(foreignModes);
         if (modes != null) {
             indexBox.getItems().addAll(modes);
         }
+        if (sql == SQLTypes.SQLITE) {
+            HBox c = (HBox) CommentButton.getParent();
+            c.getChildren().remove(CommentButton);
+        }
 
     }
 
-    public void NewColumnWin(final String DBName, final String TableName, final NewTable ref, final Stage subStage, final HashMap<String, ArrayList<String>> KeysForForeign, final SQLiteTypes types, final String[] list, final String[] charList, final String[] modes) {
+    public void NewColumnWin(final String DBName, final String TableName, final NewTable ref, final Stage subStage, final HashMap<String, ArrayList<String>> KeysForForeign, final SQLiteTypes types, final String[] list, final String[] charList, final String[] modes, SQLTypes sql) {
         LabelDB.setText("Database " + DBName + "\nTable " + TableName);
         this.TableName = TableName;
         this.DBName = DBName;
@@ -176,7 +187,42 @@ public class NewColumn {
         if (modes != null) {
             indexBox.getItems().addAll(modes);
         }
+        if (sql == SQLTypes.SQLITE) {
+            HBox c = (HBox) CommentButton.getParent();
+            c.getChildren().remove(CommentButton);
+        }
 
+    }
+
+    @FXML
+    private void loadComment() {
+
+        final TextArea text = new TextArea(comment);
+        text.getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/TextAreaStyle.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
+        text.setWrapText(true);
+        text.setStyle("-fx-background-color: #2C2C2C;");
+
+        AnchorPane container = new AnchorPane(text);
+
+        AnchorPane.setTopAnchor(text, 0.0);
+        AnchorPane.setRightAnchor(text, 0.0);
+        AnchorPane.setBottomAnchor(text, 0.0);
+        AnchorPane.setLeftAnchor(text, 0.0);
+
+        Stage pageViewer = new Stage();
+        pageViewer.setTitle("Page");
+        pageViewer.initModality(Modality.APPLICATION_MODAL);
+
+// Vincular tamanho do container ao tamanho da cena
+        container.prefWidthProperty().bind(pageViewer.widthProperty());
+        container.prefHeightProperty().bind(pageViewer.heightProperty());
+
+        pageViewer.setOnCloseRequest(_->{
+            comment = text.getText();
+        });
+
+        pageViewer.setScene(new Scene(container, 400, 600));
+        pageViewer.show();
     }
 
     private void initBox() {
@@ -410,6 +456,7 @@ public class NewColumn {
         meta.indexType = indexType;
         meta.items = new ArrayList<>(List.of(set));
         meta.check = check;
+        meta.comment = comment;
      //   meta.autoincrement = autoInit;
 
        // ref.createDBCol(colName, typeBox.getValue(),"0", IsPrimeKey);
@@ -452,6 +499,8 @@ public class NewColumn {
         ForeignKeyBox.setValue(metadata.foreign.tableRef + ": " + metadata.foreign.columnRef);
         System.out.println(1);
         checkType();System.out.println(1);
+
+        comment = metadata.comment;
 
         text1.setText(String.valueOf(metadata.size));
         System.out.println(1);

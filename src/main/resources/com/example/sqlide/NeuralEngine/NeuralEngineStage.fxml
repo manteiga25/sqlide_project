@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import java.net.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" spacing="15.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.neural.NeuralController">
+   <children>
+      <!-- Header -->
+      <Label styleClass="header-label" text="Neural Engine" textFill="#00D4FF">
+         <font>
+            <Font name="System Bold" size="24.0" />
+         </font>
+      </Label>
+
+      <!-- Model Configuration Section -->
+      <VBox spacing="10.0">
+         <children>
+            <Label styleClass="section-header" text="Model Configuration" textFill="#FFFFFF">
+               <font>
+                  <Font name="System Bold" size="16.0" />
+               </font>
+            </Label>
+            <Separator style="-fx-background-color: #404040;" />
+
+            <GridPane hgap="15.0" vgap="10.0">
+               <children>
+                  <Label text="Model Name:" textFill="#CCCCCC" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                  <JFXTextField fx:id="ModelField" prefWidth="200.0" promptText="Enter model name" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                  <Label text="Model Path:" textFill="#CCCCCC" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                  <JFXTextField fx:id="PathField" prefWidth="250.0" promptText="Select model path" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+               </children>
+               <padding>
+                  <Insets left="10.0" />
+               </padding>
+               <columnConstraints>
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+               </columnConstraints>
+               <rowConstraints>
+                  <RowConstraints />
+               </rowConstraints>
+            </GridPane>
+         </children>
+      </VBox>
+
+      <!-- Training Parameters Section -->
+      <VBox spacing="10.0">
+         <children>
+            <Label styleClass="section-header" text="Training Parameters" textFill="#FFFFFF">
+               <font>
+                  <Font name="System Bold" size="16.0" />
+               </font>
+            </Label>
+            <Separator style="-fx-background-color: #404040;" />
+
+            <GridPane hgap="15.0" vgap="15.0">
+               <children>
+                  <!-- First Row -->
+                  <Label text="Epochs:" textFill="#CCCCCC" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                  <Spinner fx:id="EpochSpinner" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                  <Label text="Batch Size:" textFill="#CCCCCC" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                  <Spinner fx:id="BatchSpinner" prefWidth="100.0" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+
+                  <Label text="Optimizer:" textFill="#CCCCCC" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+                  <ChoiceBox fx:id="OptimizerBox" prefWidth="120.0" style="-fx-background-radius: 5;" GridPane.columnIndex="5" GridPane.rowIndex="0" />
+
+                  <!-- Second Row -->
+                  <Label text="Learning Rate:" textFill="#CCCCCC" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                  <Spinner fx:id="LearningSpinner" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                  <Label text="Random Seed:" textFill="#CCCCCC" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                  <Spinner fx:id="SeedSpinner" prefWidth="100.0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                  <JFXCheckBox fx:id="BackPortOption" checkedColor="#3574f0" mnemonicParsing="false" text="Back port" textFill="WHITE" GridPane.columnIndex="5" GridPane.rowIndex="1" />
+               </children>
+               <padding>
+                  <Insets left="10.0" />
+               </padding>
+               <columnConstraints>
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+               </columnConstraints>
+               <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
+               </rowConstraints>
+            </GridPane>
+         </children>
+      </VBox>
+
+      <!-- Network Architecture Section -->
+      <VBox spacing="10.0">
+         <children>
+            <Label styleClass="section-header" text="Network Architecture" textFill="#FFFFFF">
+               <font>
+                  <Font name="System Bold" size="16.0" />
+               </font>
+            </Label>
+            <Separator style="-fx-background-color: #404040;" />
+
+            <!-- Layer Management -->
+            <HBox alignment="CENTER_LEFT" spacing="15.0">
+               <children>
+                  <Label text="Layer:" textFill="#CCCCCC" />
+                  <ChoiceBox fx:id="LayerBox" prefWidth="150.0" style="-fx-background-radius: 5;" />
+                  <Button mnemonicParsing="false" style="-fx-background-color: #00D4FF; -fx-text-fill: white; -fx-background-radius: 5;" text="Add Layer" />
+                  <Button mnemonicParsing="false" style="-fx-background-color: #FF4444; -fx-text-fill: white; -fx-background-radius: 5;" text="Remove Layer" />
+                  <Label fx:id="LayerLabel" text="Layer Type:" textFill="#cccccc" />
+               </children>
+               <padding>
+                  <Insets left="10.0" />
+               </padding>
+            </HBox>
+
+            <!-- Layer Configuration -->
+            <GridPane hgap="15.0" vgap="10.0">
+               <children>
+                  <Label text="Input Neurons:" textFill="#CCCCCC" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                  <Spinner fx:id="InputSpinner" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                  <Label text="Output Neurons:" textFill="#CCCCCC" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                  <Spinner fx:id="OutputSpinner" prefWidth="100.0" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+
+                  <Label text="Activation Function:" textFill="#CCCCCC" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+                  <ChoiceBox fx:id="FunctionBox" prefWidth="150.0" style="-fx-background-radius: 5;" GridPane.columnIndex="5" GridPane.rowIndex="0" />
+                  <Label text="Lost Function:" textFill="#cccccc" GridPane.rowIndex="1" />
+                  <Spinner GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                  <Label text="Label" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+               </children>
+               <padding>
+                  <Insets left="10.0" />
+               </padding>
+               <columnConstraints>
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+               </columnConstraints>
+               <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" />
+               </rowConstraints>
+            </GridPane>
+         </children>
+      </VBox>
+      <HBox alignment="CENTER_RIGHT" spacing="5.0">
+         <children>
+            <Button mnemonicParsing="false" style="-fx-background-color: #3574F0;" text="cancel" textFill="WHITE" />
+            <Button mnemonicParsing="false" style="-fx-background-color: #3574F0;" text="Train" textFill="WHITE" />
+         </children>
+      </HBox>
+   </children>
+   <padding>
+      <Insets bottom="10.0" left="20.0" right="20.0" top="20.0" />
+   </padding>
+   <stylesheets>
+      <URL value="@../../../../css/ChoiceBoxModern.css" />
+      <URL value="@../../../../css/SpinnerStyle.css" />
+   </stylesheets>
+</VBox>
