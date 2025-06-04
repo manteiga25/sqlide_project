@@ -7,6 +7,12 @@
     -fx-border-width: 1;
 }
 
+/* Área do plot do gráfico */
+.chart-plot-background {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+}
+
 .chart-title {
     -fx-text-fill: #cdd6f4;
     -fx-font-size: 18px;
@@ -16,12 +22,16 @@
 .chart-legend {
     -fx-background-color: rgba(69, 71, 90, 0.8);
     -fx-background-radius: 6;
-    -fx-padding: 8;
+}
+
+.chart-legend-item {
+    -fx-text-fill: #cdd6f4;
+    -fx-font-size: 13px;
 }
 
 .axis {
     -fx-tick-label-fill: #a6adc8;
-    -fx-font-size: 11px;
+    -fx-font-size: 14px;
 }
 
 .axis-label {
@@ -29,7 +39,28 @@
     -fx-font-weight: bold;
 }
 
-/* Chart Series Colors */
+/* Gráfico de pizza */
+.chart-pie-label {
+    -fx-fill: #cdd6f4;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+}
+
+.chart-pie {
+    -fx-border-color: #1e1e2e;
+    -fx-border-width: 1.5px;
+}
+
+/* Gráfico de bolhas */
+.chart-bubble-symbol {
+    -fx-background-color: rgba(137, 180, 250, 0.7); /* Azul com transparência */
+    -fx-background-radius: 10px;
+}
+
+/* Gráfico de dispersão */
+.chart-symbol {
+    -fx-background-color: #cba6f7;
+}
 
 .text-field {
     -fx-background-color:  #2E2E2E;

@@ -11,8 +11,11 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -29,6 +32,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.example.sqlide.misc.ClipBoard.CopyToBoard;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
 
@@ -38,7 +42,7 @@ public class ChartController {
     @FXML
     private NumberAxis NumberChart;
     @FXML
-    private ToggleButton BarButton;
+    private ToggleButton Bar;
     @FXML
     private Button EditButton;
     @FXML
@@ -61,6 +65,8 @@ public class ChartController {
    private ArrayList<String> columns;
 
    private DataBase db;
+
+   private ContextMenu menu;
 
    public void setAttributes(final String table, final ArrayList<String> columns, final DataBase db) {
        this.table = table;
@@ -86,7 +92,17 @@ public class ChartController {
             }
         }); */
 
-        currentChart = BarButton;
+        menu = new ContextMenu();
+        MenuItem copy = new MenuItem("Copy");
+        copy.setOnAction(_->{
+            WritableImage snapshot = ChartBox.getChildren().get(1).snapshot(new SnapshotParameters(), null);
+            CopyToBoard(snapshot);
+        });
+        menu.getItems().add(copy);
+
+        putContextMenu();
+
+        currentChart = Bar;
 
         LabelList.setItems(labelMap);
 
@@ -125,17 +141,30 @@ public class ChartController {
 
     }
 
+    private void putContextMenu() {
+        ChartBox.getChildren().get(1).setOnContextMenuRequested(e ->
+                menu.show(ChartBox.getChildren().get(1), e.getScreenX(), e.getScreenY())
+        );
+
+        // Fecha o menu quando clicar fora
+        ChartBox.getChildren().get(1).setOnMouseClicked(e -> {
+            if (e.getButton() != MouseButton.SECONDARY) {
+                menu.hide();
+            }
+        });
+    }
+
     @FXML
     private void setChart(javafx.event.ActionEvent event) {
         final ToggleButton button = (ToggleButton) event.getSource();
 
-        if (!button.getText().equals(currentChart.getText())) {
+        if (!button.getId().equals(currentChart.getId())) {
             currentChart.setSelected(false);
-            switch (button.getText()) {
+            switch (button.getId()) {
                 case "Pie":
                     createPieChart();
                     break;
-                case "Lines":
+                case "Line":
                     createLinesChart();
                     break;
                 case "Area":
@@ -153,11 +182,12 @@ public class ChartController {
                 case "Stacked":
                     createStackedChart();
                     break;
-                case "Stacked bar":
+                case "Stacked_bar":
                     createStackBarChart();
                     break;
             }
             currentChart = button;
+            putContextMenu();
             VBox.setVgrow(ChartBox.getChildren().get(1), Priority.ALWAYS);
         } else button.setSelected(true);
 
@@ -225,7 +255,7 @@ public class ChartController {
         NumberAxis yAxis = new NumberAxis();
         copyAxisProperties(CategoryChart, xAxis);
         copyAxisProperties(NumberChart, yAxis);
-        final BubbleChart<Number, Number> chart = new BubbleChart<>(NumberChart, NumberChart);
+        final BubbleChart<Number, Number> chart = new BubbleChart<>(yAxis, NumberChart);
         ChartBox.getChildren().set(1, chart);
         setChartTitle(titleField.getText());
         setCategoryTitle(categoryField.getText());
@@ -291,11 +321,16 @@ public class ChartController {
            // case PieChart chart -> chart.getData().add(series);
             case AreaChart<?, ?> chart -> chart.getData().add(series);
             case ScatterChart<?, ?> chart -> chart.getData().add(series);
-            case BubbleChart<?, ?> chart -> chart.getData().add(series);
+            case BubbleChart<?, ?> chart -> chart.getData().add(convertSeries(series));
             case StackedBarChart<?, ?> chart -> chart.getData().add(series);
             case StackedAreaChart<?, ?> chart -> chart.getData().add(series);
             default -> throw new IllegalStateException("Unexpected value: " + chartAbstract);
         }
+    }
+
+    private void setData(final ObservableList<PieChart.Data> series) {
+        final PieChart chartAbstract = (PieChart) ChartBox.getChildren().get(1);
+        chartAbstract.setData(series);
     }
 
     private void refreshData() {
@@ -303,7 +338,7 @@ public class ChartController {
         switch (chartAbstract) {
             case BarChart<?, ?> chart -> chart.getData().clear();
             case LineChart<?, ?> chart -> chart.getData().clear();
-            // case PieChart chart -> chart.getData().add(series);
+            case PieChart chart -> chart.getData().clear();
             case AreaChart<?, ?> chart -> chart.getData().clear();
             case ScatterChart<?, ?> chart -> chart.getData().clear();
             case BubbleChart<?, ?> chart -> chart.getData().clear();
@@ -498,35 +533,76 @@ public class ChartController {
 
         Thread.ofVirtual().start(()->{
 
-            final ArrayList<Label> LabelCopy = new ArrayList<>(labelMap);
+            if (ChartBox.getChildren().get(1) instanceof PieChart) {
+                setDataPie();
+            } else setData();
+
+        });
+
+    }
+
+    private XYChart.Series<Long, Long> convertSeries(XYChart.Series<String, Long> originalSeries) {
+        XYChart.Series<Long, Long> newSeries = new XYChart.Series<>();
+        newSeries.setName(originalSeries.getName()); // Mantém o nome da série
+
+        for (XYChart.Data<String, Long> data : originalSeries.getData()) {
+            try {
+                // Converte o valor X de String para Long
+                Long xValue = Long.parseLong(data.getXValue());
+                Long yValue = data.getYValue();
+
+                newSeries.getData().add(new XYChart.Data<>(xValue, yValue));
+            } catch (NumberFormatException e) {
+                System.err.println("Erro na conversão: " + data.getXValue() + " não é um número válido");
+                // Opções alternativas:
+                // 1. Usar um valor padrão como 0L
+                // 2. Ignorar o ponto de dados
+                // 3. Usar o índice como valor X
+            }
+        }
+
+        return newSeries;
+    }
+
+    private void setData() {
+        final ArrayList<Label> LabelCopy = new ArrayList<>(labelMap);
 
         //    Iterator<Label> LabelIterator = LabelCopy.iterator();
 
-            while (!LabelCopy.isEmpty()) {
-               // final Label label = LabelIterator.next();
-                Label label = LabelCopy.getFirst();
-                XYChart.Series<String, Long> series = new XYChart.Series<String, Long>();
-                series.setName(label.Func.get() + " of " + label.Name.get());
-               // final ArrayList<Long> data = db.fetchDataMap(label.Query.get());
+        while (!LabelCopy.isEmpty()) {
+            // final Label label = LabelIterator.next();
+            Label label = LabelCopy.getFirst();
+            XYChart.Series<String, Long> series = new XYChart.Series<String, Long>();
+            series.setName(label.Func.get() + " of " + label.Name.get());
+            // final ArrayList<Long> data = db.fetchDataMap(label.Query.get());
 
-                final List<Label> reduced = labelMap.stream().filter(lab -> lab.Name.get().equals(label.Name.get())).toList();
-               // series.getData().add(new XYChart.Data<String, Long>(label.Name.get(), data.getFirst()));
+            final List<Label> reduced = labelMap.stream().filter(lab -> lab.Name.get().equals(label.Name.get())).toList();
+            // series.getData().add(new XYChart.Data<String, Long>(label.Name.get(), data.getFirst()));
 
-                for (final Label subLabel : reduced) {
-                    final ArrayList<Long> subData = db.fetchDataMap(subLabel.Query.get());
+            for (final Label subLabel : reduced) {
+                final ArrayList<Long> subData = db.fetchDataMap(subLabel.Query.get());
                 //    series.getData().add(new XYChart.Data<String, Long>(label.Category.get(), subData.getFirst()));
-                    series.getData().add(new XYChart.Data<String, Long>(subLabel.Category.get(), subData.getFirst()));
-                }
-
-                LabelCopy.removeAll(reduced);
-
-              //  System.out.println(data);
-
-
-                Platform.runLater(()->setData(series));
+                series.getData().add(new XYChart.Data<String, Long>(subLabel.Category.get(), subData.getFirst()));
             }
-        });
 
+            LabelCopy.removeAll(reduced);
+
+            //  System.out.println(data);
+
+
+            Platform.runLater(()->setData(series));
+        }
+    }
+
+    private void setDataPie() {
+
+        final ObservableList<PieChart.Data> Data = FXCollections.observableArrayList();
+
+        for (final Label label : labelMap) {
+            final ArrayList<Long> subData = db.fetchDataMap(label.Query.get());
+            Data.add(new PieChart.Data(label.Category.get(), subData.getFirst()));
+        }
+        Platform.runLater(()->setData(Data));
     }
 
     static class Label {
