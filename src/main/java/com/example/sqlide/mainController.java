@@ -144,6 +144,30 @@ public class mainController implements requestInterface {
     }
 
     @Override
+    public String insertData(String table, final ArrayList<HashMap<String, String>> data) {
+
+        final DataBase db = DatabaseOpened.get(currentDB.get());
+        if (db != null) {
+            db.insertData(table, data);
+
+            return db.GetException();
+        }
+
+        return "Error";
+    }
+
+    @Override
+    public String currentTable() {
+        final DatabaseInterface db = DBopened.get(currentDB.get());
+        System.out.println("current db " + currentDB.get());
+        System.out.println(DatabaseOpened.keySet());
+        if (db != null) {
+            return "Table: " + db.getCurrentTable();
+        }
+        return "";
+    }
+
+    @Override
     public HashMap<String, ArrayList<HashMap<String, String>>> getTableMetadata() {
         final DatabaseInterface db = DBopened.get(currentDB.get());
         HashMap<String, ArrayList<HashMap<String, String>>> meta = null;
@@ -613,6 +637,7 @@ public class mainController implements requestInterface {
                     }
                 }
             });
+            ContainerForDB.getSelectionModel().selectedItemProperty().addListener((_,_,item)->currentDB.set(item.getId()));
             //  BorderContainer.setCenter(ContainerForDB);
             CenterContainer.getItems().removeFirst();
             CenterContainer.getItems().addFirst(ContainerForDB);

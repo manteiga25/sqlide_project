@@ -222,6 +222,8 @@ public abstract class DataBase {
 
     public abstract boolean insertData(String Table, HashMap<String, String> data);
 
+    public abstract boolean insertData(String Table, ArrayList<HashMap<String, String>> data);
+
     public abstract boolean updateData(String Table, HashMap<String, String> data, long index);
 
     public abstract boolean removeData(String Table, HashMap<String, String> data, ArrayList<Long> rowid);

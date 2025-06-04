@@ -117,6 +117,27 @@ public class AssistantController {
                                     sender.put(Boolean.toString(AssistantFunctionsInterface.createTable(parameters.getString(0), Table)));
                                     break;
 
+                                case "table":
+                                    sender.put(AssistantFunctionsInterface.currentTable());
+                                    break;
+
+                                case "InsertData":
+                                    final ArrayList<HashMap<String, String>> Rows = new ArrayList<>();
+                                    final JSONArray Data = parameters.getJSONArray(1);
+                                    for (int i = 0; i < Data.length(); i++) {
+                                        final JSONObject obj = Data.getJSONObject(i);
+                                        final HashMap<String, String> map = new HashMap<>();
+
+                                        for (String key : obj.keySet()) {
+                                            map.put(key, obj.getString(key));
+                                        }
+
+                                        Rows.add(map);
+                                    }
+
+                                    sender.put(AssistantFunctionsInterface.insertData(parameters.getString(0), Rows));
+                                    break;
+
                                 case "sendEmail":
                                     sender.put(String.valueOf(AssistantFunctionsInterface.sendEmail(parameters.getString(0))));
                                     break;

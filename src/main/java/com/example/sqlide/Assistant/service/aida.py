@@ -7,8 +7,26 @@ from sys import stderr
 conversation_history = []
 client = None
 
+def currentTable():
+    """Fetch the current Table on the user is.
+    Args:
+
+    Return (str): the table name of the user if value is "" is invalid.
+    """
+
+    sender = {
+        'status': 'request',
+        'function': 'table',
+        'parameters': [],
+        'message': 'Fetching current Table'
+        }
+
+    print(json.dumps(sender))
+
+    return input()
+
 def ShowData(query: str, table: str):
-    """Show data for user from a SQL query.
+    """Show data for user from a SQL query, If table is not mentioned use currentTable() to fetch current Table.
     Args:
         query (str): Generate the query to execute fetch.
         table (str): The table to execute query.
@@ -27,7 +45,7 @@ def ShowData(query: str, table: str):
     return input()
 
 def RequestData(query: str, table: str):
-    """Show data for user from a SQL query.
+    """Show data for user from a SQL query, If table is not mentioned use currentTable() to fetch current Table.
     Args:
         query (str): Generate the query to execute fetch.
         table (str): The table to execute query.
@@ -103,6 +121,26 @@ def createTable(tableName: str, meta: list[dict[str, str]]):
 
     return input()
 
+def createData(table: str, data: list[dict[str, str]]):
+    """Create a data for the table's.
+        Args:
+            table: The table to insert data, if not mentioned by the user use currentTable() to fetch current Table.
+            data: The list of dictionary of data, the keys of dict is the columns Name and the values is String (The application convert to real type of column).
+
+        Return (str): empty Success, Error or SQLException Error.
+    """
+
+    sender = {
+                'status': 'request',
+                'function': 'InsertData',
+                'parameters': [table, data],
+                'message': ''
+                }
+
+    print(json.dumps(sender))
+
+    return input()
+
 def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
     global conversation_history
     global client
@@ -113,7 +151,7 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
         google_search = GoogleSearch()
     )
 
-    func_tools = [ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable]
+    func_tools = [ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable, currentTable, createData]
 
     tools = None
 

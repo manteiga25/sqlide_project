@@ -15,4 +15,8 @@ public interface requestInterface {
 
     public abstract boolean createTable(final String table, final ArrayList<HashMap<String, String>> meta);
 
+    public abstract String insertData(final String table, final ArrayList<HashMap<String, String>> data);
+
+    public abstract String currentTable();
+
 }

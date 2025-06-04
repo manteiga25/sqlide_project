@@ -8,6 +8,8 @@ import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.neural.NeuralController;
 import com.jfoenix.controls.JFXButton;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,6 +20,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTCol;
@@ -40,6 +43,10 @@ public class DatabaseInterface {
     private TabPane DBTabContainer;
 
     private boolean removing = false;
+
+    public String getCurrentTable() {
+        return DBTabContainer.getSelectionModel().getSelectedItem().getText();
+    }
 
     public HashMap<String, ArrayList<String>> getColumnPrimaryKeyName(final String tableToIgnore) {
         final HashMap<String, ArrayList<String>> list = new HashMap<>();
@@ -187,7 +194,11 @@ public class DatabaseInterface {
         HBox ButtonsLine = new HBox(5);
         ButtonsLine.setPadding(new Insets(5,0,5,5));
 
-        JFXButton save = new JFXButton("Save");
+        JFXButton save = new JFXButton();
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.SAVE);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        save.setGraphic(icon);
         save.setOnAction(e -> commit());
 
         JFXButton createTab = new JFXButton("create table");

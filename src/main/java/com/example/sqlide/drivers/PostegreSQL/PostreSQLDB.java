@@ -602,6 +602,37 @@ public class PostreSQLDB extends DataBase {
     }
 
     @Override
+    public boolean insertData(String Table, ArrayList<HashMap<String, String>> data) {
+        StringBuilder command = new StringBuilder("INSERT INTO " + Table + " (");
+        for (final String column : data.getFirst().keySet()) {
+            command.append(column).append(", ");
+        }
+        command.replace(command.length()-2, command.length(), "");
+        command.append(") VALUES (");
+        for (final String _ : data.getFirst().keySet()) {
+            command.append("?").append(", ");
+        }
+        command.replace(command.length()-2, command.length(), "");
+        command.append(");");
+        System.out.println(command);
+
+        try (PreparedStatement ps = connection.prepareStatement(command.toString())) {
+            for (final HashMap<String, String> row : data) {
+                int column = 1;
+                for (final String key : row.keySet()) {
+                    ps.setObject(column++, row.get(key));
+                }
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public boolean updateData(String Table, HashMap<String, String> data, long index) {
         StringBuilder command = new StringBuilder("UPDATE " + Table + " SET ");
         for (final String column : data.keySet()) {
