@@ -172,6 +172,10 @@ public class AdvancedSearchController {
         return QueryField.getText();
     }
 
+    public void setQuery(final String query) {
+        QueryField.setText(query);
+    }
+
     public void setColumns(final HashMap<String, ArrayList<String>> columns) {
         this.columns = columns.get(Table);
         AllColumns = columns;

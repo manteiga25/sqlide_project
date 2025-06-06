@@ -36,11 +36,9 @@ public class TextAreaAutocomplete extends CodeArea {
 
     private ArrayList<String> words = new ArrayList<>();
 
-    Font customFont = Font.loadFont(
-            getClass().getResourceAsStream("/Fonts/JetBrains.ttf"), 18
-    );
-
     private boolean changed = false;
+
+    private int size = 14;
 
     public boolean isChanged() {
         return changed;
@@ -91,7 +89,8 @@ public class TextAreaAutocomplete extends CodeArea {
             lineNumber.getStyleClass().add("lineno-label"); // Aplica a classe CSS
             HBox container = new HBox(lineNumber);
             container.getStyleClass().add("lineno-container");
-            container.setAlignment(Pos.CENTER_RIGHT);
+            container.setAlignment(Pos.CENTER_LEFT);
+            container.setPrefWidth(100);
             return container;
         });
 
@@ -280,6 +279,20 @@ public class TextAreaAutocomplete extends CodeArea {
             }
         });
 
+        addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, event -> {
+            if (event.isControlDown()) {
+                if (event.getDeltaY() > 0) {
+                    if (size != 30) {
+                        setStyle("-fx-font-size: " + ++size + "px;");
+                    }
+                } else {
+                    if (size != 10) {
+                        setStyle("-fx-font-size: " + --size + "px;");
+                    }
+                }
+            }
+        });
+
         // Handle mouse click event
         setOnMouseClicked(e -> {
             newWord = false;
@@ -289,18 +302,43 @@ public class TextAreaAutocomplete extends CodeArea {
     }
 
     private Point2D findCaret() {
-        Optional<Bounds> caretBounds = getCaretBounds();
-        Point2D screenCoords = null;
-        if (caretBounds.isPresent()) {
-            Bounds bounds = caretBounds.get();
-            double x = bounds.getMinX(); // Posição X relativa ao CodeArea
-            double y = bounds.getMinY(); // Posição Y relativa ao CodeArea
+        try {
+            int caretPosition = getCaretPosition();
+            if (caretPosition == 0) {
+                // Trata posição inicial
+                return localToScreen(0, 0);
+            }
 
-            // Converter para coordenadas da tela (opcional)
-            screenCoords = localToScreen(x, y);
-            System.out.println("Posição na tela: X=" + screenCoords.getX() + ", Y=" + screenCoords.getY());
+            int lineIndex = getCurrentParagraph();
+            Optional<Bounds> lineBoundsOpt = getCaretBounds();
+
+            if (lineBoundsOpt.isEmpty()) {
+                return null;
+            }
+
+            Bounds lineBounds = lineBoundsOpt.get();
+            String lineText = getParagraph(lineIndex).getText();
+            int columnPosition = caretPosition - getAbsolutePosition(lineIndex, 0);
+
+            // Limita a posição da coluna ao tamanho da linha
+            columnPosition = Math.min(columnPosition, lineText.length());
+
+            Text measurer = new Text(lineText.substring(0, columnPosition));
+           // measurer.setFont(getFont());
+            double charWidth = measurer.getLayoutBounds().getWidth();
+
+            // Adiciona offset de padding se necessário
+            double paddingLeft = getInsets().getLeft();
+            double paddingTop = getInsets().getTop();
+
+            return localToScreen(
+                    charWidth + paddingLeft,
+                    lineBounds.getMinY() + lineBounds.getHeight() + paddingTop
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
-        return screenCoords;
     }
 
 // Refresh and show suggestions in the menu

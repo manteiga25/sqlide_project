@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.example.sqlide.popupWindow.handleWindow.ShowError;
+import static com.example.sqlide.popupWindow.handleWindow.*;
 
 public class ReportController {
 
@@ -92,7 +92,6 @@ public class ReportController {
     public void initializeDialog(DataBase db, Stage stage) {
         this.db = db;
         this.dialogStage = stage;
-        reportTitleField.setText("Report");
         this.pdfPreviewService = new PdfPreviewService();
         VBox styleControlsVBox = createStyleControlsNode();
         styleControlsVBox.setStyle("-fx-background-color: #2C2C2C;");
@@ -427,11 +426,11 @@ public class ReportController {
         List<String> selectedReportColumns = secondaryController.getSelected();
 
         if (title.isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Validation Error", "Report title cannot be empty.");
+            ShowError("Validation Error", "Report title cannot be empty.");
             return;
         }
         if (selectedReportColumns.isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Validation Error", "Please select at least one column for the report.");
+            ShowError("Validation Error", "Please select at least one column for the report.");
             return;
         }
 
@@ -451,19 +450,19 @@ public class ReportController {
             } */
             //    currentDB = mainCtrlRef.DatabaseOpened.get(mainCtrlRef.currentDB.get());
             if (db == null) {
-                showAlert(Alert.AlertType.ERROR, "Database Error", "Could not retrieve the current database connection.");
+                ShowError( "Database Error", "Could not retrieve the current database connection.");
                 return;
             }
             // Assuming null for tableName is acceptable if query is self-contained.
             fetchedData = db.fetchData(secondaryController.getQuery(), new ArrayList<>(), null);
         } catch (Exception e) { // Catching general Exception as specific SQLException is not guaranteed by fetchData signature
-            showAlert(Alert.AlertType.ERROR, "Data Fetch Error", "Failed to fetch data for the report: " + e.getMessage());
+            ShowError( "Data Fetch Error", "Failed to fetch data for the report: " + e.getMessage());
             e.printStackTrace(); // For logging
             return;
         }
 
         if (fetchedData == null) { // fetchData might return null on error or no data
-            showAlert(Alert.AlertType.INFORMATION, "No Data", "No data returned for the given query.");
+            ShowInformation("No Data", "No data returned for the given query.");
             return; // Or proceed to generate an empty report if desired
         }
 
@@ -520,27 +519,16 @@ public class ReportController {
             try {
                 reportService.generatePdfReport(reportData, file.getAbsolutePath());
             } catch (IOException e) {
-                showAlert(Alert.AlertType.ERROR, "PDF Generation Error", "Failed to generate PDF report: " + e.getMessage());
+                ShowError("PDF Generation Error", "Failed to generate PDF report.", e.getMessage());
                 e.printStackTrace(); // For logging
             }
         });
 
         // 7. Show Success Message and Close Dialog
-        showAlert(Alert.AlertType.INFORMATION, "Success", "Report generated successfully at:\n" + file.getAbsolutePath());
+        ShowSucess("Success", "Report generated successfully at:\n" + file.getAbsolutePath());
         if (dialogStage != null) {
             dialogStage.close();
         }
-    }
-
-    private void showAlert(Alert.AlertType alertType, String title, String message) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        if (dialogStage != null && dialogStage.getScene() != null && dialogStage.getScene().getWindow() != null) {
-            alert.initOwner(dialogStage.getScene().getWindow()); // Ensure alert is modal to the dialog
-        }
-        alert.showAndWait();
     }
 
     @FXML
@@ -566,4 +554,12 @@ public class ReportController {
         return sourceQuery;
     }
 
+    public void setQuery(final String query) {
+        secondaryController.setQuery(query);
+        handleGeneratePdf();
+    }
+
+    public void setTitle(final String title) {
+        reportTitleField.setText(title);
+    }
 }

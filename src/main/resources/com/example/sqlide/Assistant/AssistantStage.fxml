@@ -11,6 +11,11 @@
 <VBox spacing="5.0" style="-fx-background-color: #2C2C2C; -fx-font-family: JetBrains Mono Medium;" stylesheets="@../../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Assistant.AssistantController">
 
     <children>
+      <Hyperlink fx:id="deleteButton" onAction="#DeleteConversation" style="-fx-font-size: 18px;" stylesheets="@../../../../css/Hyper.css" text="Delete All">
+         <font>
+            <Font size="14.0" />
+         </font>
+      </Hyperlink>
         <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
             <content>
                 <AnchorPane style="-fx-background-color: #2A2A2A;">

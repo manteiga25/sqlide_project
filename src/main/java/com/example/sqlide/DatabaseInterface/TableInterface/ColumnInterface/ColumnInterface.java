@@ -62,7 +62,6 @@ public class ColumnInterface {
     public TableColumn<DataForDB, String> createDBColContainer(final StringProperty TableName) {
 
         this.table = TableName;
-        final String ColName = Metadata.Name;
         final boolean isPrimeKey = Metadata.IsPrimaryKey;
 
         return getForDBStringTableColumn(TableName, isPrimeKey, Metadata.foreign.isForeign);
@@ -175,10 +174,7 @@ public class ColumnInterface {
         ColumnContainer.setEditable(true);
         ColumnContainer.setId(Metadata.Name);
         createMenu(ColumnContainer);
-        System.out.println("id prime " + isPrimeKey);
         if (isPrimeKey || isForeign) {
-       //     final String name = isPrimeKey ? "prime.jpg" : "foreign.jpg";
-      //      Label columnName = new Label(Metadata.Name + "\uD83D\uDD11");
             final String columnTitle = Metadata.Name;
             final String lockIcon = " \uD83D\uDD11"; // 🔑
 
@@ -194,9 +190,6 @@ public class ColumnInterface {
 
             // Criando um TextFlow para combinar os textos
             final TextFlow textFlow = new TextFlow(nameText, lockText);
-        //    ImageView icon = new ImageView(new Image(getClass().getResource("/com/example/sqlide/images/" + name).toExternalForm()));
-          //  icon.setFitHeight(16);
-            //icon.setFitWidth(16);
             HBox header = new HBox(5, textFlow);
             header.setAlignment(Pos.CENTER);
 

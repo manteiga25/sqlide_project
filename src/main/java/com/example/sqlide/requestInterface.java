@@ -17,6 +17,8 @@ public interface requestInterface {
 
     public abstract String insertData(final String table, final ArrayList<HashMap<String, String>> data);
 
+    public abstract boolean createReport(final String title, final String query);
+
     public abstract String currentTable();
 
 }

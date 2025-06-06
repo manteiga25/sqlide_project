@@ -26,8 +26,11 @@ import java.util.*;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class NewRow {
-    public GridPane GridContainer;
-    public Label DBInfo;
+
+    @FXML
+    private GridPane GridContainer;
+    @FXML
+    private Label DBInfo;
 
     private TableInterface ref;
 

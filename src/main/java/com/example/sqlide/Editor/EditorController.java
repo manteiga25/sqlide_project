@@ -55,10 +55,12 @@ public class EditorController {
 
     public EditorController() {
         imgPause = new ImageView(Objects.requireNonNull(getClass().getResource("/img/stop.png")).toExternalForm());
+        imgPause.setPreserveRatio(true);
         imgPause.setFitHeight(15);
         imgPause.setFitWidth(15);
 
         imgPlay = new ImageView(Objects.requireNonNull(getClass().getResource("/img/play.png")).toExternalForm());
+        imgPlay.setPreserveRatio(true);
         imgPlay.setFitHeight(15);
         imgPlay.setFitWidth(15);
 

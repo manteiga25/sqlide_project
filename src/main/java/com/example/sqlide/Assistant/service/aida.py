@@ -83,9 +83,9 @@ def GetColumnsMetadata():
 
 def sendEmail(body: str):
     """Generate and send a html email body ex: <html dir="ltr"><head></head><body contenteditable="true"><span style="font-family: &quot;&quot;;">Olá&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=user:Name/&gt;</span><span style="font-family: &quot;&quot;;">, parabéns foi selecionado como candidato para o prémio por ter completado os seus&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=user:age/&gt; de idade, vá para a lojá maos proxima e use o seguinte código&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=product:id/&gt; para receber o prémio, obrigado.&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=worker:Name/&gt;.</span></body></html>
-        use GetColumnsMetadata function to get information odf tables to insert data tag to email ex: <DataSrc='table':'column'/>.
+        use GetColumnsMetadata function to get information of tables to insert data tag to email ex: <DataSrc='table':'column'/>.
         Args:
-            body: (str): The html content of email.
+            body (str): The html content of email.
 
         Return None:
     """
@@ -96,6 +96,26 @@ def sendEmail(body: str):
         'parameters': [body],
         'message': ''
         }
+
+    print(json.dumps(sender))
+
+    return input()
+
+def createReport(title: str, query: str):
+    """Generate a report, use GetColumnsMetadata and currentTable function to get information of tables to to generate query for report.
+            Args:
+                title (str): The title of report.
+                query (str): The SQL Query for report, generate.
+
+            Return (bool): true success, false error.
+        """
+
+    sender = {
+            'status': 'request',
+            'function': 'createReport',
+            'parameters': [title, query],
+            'message': ''
+            }
 
     print(json.dumps(sender))
 
@@ -151,7 +171,7 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
         google_search = GoogleSearch()
     )
 
-    func_tools = [ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable, currentTable, createData]
+    func_tools = [ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable, currentTable, createData, createReport]
 
     tools = None
 

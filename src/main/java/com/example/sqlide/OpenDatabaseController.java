@@ -35,9 +35,6 @@ public class OpenDatabaseController {
     public void initWin(final mainController ref, final Stage stage) {
         this.context = ref;
         this.stage = stage;
-        File file = new File("/images/sqlite.png");
-        Image i = new Image(file.toURI().toString());
-     //   sqliteImage.setImage(i);
     }
 
     @FXML

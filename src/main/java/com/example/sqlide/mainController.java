@@ -50,8 +50,9 @@ import static com.example.sqlide.popupWindow.handleWindow.*;
 
 public class mainController implements requestInterface {
 
-    public JFXButton AssistantButton;
-    public JFXButton NotificationButton;
+    @FXML
+    private JFXButton AssistantButton, NotificationButton;
+
     @FXML
     private SplitPane HorizontalSplit;
     @FXML
@@ -62,9 +63,6 @@ public class mainController implements requestInterface {
 
     @FXML
     private MenuItem backupMenu;
-
-    @FXML
-    private VBox MessagesBox, NotificationBox = new VBox(5);
 
     private VBox AssistantContainer, NotificationContainer;
 
@@ -78,22 +76,17 @@ public class mainController implements requestInterface {
 
     private Popup MenuPopup;
 
-    public String currentInstance = "";
-
     private boolean editor = false;
 
     public HashMap<String, DataBase> DatabaseOpened = new HashMap<>();
 
     private final HashMap<String, DatabaseInterface> DBopened = new HashMap<>();
 
-    private final ArrayList<String> ScriptsOpened = new ArrayList<>();
-
     private final ObservableList<String> DatabasesName = FXCollections.observableArrayList();
     private final ObservableList<DataBase> DatabasesOpened = FXCollections.observableArrayList();
 
     @FXML
     private Menu queryMenu;
-  //  MenuButton queryMenu;
 
     private boolean created = false;
 
@@ -157,6 +150,16 @@ public class mainController implements requestInterface {
     }
 
     @Override
+    public boolean createReport(final String title, final String query) {
+        final DatabaseInterface db = DBopened.get(currentDB.get());
+        if (db != null) {
+            Platform.runLater(()->db.openReportStage(title, query));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public String currentTable() {
         final DatabaseInterface db = DBopened.get(currentDB.get());
         System.out.println("current db " + currentDB.get());
@@ -189,44 +192,32 @@ public class mainController implements requestInterface {
     }
 
     @FXML
-    public void openDBWindow() {
+    private void openDBWindow() {
 
         try {
             // Carrega o arquivo FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("openDatabase.fxml"));
-            //    VBox miniWindow = loader.load();
             Parent root = loader.load();
 
             OpenDatabaseController secondaryController = loader.getController();
 
             // Criar um novo Stage para a subjanela
             Stage subStage = new Stage();
-            subStage.setTitle("Subjanela");
+            subStage.setTitle("Open Database");
             subStage.setScene(new Scene(root));
             secondaryController.initWin(this, subStage);
 
-            // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
 
             // Mostrar a subjanela
             subStage.show();
         } catch (Exception e) {
-            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+            ShowError("Error to load", "Error tom load stage.", e.getMessage());
         }
-
-   /*     FileChooser selectFileWindow = new FileChooser();
-        selectFileWindow.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Database SQL", "*.db"),
-                new FileChooser.ExtensionFilter("script SQL", "*.sql"));
-
-        final File selectedFile = selectFileWindow.showOpenDialog(primaryStage);
-        if (selectedFile != null) {
-            openDB(selectedFile.getAbsolutePath(), selectedFile.getName());
-        } */
     }
 
     @FXML
-    public void initialize() {
+    private void initialize() {
 
         setHDividerSpace();
 
@@ -1098,22 +1089,6 @@ public class mainController implements requestInterface {
         } catch (Exception e) {
             ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
         }
-    }
-
-    private void createEditorPane() {
-        ContainerForEditor = new TabPane();
-        ContainerForEditor.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/TabPane.css")).toExternalForm());
-        ContainerForEditor.getTabs().addListener((ListChangeListener<Tab>) change -> {
-            while (change.next()) {
-                if (change.wasRemoved()) {
-                    ScriptsOpened.remove(change.getRemoved().getFirst().getId());
-                } else if (change.wasAdded()) {
-                    final Tab FolderTab = change.getAddedSubList().getFirst();
-                    ScriptsOpened.add(FolderTab.getId());
-                    ContainerForEditor.getSelectionModel().select(FolderTab);
-                }
-            }
-        });
     }
 
     @FXML

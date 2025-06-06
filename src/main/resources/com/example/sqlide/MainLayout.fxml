@@ -11,152 +11,114 @@
 
 <BorderPane fx:id="BorderContainer" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.mainController">
 
-             <top>
-                 <HBox styleClass="HBox">
-                 <MenuBar style="-fx-background-color: transparent;" stylesheets="@../../../css/MenuBarStyle.css">
-         <menus>
-            <Menu mnemonicParsing="false" text="Database ▼">
-              <items>
-                <MenuItem mnemonicParsing="false" onAction="#createDBInterface" text="New Database">
-                </MenuItem>
-                  <MenuItem mnemonicParsing="false" onAction="#openDBWindow" text="Open Database" />
-                     <MenuItem mnemonicParsing="false" onAction="#openImport" text="Import" />
-                  <Menu fx:id="backupMenu" disable="true" mnemonicParsing="false" text="Backup/Export">
-                    <items>
-                      <MenuItem mnemonicParsing="false" onAction="#initExcelWindow" text="Excel" />
-                        <MenuItem mnemonicParsing="false" onAction="#initCSVWindow" text="CSV" />
-                        <MenuItem mnemonicParsing="false" onAction="#initXMLWindow" text="XML" />
-                        <MenuItem mnemonicParsing="false" text="SQLITE" />
-                        <MenuItem mnemonicParsing="false" onAction="#initJSONWindow" text="JSON" />
-                    </items>
-                  </Menu>
-                  <MenuItem mnemonicParsing="false" onAction="#OpenAtributesWin" text="Database Atributes" />
-                  <Menu mnemonicParsing="false" text="Fetch size">
-                     <items>
-                        <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="100" />
-                        <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="250" />
-                        <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="500" />
-                        <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="1000" />
-                     </items>
-                  </Menu>
-              </items>
-            </Menu>
-             <Menu fx:id="queryMenu" disable="true" mnemonicParsing="false" text="Script ▼">
-                 <items>
-                     <MenuItem mnemonicParsing="false" onAction="#initScriptWindow" text="Execute All statements">
-                     </MenuItem>
-                  <MenuItem mnemonicParsing="false" onAction="#initScriptWindow" text="Execute this statement" />
-                  <MenuItem mnemonicParsing="false" onAction="#initTriggerWindow" text="Add Trigger" />
-                  <MenuItem mnemonicParsing="false" onAction="#initEditTriggerWindow" text="Edit Trigger" />
-                  <MenuItem mnemonicParsing="false" onAction="#initEventWindow" text="Add Event" />
-                  <MenuItem mnemonicParsing="false" onAction="#initEditEventWindow" text="Edit Event" />
-                 </items>
-             </Menu>
-         </menus>
-                 </MenuBar>
-                     <JFXButton fx:id="openScript" disable="true" maxHeight="1.7976931348623157E308" mnemonicParsing="false" onAction="#setOpenScript" text="Open Script" textFill="WHITE" />
-                     <JFXButton fx:id="createScript" disable="true" maxHeight="1.7976931348623157E308" mnemonicParsing="false" onAction="#createScript" text="Create Script" textFill="WHITE" />
-                     <Spacer />
-                     <Button alignment="CENTER" maxHeight="1.7976931348623157E308">
-                         <graphic>
-                             <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_MINIMIZE" size="16.0" />
-                         </graphic></Button>
-                     <Button maxHeight="1.7976931348623157E308">
-                         <graphic>
-                             <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_RESTORE" size="16.0" />
-                         </graphic></Button>
-                     <Button maxHeight="1.7976931348623157E308" styleClass="button-close">
-                         <graphic>
-                             <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_CLOSE_ALT" size="16.0" />
-                         </graphic></Button>
-         <stylesheets>
-            <URL value="@../../../css/HBoxStyle.css" />
-            <URL value="@../../../css/ContextMenuStyle.css" />
-         </stylesheets>
-                 </HBox>
-             </top>
-           <!--  <HBox style="-fx-background-color: #3C3F41;" stylesheets="@../../../css/MenuStyle.css" BorderPane.alignment="CENTER">
-                 <MenuButton mnemonicParsing="false" text="Database">
-                     <items>
-                         <MenuItem mnemonicParsing="false" onAction="#SQLiteInterface" text="New Database" />
-                         <MenuItem mnemonicParsing="false" onAction="#openDBWindow" text="Open Database" />
-                         <Menu fx:id="backupMenu" disable="true" mnemonicParsing="false" text="Backup/Export">
-                             <MenuItem mnemonicParsing="false" onAction="#initExcelWindow" text="Excel" />
-                             <MenuItem mnemonicParsing="false" onAction="#initCSVWindow" text="CSV" />
-                             <MenuItem mnemonicParsing="false" onAction="#initXMLWindow" text="XML" />
-                             <MenuItem mnemonicParsing="false" text="SQLITE" />
-                             <MenuItem mnemonicParsing="false" onAction="#initJSONWindow" text="JSON" />
-                         </Menu>
-                         <MenuItem mnemonicParsing="false" onAction="#OpenAtributesWin" text="Database Atributes" />
-                         <Menu mnemonicParsing="false" text="Fetch size">
-                             <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="100" />
-                             <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="250" />
-                             <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="500" />
-                             <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="1000" />
-                         </Menu>
-                     </items>
-                 </MenuButton>
-                 <MenuButton fx:id="queryMenu" disable="true" mnemonicParsing="false" text="Script">
-                     <items>
-                         <MenuItem fx:id="allStats" mnemonicParsing="false" onAction="#initScriptWindow" text="Execute all statement" />
-                         <MenuItem mnemonicParsing="false" onAction="#initScriptWindow" text="Execute this statement" />
-                         <MenuItem mnemonicParsing="false" onAction="#initTriggerWindow" text="Add Triger" />
-                         <MenuItem mnemonicParsing="false" onAction="#initEditTriggerWindow" text="Edit Trigger" />
-                         <MenuItem mnemonicParsing="false" onAction="#initEventWindow" text="Add Event" />
-                         <MenuItem mnemonicParsing="false" onAction="#initEditEventWindow" text="Edit Event" />
-                     </items>
-                     <opaqueInsets>
-                         <Insets />
-                     </opaqueInsets>
-                 </MenuButton>
-         <JFXButton fx:id="openScript" disable="true" mnemonicParsing="false" onAction="#setOpenScript" text="Open Script" />
-         <JFXButton fx:id="createScript" disable="true" mnemonicParsing="false" onAction="#createScript" text="Create Script" />
-             </HBox>
-         </top> -->
-         <left>
-             <VBox spacing="5.0" style="-fx-background-color: #2A2A2A;" BorderPane.alignment="CENTER">
-                 <JFXButton mnemonicParsing="false" onAction="#SwitchToDB" prefWidth="75.0" style="-fx-background-color: #3574F0;" text="Database" textFill="#f2f2f2">
-            <font>
-               <Font name="Arial" size="12.0" />
-            </font></JFXButton>
-                 <JFXButton mnemonicParsing="false" onAction="#SwitchToEditor" style="-fx-background-color: #3574F0;" text="SQL Editor" textFill="#f2f2f2">
-            <font>
-               <Font name="Arial" size="12.0" />
-            </font></JFXButton>
-         <BorderPane.margin>
-            <Insets left="5.0" top="5.0" />
-         </BorderPane.margin>
-         <padding>
-            <Insets right="5.0" />
-         </padding>
-             </VBox>
-         </left>
-         <center>
-             <SplitPane fx:id="HorizontalSplit" orientation="VERTICAL" style="-fx-background-color: black;" stylesheets="@../../../css/SplitHorizontal.css">
-          <!--  <Label fx:id="LabelDB" prefHeight="52.0" prefWidth="246.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true" BorderPane.alignment="CENTER"> -->
-             <SplitPane fx:id="CenterContainer" style="-fx-background-color: #2A2A2A;">
-                 <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" prefWidth="1832.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true">
-            <font>
-               <Font size="36.0" />
-            </font></Label>
-             </SplitPane>
-             </SplitPane>
+    <top>
+        <HBox styleClass="HBox">
+            <MenuBar style="-fx-background-color: transparent;" stylesheets="@../../../css/MenuBarStyle.css">
+                <menus>
+                    <Menu mnemonicParsing="false" text="Database ▼">
+                        <items>
+                            <MenuItem mnemonicParsing="false" onAction="#createDBInterface" text="New Database">
+                            </MenuItem>
+                            <MenuItem mnemonicParsing="false" onAction="#openDBWindow" text="Open Database" />
+                            <MenuItem mnemonicParsing="false" onAction="#openImport" text="Import" />
+                            <Menu fx:id="backupMenu" disable="true" mnemonicParsing="false" text="Backup/Export">
+                                <items>
+                                    <MenuItem mnemonicParsing="false" onAction="#initExcelWindow" text="Excel" />
+                                    <MenuItem mnemonicParsing="false" onAction="#initCSVWindow" text="CSV" />
+                                    <MenuItem mnemonicParsing="false" onAction="#initXMLWindow" text="XML" />
+                                    <MenuItem mnemonicParsing="false" text="SQLITE" />
+                                    <MenuItem mnemonicParsing="false" onAction="#initJSONWindow" text="JSON" />
+                                </items>
+                            </Menu>
+                            <MenuItem mnemonicParsing="false" onAction="#OpenAtributesWin" text="Database Atributes" />
+                            <Menu mnemonicParsing="false" text="Fetch size">
+                                <items>
+                                    <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="100" />
+                                    <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="250" />
+                                    <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="500" />
+                                    <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="1000" />
+                                </items>
+                            </Menu>
+                        </items>
+                    </Menu>
+                    <Menu fx:id="queryMenu" disable="true" mnemonicParsing="false" text="Script ▼">
+                        <items>
+                            <MenuItem mnemonicParsing="false" onAction="#initScriptWindow" text="Execute All statements">
+                            </MenuItem>
+                            <MenuItem mnemonicParsing="false" onAction="#initScriptWindow" text="Execute this statement" />
+                            <MenuItem mnemonicParsing="false" onAction="#initTriggerWindow" text="Add Trigger" />
+                            <MenuItem mnemonicParsing="false" onAction="#initEditTriggerWindow" text="Edit Trigger" />
+                            <MenuItem mnemonicParsing="false" onAction="#initEventWindow" text="Add Event" />
+                            <MenuItem mnemonicParsing="false" onAction="#initEditEventWindow" text="Edit Event" />
+                        </items>
+                    </Menu>
+                </menus>
+            </MenuBar>
+            <JFXButton fx:id="openScript" disable="true" maxHeight="1.7976931348623157E308" mnemonicParsing="false" onAction="#setOpenScript" text="Open Script" textFill="WHITE" />
+            <JFXButton fx:id="createScript" disable="true" maxHeight="1.7976931348623157E308" mnemonicParsing="false" onAction="#createScript" text="Create Script" textFill="WHITE" />
+            <Spacer />
+            <Button alignment="CENTER" maxHeight="1.7976931348623157E308">
+                <graphic>
+                    <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_MINIMIZE" size="16.0" />
+                </graphic></Button>
+            <Button maxHeight="1.7976931348623157E308">
+                <graphic>
+                    <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_RESTORE" size="16.0" />
+                </graphic></Button>
+            <Button maxHeight="1.7976931348623157E308" styleClass="button-close">
+                <graphic>
+                    <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_CLOSE_ALT" size="16.0" />
+                </graphic></Button>
+            <stylesheets>
+                <URL value="@../../../css/HBoxStyle.css" />
+                <URL value="@../../../css/ContextMenuStyle.css" />
+            </stylesheets>
+        </HBox>
+    </top>
+    <left>
+        <VBox spacing="5.0" style="-fx-background-color: #2A2A2A;" BorderPane.alignment="CENTER">
+            <JFXButton mnemonicParsing="false" onAction="#SwitchToDB" prefWidth="75.0" style="-fx-background-color: #3574F0;" text="Database" textFill="#f2f2f2">
+                <font>
+                    <Font name="Arial" size="12.0" />
+                </font></JFXButton>
+            <JFXButton mnemonicParsing="false" onAction="#SwitchToEditor" style="-fx-background-color: #3574F0;" text="SQL Editor" textFill="#f2f2f2">
+                <font>
+                    <Font name="Arial" size="12.0" />
+                </font></JFXButton>
+            <BorderPane.margin>
+                <Insets left="5.0" top="5.0" />
+            </BorderPane.margin>
+            <padding>
+                <Insets right="5.0" />
+            </padding>
+        </VBox>
+    </left>
+    <center>
+        <SplitPane fx:id="HorizontalSplit" orientation="VERTICAL" style="-fx-background-color: black;" stylesheets="@../../../css/SplitHorizontal.css">
+            <!--  <Label fx:id="LabelDB" prefHeight="52.0" prefWidth="246.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true" BorderPane.alignment="CENTER"> -->
+            <SplitPane fx:id="CenterContainer" style="-fx-background-color: #2A2A2A;">
+                <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" prefWidth="1832.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true">
+                    <font>
+                        <Font size="36.0" />
+                    </font></Label>
+            </SplitPane>
+        </SplitPane>
 
-         </center>
-   <right>
-      <VBox alignment="TOP_CENTER" prefHeight="1195.0" prefWidth="0.0" spacing="10" style="-fx-background-color: #3A3A3A;" BorderPane.alignment="CENTER">
-         <children>
-            <JFXButton fx:id="AssistantButton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#OpenAssistent" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" prefHeight="25.0" prefWidth="81.0" stylesheets="@../../../css/BarButtonStyle.css" textAlignment="CENTER" textFill="WHITE" VBox.vgrow="ALWAYS">
-               <graphic>
-                  <FontAwesomeIconView fx:id="glowingIcon" fill="#e8e1e1" glyphName="MAGIC" size="26.0" />
-               </graphic>
-               <VBox.margin>
-                  <Insets top="10.0" />
-               </VBox.margin></JFXButton>
-             <JFXButton fx:id="NotificationButton" alignment="CENTER" mnemonicParsing="false" onAction="#OpenNotifications" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" stylesheets="@../../../css/BarButtonStyle.css" textFill="white" viewOrder="1.0" VBox.vgrow="ALWAYS">
-               <graphic>
-                  <FontAwesomeIconView fill="#e8e1e1" glyphName="BELL_ALT" size="26.0" />
-               </graphic>
-             </JFXButton>
-         </children></VBox>
-   </right></BorderPane>
+    </center>
+    <right>
+        <VBox alignment="TOP_CENTER" prefHeight="1195.0" prefWidth="0.0" spacing="10" style="-fx-background-color: #3A3A3A;" BorderPane.alignment="CENTER">
+            <children>
+                <JFXButton fx:id="AssistantButton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#OpenAssistent" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" prefHeight="25.0" prefWidth="81.0" stylesheets="@../../../css/BarButtonStyle.css" textAlignment="CENTER" textFill="WHITE" VBox.vgrow="ALWAYS">
+                    <graphic>
+                        <FontAwesomeIconView fx:id="glowingIcon" fill="#e8e1e1" glyphName="MAGIC" size="26.0" />
+                    </graphic>
+                    <VBox.margin>
+                        <Insets top="10.0" />
+                    </VBox.margin></JFXButton>
+                <JFXButton fx:id="NotificationButton" alignment="CENTER" mnemonicParsing="false" onAction="#OpenNotifications" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" stylesheets="@../../../css/BarButtonStyle.css" textFill="white" viewOrder="1.0" VBox.vgrow="ALWAYS">
+                    <graphic>
+                        <FontAwesomeIconView fill="#e8e1e1" glyphName="BELL_ALT" size="26.0" />
+                    </graphic>
+                </JFXButton>
+            </children></VBox>
+    </right></BorderPane>

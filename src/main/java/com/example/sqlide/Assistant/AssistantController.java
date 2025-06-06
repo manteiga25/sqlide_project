@@ -9,6 +9,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.Priority;
@@ -25,6 +26,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class AssistantController {
 
+    @FXML
+    private Hyperlink deleteButton;
     @FXML
     private Button FuncButton, SearchButton, DeepButton;
 
@@ -138,6 +141,10 @@ public class AssistantController {
                                     sender.put(AssistantFunctionsInterface.insertData(parameters.getString(0), Rows));
                                     break;
 
+                                case "createReport":
+                                    sender.put(String.valueOf(AssistantFunctionsInterface.createReport(parameters.getString(0), parameters.getString(1))));
+                                    break;
+
                                 case "sendEmail":
                                     sender.put(String.valueOf(AssistantFunctionsInterface.sendEmail(parameters.getString(0))));
                                     break;
@@ -224,6 +231,7 @@ public class AssistantController {
             MessagesBox.getChildren().add(createUserMessageBox(message, num));
             MessageBox.setText("");
             sender.setDisable(true);
+            deleteButton.setDisable(true);
             final ProgressIndicator progress = createProgress();
             MessagesBox.getChildren().add(progress);
             final Thread Generator = new Thread(() -> {
@@ -255,6 +263,7 @@ public class AssistantController {
                         MessagesBox.getChildren().add(box);
                         MessagesBox.getChildren().remove(progress);
                     });
+                    deleteButton.setDisable(false);
                     sender.setDisable(false);
                 }
             });
@@ -386,4 +395,8 @@ public class AssistantController {
         }
     }
 
+    @FXML
+    private void DeleteConversation() {
+        MessagesBox.getChildren().clear();
+    }
 }

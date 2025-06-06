@@ -5,10 +5,11 @@ import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.SQLTypes;
 import com.jfoenix.controls.JFXTextField;
 import javafx.application.Platform;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.VBox;
+import javafx.fxml.FXML;
+import javafx.scene.layout.*;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.shape.Line;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -17,6 +18,7 @@ import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -28,14 +30,15 @@ public class SQLTerminalController {
 
     private final BlockingQueue<String> queue = new LinkedBlockingQueue<>(), sender = new LinkedBlockingQueue<>();
 
-    private JFXTextField currentField = new JFXTextField();
+    private TextField currentField = new TextField();
 
     public VBox getContainer() {
         return container;
     }
 
     public SQLTerminalController() {
-        container.setStyle("-fx-background-color: #2C2C2C;");
+        container.setStyle("-fx-background-color: #1E1E1E;");
+        container.getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/Console/TextStyle.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
         driverPath.put(SQLTypes.SQLITE, "sqlite3.exe");
         addLine("SQL> ");
      //   initializeQueue();
@@ -90,6 +93,7 @@ public class SQLTerminalController {
                     new OutputStreamWriter(process.getOutputStream()))) {
                 String linha;
                 while (!(linha = sender.take()).isEmpty()) {
+                    System.out.println(linha);
                     writer.write(linha);
                     writer.newLine();
                     writer.flush();
@@ -126,24 +130,28 @@ public class SQLTerminalController {
 
         currentField.setEditable(false);
 
-        final JFXTextField textLine = new JFXTextField(line);
-        textLine.setEditable(false);
-        textLine.setStyle("-fx-background-color: transparent; -fx-text-fill: white;");
-        textLine.setDisableAnimation(false);
+        final HBox box = new HBox(5);
 
-        final JFXTextField newLine = new JFXTextField("SQL> ");
-        textLine.setStyle("-fx-background-color: transparent;");
-        textLine.setDisableAnimation(false);
-        textLine.setOnAction(_-> {
+        final HBox tmp = new HBox(5);
+
+        final TextField textLine = new TextField(line);
+        textLine.setEditable(false);
+
+        tmp.getChildren().addAll(new Label("SQL>"), textLine);
+
+        final TextField newLine = new TextField();
+        newLine.setOnAction(_-> {
             try {
-                sender.put(textLine.getText());
+                sender.put(newLine.getText());
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         });
         currentField = newLine;
 
-        container.getChildren().addAll(textLine, newLine);
+        box.getChildren().addAll(new Label("SQL>"), newLine);
+
+        container.getChildren().addAll(tmp, box);
 
     }
 
@@ -151,24 +159,25 @@ public class SQLTerminalController {
 
         currentField.setEditable(false);
 
-        final JFXTextField textLine = new JFXTextField(line);
-        textLine.setEditable(false);
-        textLine.setStyle("-fx-background-color: transparent; -fx-text-fill: red;");
-        textLine.setDisableAnimation(false);
+        final HBox box = new HBox(5);
 
-        final JFXTextField newLine = new JFXTextField();
-        textLine.setStyle("-fx-background-color: transparent;");
-        textLine.setDisableAnimation(false);
-        textLine.setOnAction(_-> {
+        final TextField textLine = new TextField(line);
+        textLine.setEditable(false);
+        textLine.setStyle("-fx-text-fill: red;");
+
+        final TextField newLine = new TextField();
+        newLine.setOnAction(_-> {
             try {
-                sender.put(textLine.getText());
+                sender.put(newLine.getText());
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         });
         currentField = newLine;
 
-        container.getChildren().addAll(textLine, newLine);
+        box.getChildren().addAll(new Label("SQL>"), newLine);
+
+        container.getChildren().add(box);
 
     }
 

@@ -110,7 +110,7 @@ public class DatabaseInterface {
         }
     }
 
-    private void openReportStage() {
+    public void openReportStage(final String title, final String query) {
 
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Report.fxml"));
@@ -127,9 +127,12 @@ public class DatabaseInterface {
 
             dialogController.initializeDialog(DatabaseSeted, dialogStage);
             dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
+            dialogController.setTitle(title);
 
             dialogStage.setScene(new Scene(root));
             dialogStage.show();
+
+            if (query != null) dialogController.setQuery(query);
 
         } catch (IOException e) {
             ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
@@ -211,7 +214,7 @@ public class DatabaseInterface {
         SendEmailButton.setOnAction(e -> openEmailStage(""));
 
         JFXButton ReportButton = new JFXButton("Create Report");
-        ReportButton.setOnAction(e -> openReportStage());
+        ReportButton.setOnAction(e -> openReportStage("Report", null));
 
         JFXButton TrainButton = new JFXButton("Create Model");
         TrainButton.setOnAction(e -> openTrainStage());

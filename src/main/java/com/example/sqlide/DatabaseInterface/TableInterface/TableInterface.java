@@ -180,7 +180,7 @@ public class TableInterface {
         }
     }
 
-    public void createDatabaseTab() {
+    private void createDatabaseTab() {
         Tab newTab = new Tab(TableName.get());
         newTab.setId(TableName.get());
         newTab.setClosable(false);
@@ -230,7 +230,6 @@ public class TableInterface {
 
         final Font courierNewFontBold36 = Font.font("Arial", FontWeight.NORMAL, 16);
 
-        //    ContainerPrev.getChildren().addAll(anchorSpace1, createPreviou(courierNewFontBold36), anchorSpace2, createNext(courierNewFontBold36), anchorSpace3);
         ContainerPrev.getChildren().addAll(createPreviou(courierNewFontBold36), createLabelPageInfo(), createNext(courierNewFontBold36));
 
         DBContainer.getChildren().addAll(buttonsScroll, tableContainer, ContainerPrev);
@@ -978,7 +977,7 @@ public class TableInterface {
         if (TablePrimeKey.get().isEmpty()) {
             createRowId();
         }
-        setTotalPages();
+
         //  pageLabel.setText("0:" + totalPages);
        // fetchData();
     //    prepareFetch();
@@ -988,6 +987,7 @@ public class TableInterface {
         Platform.runLater(()->pageLabel.setText("0:" + totalPages));
         if (!alreadyFetched) {
             alreadyFetched = true;
+            setTotalPages();
             prepareFetch();
         }
     }
@@ -1093,7 +1093,10 @@ public class TableInterface {
     public void setTotalPages() {
         final Thread fetchPage = new Thread(()->{
             totalPages = Database.totalPages(TableName.get())-1;
-            System.out.println(Database.GetException());
+            if (totalPages == -1) {
+                System.out.println(Database.GetException());
+                totalPages = 0;
+            }
             System.out.println("encontrado " + totalPages);
             Platform.runLater(()->PageNum.set(0));
         });

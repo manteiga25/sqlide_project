@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -28,6 +29,7 @@ public class HelloApplication extends Application {
         controller.setPrimaryStage(stage);
         // stage.initStyle(StageStyle.UNDECORATED);
         stage.setTitle("SQL IDE");
+        stage.getIcons().add(new Image(getClass().getResource("/img/SQLIDE.png").toExternalForm()));
         stage.setScene(scene);
         // Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         stage.show();
