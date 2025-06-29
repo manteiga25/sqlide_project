@@ -1,0 +1,38 @@
+/* color-picker.css */
+.color-picker {
+    -fx-background-color: #2d2d2d;
+    -fx-border-color: #3574F0;
+    -fx-border-radius: 5px;
+    -fx-padding: 0;
+}
+
+/* Estilo do botão principal */
+.color-picker .color-picker-label {
+    -fx-background-color: #3a3a3a;
+    -fx-background-radius: 5px;
+    -fx-border-color: #3a3a3a;
+    -fx-border-radius: 5px;
+    -fx-border-width: 1px;
+    -fx-padding: 5px 10px;
+    -fx-text-fill: white;
+}
+
+.color-picker:armed .color-picker-label {
+    -fx-background-color: #454545;
+}
+
+/* Popup do color picker */
+.color-palette {
+    -fx-background-color: #2d2d2d;
+    -fx-border-color: #3574F0;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+    -fx-padding: 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 5, 0, 0, 1);
+}
+
+/* Grid de cores padrão */
+.color-picker-grid {
+    -fx-background-color: transparent;
+    -fx-padding: 5px;
+}

@@ -20,7 +20,7 @@
                             <MenuItem mnemonicParsing="false" onAction="#createDBInterface" text="New Database">
                             </MenuItem>
                             <MenuItem mnemonicParsing="false" onAction="#openDBWindow" text="Open Database" />
-                            <MenuItem mnemonicParsing="false" onAction="#openImport" text="Import" />
+                            <MenuItem fx:id="ImporterMenu" disable="true" mnemonicParsing="false" onAction="#openImport" text="Import" />
                             <Menu fx:id="backupMenu" disable="true" mnemonicParsing="false" text="Backup/Export">
                                 <items>
                                     <MenuItem mnemonicParsing="false" onAction="#initExcelWindow" text="Excel" />
@@ -97,7 +97,7 @@
         <SplitPane fx:id="HorizontalSplit" orientation="VERTICAL" style="-fx-background-color: black;" stylesheets="@../../../css/SplitHorizontal.css">
             <!--  <Label fx:id="LabelDB" prefHeight="52.0" prefWidth="246.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true" BorderPane.alignment="CENTER"> -->
             <SplitPane fx:id="CenterContainer" style="-fx-background-color: #2A2A2A;">
-                <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" prefWidth="1832.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true">
+                <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" onMouseClicked="#openDBWindow" prefWidth="1832.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true">
                     <font>
                         <Font size="36.0" />
                     </font></Label>

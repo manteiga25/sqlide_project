@@ -3,7 +3,8 @@ package com.example.sqlide.exporter.CSV;
 import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
-import com.example.sqlide.EventLayout.EventController;
+import com.example.sqlide.Container.loading.loadingInterface;
+import com.example.sqlide.Notification.NotificationInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
@@ -20,6 +21,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.stage.DirectoryChooser;
@@ -31,8 +33,8 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
@@ -41,12 +43,12 @@ import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
 import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class CSVController {
+public class CSVController implements NotificationInterface, loadingInterface {
 
     @FXML
-    private JFXCheckBox MetaBox;
+    private Label NameLabel;
     @FXML
-    private JFXButton folderButton;
+    private JFXCheckBox MetaBox;
 
     @FXML
     ComboBox<String> ComboMode;
@@ -62,8 +64,6 @@ public class CSVController {
     private Thread main, writer, fetcher;
 
     private final ArrayList<Thread> flusherThreads = new ArrayList<>();
-
-    private final BooleanProperty TaskState = new SimpleBooleanProperty(true);
 
     private DataBase db;
 
@@ -97,21 +97,6 @@ public class CSVController {
         ComboMode.getItems().addAll("DEFAULT", "EXCEL", "INFORMIX_UNLOAD", "INFORMIX_UNLOAD_CSV", "MONGODB_CSV", "MONGODB_TSV", "MYSQL", "ORACLE", "POSTGRESQL_CSV", "POSTGRESQL_TEXT", "RFC4180", "TDF");
         ComboMode.setValue("DEFAULT");
         writeSem.acquire();
-
-        final String imagePath = getClass().getResource("/com/example/sqlide/images/folder.png").getPath();
-
-        // Cria um objeto File a partir do caminho
-        File imageFile = new File(imagePath);
-
-        // Converte o caminho do arquivo para uma URL
-        String imageUrl = imageFile.toURI().toString();
-
-        ImageView view = new ImageView(imageUrl);
-        view.setFitHeight(17);
-        view.setPreserveRatio(true);
-        folderButton.setPadding(Insets.EMPTY);
-        folderButton.setGraphic(view);
-
     }
 
     public void setTablesAndColumns(final HashMap<String, ArrayList<String>> TablesAndColumns) {
@@ -165,7 +150,6 @@ public class CSVController {
     public void initCSVController(final DataBase db, final Stage stage) {
         this.db = db;
         this.stage = stage;
-        TaskState.addListener((observable -> cancelTask()));
         final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
         final HashMap<String, ArrayList<String>> TablesAndColumnsName = new HashMap<>();
         for (final String table : db.getTables()) {
@@ -173,12 +157,13 @@ public class CSVController {
             TablesAndColumnsName.put(table, db.getColumnsName(table));
         }
         for (final String table : TablesAndColumns.keySet()) {
-            QueryList.put(table, "SELECT * FROM " + table + ";");
+            QueryList.put(table, "SELECT * FROM " + table);
         }
 
         this.TablesAndColumns = TablesAndColumns;
         this.TablesAndColumnsNames = TablesAndColumnsName;
         loadFetchStage();
+        NameLabel.setText("Database: " + db.getDatabaseName());
     }
 
     @FXML
@@ -214,27 +199,26 @@ public class CSVController {
         closeWindow();
 
         String finalPath = path;
+        Notification.showInformationNotification("Export to CSV", "Exporting data to CSV file.");
+        setLoadingStage();
         main = new Thread(()->{
-            boolean state = false;
             try {
 
-                Platform.runLater(this::setLoadingStage);
+              //  Platform.runLater(this::setLoadingStage);
+
+                createLoading(db.getDatabaseName()+"-csv", "Export to CSV", "Exporting data to CSV");
 
                // final ArrayList<String> tables = cursor.getTables();
 
                 prepareWork(finalPath, db, CSVmode);
-                state = true;
                 ShowSucess("Exporting csv", "Success to export database to CSV.");
+                Platform.runLater(()->createSuccessNotification(db.getDatabaseName() + "-csv-1", "CSV Success", "Success to export CSV.", finalPath));
             } catch (Exception e) {
                 if (Thread.currentThread().isInterrupted()) {
+                    Platform.runLater(() -> createErrorNotification(db.getDatabaseName() + "-csv-1", "CSV Error", "Error to export CSV.\n"+e.getMessage()));
                     ShowError("CSV", "Error to create CSV.\n" + e.getMessage());
                 }
-                } finally {
-                final boolean finalState = state;
-                Platform.runLater(()->{
-                    loadingStage.close();
-                    createNot(finalState);
-                });
+                Platform.runLater(()->loadingStage.close());
             }
         });
         main.start();
@@ -283,7 +267,7 @@ public class CSVController {
             fetcher = new Thread(() -> {
                 long offset = 0;
                 while (true) {
-                    ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(query, columns, buffer, offset);
+                    ArrayList<ArrayList<Object>> dataCopy = cursor.Fetcher().fetchDataBackupObject(query, columns, buffer, offset);
                     if (dataCopy == null || dataCopy.isEmpty()) {
                         break;
                     }
@@ -308,7 +292,9 @@ public class CSVController {
             final Thread flusherTask = new Thread(() -> {
                 try {
                     csv.SaveAndClose();
-                    Platform.runLater(() -> progress.set(progress.get() + interact));
+                    //Platform.runLater(() -> progress.set(progress.get() + interact));
+                    progress.set(progress.get() + interact);
+                    updateLoading(db.getDatabaseName()+"-csv", progress.get());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 } finally {
@@ -339,49 +325,6 @@ public class CSVController {
         csv.SaveAndClose();
     }
 
-    private void createNot(final boolean state) {
-
-        Action function = new Action("open", event->{
-            if (Desktop.isDesktopSupported()) {
-                Desktop desktop = Desktop.getDesktop();
-
-                // Verifica se a ação de abrir uma pasta é suportada
-                if (desktop.isSupported(Desktop.Action.OPEN)) {
-                    try {
-                        // Cria um objeto File com o caminho da pasta
-                        File folder = new File(PathBox.getText());
-
-                        // Verifica se o caminho é uma pasta válida
-                        if (folder.exists() && folder.isDirectory()) {
-                            desktop.open(folder); // Abre a pasta no explorador de arquivos
-                        }
-                    } catch (IOException _) {
-                    }
-                }
-            }
-        });
-        function.setStyle("-fx-background-color: #3574f0; -fx-text-fill: white");
-
-        if (state) {
-            Notification.showSuccessNotification("CSV Success", "Success to export CSV", function);
-        } else {
-            Notification.showErrorNotification("CSV Error", "Error to export CSV");
-        }
-
-
-    }
-
-   /* private void addData(final String table, final ArrayList<String> columns, final SqlToCSV csv, final DataBase cursor) {
-        long offset = 0;
-        final long buffer = cursor.buffer * 10L;
-        ArrayList<ArrayList<Object>> data = cursor.fetchDataBackupObject(table, columns, buffer, offset);
-        while (data != null && !data.isEmpty()) {
-            csv.writeCSVData(data);
-            offset += buffer;
-            data = cursor.fetchDataBackupObject(table, columns, buffer, offset);
-        }
-    } */
-
     private String removeDot(String s) {
         if (s.contains(".")) {
             return s.substring(0, s.indexOf("."));
@@ -404,7 +347,7 @@ public class CSVController {
             subStage.initOwner(stage);
             subStage.setResizable(false);
             subStage.setScene(new Scene(root));
-            secondaryController.setAttr(progress, "Exporting CSV", stage, TaskState);
+            secondaryController.setAttr(progress, "Exporting CSV", stage, this);
 
             subStage.initModality(Modality.NONE);
 
@@ -429,5 +372,10 @@ public class CSVController {
         fetcher.interrupt();
         main.interrupt();
         flusherThreads.clear();
+    }
+
+    @Override
+    public void close() {
+        cancelTask();
     }
 }

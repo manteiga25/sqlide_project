@@ -140,7 +140,10 @@ public class SearchScriptController {
                         }
                     }
                     Platform.runLater(() -> {
-                        cursor.back();
+                        try {
+                            cursor.back();
+                        } catch (SQLException _) {
+                        }
                         ShowError("Error script", "Error to execute script.\n" + e.getMessage());
                     });
                 } catch (IOException e) {

@@ -1,6 +1,8 @@
 package com.example.sqlide.Container.Editor;
 
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.*;
 import javafx.scene.Node;
@@ -36,16 +38,20 @@ public class TextAreaAutocomplete extends CodeArea {
 
     private ArrayList<String> words = new ArrayList<>();
 
-    private boolean changed = false;
+    private BooleanProperty changed = new SimpleBooleanProperty(false);
 
     private int size = 14;
 
     public boolean isChanged() {
-        return changed;
+        return changed.get();
     }
 
     public void setChanged(final boolean changed) {
-        this.changed = changed;
+        this.changed.set(changed);
+    }
+
+    public BooleanProperty getChanged() {
+        return changed;
     }
 
     private static final String COMMENT_REGEX =
@@ -96,7 +102,6 @@ public class TextAreaAutocomplete extends CodeArea {
 
         addContextMenu();
         entriesPopup.setAutoHide(true);
-        WordsBox.setPrefHeight(Region.USE_COMPUTED_SIZE);
         initializeHandlers();
     }
 
@@ -239,7 +244,7 @@ public class TextAreaAutocomplete extends CodeArea {
 
     private void initializeHandlers() {
         textProperty().addListener((_, _, text) -> {
-            changed = true;
+            changed.set(true);
             setStyleSpans(0, computeHighlighting(text));
         });
         WordsBox.setOnKeyPressed(event-> {
@@ -273,8 +278,17 @@ public class TextAreaAutocomplete extends CodeArea {
 
                 refreshMenu();
                 if (entriesPopup.getContent() != null) {
-                    Point2D screenLoc = findCaret();
-                    entriesPopup.show(TextAreaAutocomplete.this, screenLoc.getX(), screenLoc.getY() + 20);
+                    //Bounds screenLoc = findCaret();
+                    //entriesPopup.show(TextAreaAutocomplete.this, screenLoc.getMaxX(), screenLoc.getMinY());
+                    System.out.println();
+                    Optional<Bounds> caretBounds = getCharacterBoundsOnScreen(getText(getCurrentParagraph()).length(), getCaretPosition());
+
+                    caretBounds.ifPresent(bounds -> {
+                        // Mostra o popup usando as coordenadas do caret
+                        // bounds.getMinX() -> Posição X (início horizontal do caractere)
+                        // bounds.getMaxY() -> Posição Y (base da linha de texto do caractere)
+                        entriesPopup.show(this, bounds.getMaxX(), bounds.getMaxY()+10);
+                    });
                 }
             }
         });
@@ -301,44 +315,12 @@ public class TextAreaAutocomplete extends CodeArea {
         });
     }
 
-    private Point2D findCaret() {
-        try {
-            int caretPosition = getCaretPosition();
-            if (caretPosition == 0) {
-                // Trata posição inicial
-                return localToScreen(0, 0);
-            }
+    private Bounds findCaret() {
+        Optional<Bounds> caretBounds = getCaretBounds();
 
-            int lineIndex = getCurrentParagraph();
-            Optional<Bounds> lineBoundsOpt = getCaretBounds();
+        Bounds bounds = localToScreen(caretBounds.get());
 
-            if (lineBoundsOpt.isEmpty()) {
-                return null;
-            }
-
-            Bounds lineBounds = lineBoundsOpt.get();
-            String lineText = getParagraph(lineIndex).getText();
-            int columnPosition = caretPosition - getAbsolutePosition(lineIndex, 0);
-
-            // Limita a posição da coluna ao tamanho da linha
-            columnPosition = Math.min(columnPosition, lineText.length());
-
-            Text measurer = new Text(lineText.substring(0, columnPosition));
-           // measurer.setFont(getFont());
-            double charWidth = measurer.getLayoutBounds().getWidth();
-
-            // Adiciona offset de padding se necessário
-            double paddingLeft = getInsets().getLeft();
-            double paddingTop = getInsets().getTop();
-
-            return localToScreen(
-                    charWidth + paddingLeft,
-                    lineBounds.getMinY() + lineBounds.getHeight() + paddingTop
-            );
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return bounds;
     }
 
 // Refresh and show suggestions in the menu
@@ -368,8 +350,9 @@ private void refreshMenu() {
             entriesPopup.getContent().add(WordsBox);
         } else {
             ScrollPane scrollPane = new ScrollPane(WordsBox);
-            scrollPane.setMaxHeight(200);//Adjust max height of the popup here
-            scrollPane.setMaxWidth(200);//Adjust max width of the popup here
+            scrollPane.setMaxHeight(300);//Adjust max height of the popup here
+            scrollPane.setStyle("-fx-border-radius: 5px; -fx-background-radius: 5px; -fx-border-width: 0.5px;");
+            scrollPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm());
             WordsBox.getChildren().getFirst().requestFocus();
             entriesPopup.getContent().add(scrollPane);
         }
@@ -413,6 +396,8 @@ private void refreshMenu() {
                 public void ADDLabel() {
                     Label wordLabel = new Label(word);
                     wordLabel.setTextFill(Color.WHITE);
+                    wordLabel.setStyle("-fx-font-size: 16px;");
+                    wordLabel.setPadding(new Insets(0, 0, 0, 5));
 
                     getChildren().add(wordLabel);
                 }

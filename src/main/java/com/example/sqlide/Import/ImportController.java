@@ -1,14 +1,18 @@
 package com.example.sqlide.Import;
 
 import com.example.sqlide.drivers.model.DataBase;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 public class ImportController {
 
@@ -44,21 +48,31 @@ public class ImportController {
     private DataBase currentDb;
     private Stage stage;
 
+    private HashMap<String, ArrayList<String>> TableAndColumns = null;
+
     public void setStage(Stage stage) {
         this.stage = stage;
     }
 
     public void setCurrentDb(DataBase db) {
         this.currentDb = db;
+        loadTables();
         // Populate targetTableComboBox with existing tables from currentDb
         if (currentDb != null) {
             try {
                 List<String> dbTables = currentDb.getTables();
                 targetTableComboBox.getItems().setAll(dbTables);
-                targetTableComboBox.getItems().add(0, "Create New Table..."); // Option to create new
+                targetTableComboBox.getItems().addFirst("Create New Table..."); // Option to create new
             } catch (Exception e) {
                 statusTextArea.appendText("Error loading database tables: " + e.getMessage() + "\n");
             }
+        }
+    }
+
+    private void loadTables() {
+        TableAndColumns = new HashMap<>();
+        for (final String table : currentDb.getTables()) {
+            TableAndColumns.put(table, currentDb.getColumnsName(table));
         }
     }
 
@@ -195,7 +209,20 @@ public class ImportController {
             List<String> headers = currentImporter.getColumnHeaders(selectedFile, selectedSourceTable);
             statusTextArea.appendText("Columns for '" + selectedSourceTable + "': " + headers + "\n");
             // Placeholder: Just display headers for now. Actual mapping UI will be more complex.
-            columnMappingListView.getItems().setAll(headers.stream().map(h -> h + " -> DB_COLUMN_X").toList());
+            if (TableAndColumns == null || TableAndColumns.isEmpty()) {
+                columnMappingListView.getItems().setAll(headers.stream().map(h -> h + " -> DB_COLUMN_X").toList());
+            } else {
+                List<String> cols = TableAndColumns.get(selectedSourceTable);
+                columnMappingListView.getItems().setAll(
+                        IntStream.range(0, headers.size())
+                                .mapToObj(i -> {
+                                    String header = headers.get(i);
+                                    String colValue = i < cols.size() ? cols.get(i) : "";
+                                    return header + " -> " + colValue;
+                                })
+                                .toList()
+                );
+            }
 
             // Try to preview data for the selected table
             previewSourceData();
@@ -211,15 +238,19 @@ public class ImportController {
             return;
         }
         String selectedSourceTable = sourceTableComboBox.getValue();
-        try {
-            List<Map<String, String>> preview = currentImporter.previewData(selectedFile, selectedSourceTable);
-            statusTextArea.appendText("Data preview for '" + selectedSourceTable + "' (first 5 rows):\n");
-            for(Map<String, String> row : preview) {
-                statusTextArea.appendText(row.toString() + "\n");
+        Thread.ofVirtual().start(()->{
+            try {
+                List<Map<String, String>> preview = currentImporter.previewData(selectedFile, selectedSourceTable);
+                Platform.runLater(()->{
+                    statusTextArea.appendText("Data preview for '" + selectedSourceTable + "' (first 5 rows):\n");
+                    for(Map<String, String> row : preview) {
+                        statusTextArea.appendText(row.toString() + "\n");
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(()->statusTextArea.appendText("Error previewing data for '" + selectedSourceTable + "': " + e.getMessage() + "\n"));
             }
-        } catch (Exception e) {
-            statusTextArea.appendText("Error previewing data for '" + selectedSourceTable + "': " + e.getMessage() + "\n");
-        }
+        });
     }
 
 
@@ -259,23 +290,27 @@ public class ImportController {
         statusTextArea.appendText(String.format("Starting import: %s (%s) -> %s %s...\n",
                 selectedFile.getName(), sourceTable, targetTable, createNew ? "(new table)" : ""));
         importProgressBar.setProgress(0);
+        currentImporter.setImportProprerty(importProgressBar.progressProperty());
 
         // This should run in a background thread in a real app
-        try {
-            // For now, we'll call the placeholder importData
-            String result = currentImporter.importData(selectedFile, sourceTable, currentDb, targetTable, createNew, columnMapping);
-            statusTextArea.appendText("Import result: " + result + "\n");
-            importProgressBar.setProgress(1.0); // Simulate completion
-            List<String> errors = currentImporter.getErrors();
-            if (!errors.isEmpty()) {
-                statusTextArea.appendText("Import errors/warnings:\n");
-                errors.forEach(e -> statusTextArea.appendText("- " + e + "\n"));
+        String finalTargetTable = targetTable;
+        Thread.ofVirtual().start(()->{
+            try {
+                // For now, we'll call the placeholder importData
+                String result = currentImporter.importData(selectedFile, sourceTable, currentDb.Inserter(), currentDb.buffer, finalTargetTable, createNew, columnMapping);
+                Platform.runLater(()->{
+                    statusTextArea.appendText("Import result: " + result + "\n");
+                    List<String> errors = currentImporter.getErrors();
+                    if (!errors.isEmpty()) {
+                        statusTextArea.appendText("Import errors/warnings:\n");
+                        errors.forEach(e -> statusTextArea.appendText("- " + e + "\n"));
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(()->statusTextArea.appendText("Import failed: " + e.getMessage() + "\n"));
+                e.printStackTrace(); // For debugging
             }
-        } catch (Exception e) {
-            statusTextArea.appendText("Import failed: " + e.getMessage() + "\n");
-            e.printStackTrace(); // For debugging
-            importProgressBar.setProgress(0); // Reset on failure
-        }
+        });
     }
 
     @FXML

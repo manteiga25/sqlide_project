@@ -18,17 +18,15 @@ public class SqlToXml {
 
     private ArrayList<String> columns;
 
-    private String buffer = "";
-
     private boolean rowid = false;
 
-    public void createXML(String dbName, String path, final String charset) throws Exception {
+    public void createXML(String dbName, String path) throws Exception {
         outputStream = new FileOutputStream(path + ".xml");
-        XMLOutputFactory factory = XMLOutputFactory.newInstance();;
-        writer = factory.createXMLStreamWriter(outputStream, charset);
+        XMLOutputFactory factory = XMLOutputFactory.newInstance();
+        writer = factory.createXMLStreamWriter(outputStream, "utf-8");
 
         // Escrever o cabeçalho e abrir a raiz
-        writer.writeStartDocument(charset, "1.0");
+        writer.writeStartDocument("utf-8", "1.0");
         writer.writeCharacters("\n");
         writer.writeStartElement(dbName);
     }
@@ -39,28 +37,6 @@ public class SqlToXml {
 
     public void setStructure(final ArrayList<String> columns) {
         this.columns = columns;
-    }
-
-    public void addData3(ArrayList<ArrayList<Object>> data) throws Exception {
-        if (data != null) {
-            for (ArrayList<Object> row : data) {
-               // writer.writeAttribute("ROWID", String.valueOf(row.hashCode())); // Exemplo de ROWID
-
-                for (int i = 0; i < columns.size(); i++) {
-                    buffer += "\n\t\t";//writer.writeCharacters("\n\t\t");
-                    String columnName = columns.get(i);
-                    Object value = row.get(i);
-                    buffer += "<" + columnName + ">"; //writer.writeStartElement(columnName);
-                    buffer += value != null ? value.toString() : "null </" + columnName + ">"; //writer.writeCharacters(value != null ? value.toString() : "null");
-                    //writer.writeEndElement(); // Fecha a coluna
-                }
-
-                buffer += "\n\t</" + currentChild + ">\n\t";//writer.writeEndElement(); // Fecha a linha (currentChild)
-                //writer.writeCharacters("\n\t");
-            }
-            writer.writeCharacters(buffer);
-            buffer = "";
-        }
     }
 
     public void setRow(final boolean rowid) {
@@ -79,72 +55,54 @@ public class SqlToXml {
     }
 
     private void addDataNoRow(ArrayList<ArrayList<Object>> data) throws Exception {
-        if (data != null) {
-            for (ArrayList<Object> row : data) {
-                writer.writeCharacters("\n\t");
-                writer.writeStartElement(currentChild);
+        if (data == null) return;
 
-                for (int i = 0; i < columns.size(); i++) {
-                    writer.writeCharacters("\n\t\t");
-                    String columnName = columns.get(i);
-                    Object value = row.get(i);
-                    writer.writeStartElement(columnName);
-                    writer.writeCharacters(value != null ? value.toString() : "null");
-                    writer.writeEndElement(); // Fecha a coluna
-                }
+        for (List<Object> row : data) {
+            writer.writeCharacters("\n\t");
+            writer.writeStartElement(currentChild);
 
-                writer.writeEndElement(); // Fecha a linha (currentChild)
+            // Start from 1 if ROWID skipped, else 0
+            int startIndex = rowid ? 1 : 0;
+            for (int i = startIndex; i < columns.size(); i++) {
+                String colName = columns.get(i);
+                Object value = (i < row.size()) ? row.get(i) : null;
+
+                writer.writeCharacters("\n\t\t");
+                writer.writeStartElement(colName);
+                writer.writeCharacters(value != null ? value.toString() : "null");
+                writer.writeEndElement();
             }
-         //   writer.writeCharacters(buffer);
-            buffer = "";
+            writer.writeCharacters("\n\t");
+            writer.writeEndElement();
         }
     }
 
     private void addDataRow(ArrayList<ArrayList<Object>> data) throws Exception {
-        if (data != null) {
-            for (ArrayList<Object> row : data) {
-                writer.writeCharacters("\n\t");
-                writer.writeStartElement(currentChild);
-                    writer.writeAttribute("ROWID", row.getFirst().toString()); // Exemplo de ROWID
+        if (data == null) return;
 
-                for (int i = 1; i < columns.size(); i++) {
-                    writer.writeCharacters("\n\t\t");
-                    String columnName = columns.get(i);
-                    Object value = row.get(i);
-                    writer.writeStartElement(columnName);
-                    writer.writeCharacters(value != null ? value.toString() : "null");
-                    writer.writeEndElement(); // Fecha a coluna
-                }
-
-                writer.writeEndElement(); // Fecha a linha (currentChild)
-            }
-            //   writer.writeCharacters(buffer);
-            buffer = "";
-        }
-    }
-
-    public void addData2(ArrayList<ArrayList<Object>> data, ArrayList<String> columns) throws Exception {
-        if (data == null || columns == null) return;
-
-        for (ArrayList<Object> row : data) {
-            writer.writeCharacters("\t");
+        for (int rowIndex = 0; rowIndex < data.size(); rowIndex++) {
+            final ArrayList<Object> row = data.get(rowIndex);
+            writer.writeCharacters("\n\t");
             writer.writeStartElement(currentChild);
 
-            for (int i = 0; i < columns.size(); i++) {
-                String columnName = columns.get(i);
-                Object value = row.get(i);
-
-                writer.writeStartElement(columnName);
-                if (value != null) {
-                    writer.writeCharacters(value.toString());
-                }
-                writer.writeEndElement();
+            // Handle ROWID attribute if enabled
+            if (rowid && !row.isEmpty()) {
+                writer.writeAttribute("ROWID", String.valueOf(rowIndex));
             }
 
-            writer.writeEndElement();
-            writer.writeCharacters("\n");
+            // Start from 1 if ROWID skipped, else 0
+            int startIndex = rowid ? 1 : 0;
+            for (int i = startIndex; i < columns.size(); i++) {
+                String colName = columns.get(i);
+                Object value = (i < row.size()) ? row.get(i) : null;
 
-            // Flush periódico para liberar memória
+                writer.writeCharacters("\n\t\t");
+                writer.writeStartElement(colName);
+                writer.writeCharacters(value != null ? value.toString() : "null");
+                writer.writeEndElement();
+            }
+            writer.writeCharacters("\n\t");
+            writer.writeEndElement();
         }
     }
 

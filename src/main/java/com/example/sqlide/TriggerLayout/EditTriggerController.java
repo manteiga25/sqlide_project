@@ -5,7 +5,10 @@ import com.example.sqlide.Container.Editor.TextAreaAutocompleteLines;
 import com.example.sqlide.drivers.model.DataBase;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -18,10 +21,9 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 public class EditTriggerController {
 
     @FXML
-    ComboBox<String> TriggersBox;
-
+    private VBox container;
     @FXML
-    Pane CodeViewContainer;
+    private ComboBox<String> TriggersBox;
 
     private final TextAreaAutocomplete codeView = new TextAreaAutocomplete();
 
@@ -33,10 +35,9 @@ public class EditTriggerController {
         this.db = db;
         this.list = list;
         initCombo();
-        codeView.setPrefHeight(CodeViewContainer.getPrefHeight());
-        codeView.setPrefWidth(CodeViewContainer.getPrefWidth());
         codeView.setAutoCompleteWords(new ArrayList<>(List.of(getWords(db.getSQLType().ordinal()))));
-        CodeViewContainer.getChildren().add(codeView);
+        VBox.setVgrow(codeView, Priority.ALWAYS);
+        container.getChildren().add(2, codeView);
     }
 
     @FXML

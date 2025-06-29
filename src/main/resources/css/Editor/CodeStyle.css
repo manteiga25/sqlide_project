@@ -39,12 +39,3 @@
 .code-area .selection {
     -fx-fill: rgba(173, 216, 230, 0.3);
 }
-
-/* ScrollBar */
-.scroll-bar:vertical {
-    -fx-background-color: #1E1F22;
-}
-
-.scroll-bar .thumb {
-    -fx-background-color: #404040;
-}

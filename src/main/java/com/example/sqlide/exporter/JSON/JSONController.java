@@ -3,6 +3,8 @@ package com.example.sqlide.exporter.JSON;
 import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
+import com.example.sqlide.Container.loading.loadingInterface;
+import com.example.sqlide.Notification.NotificationInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.Excel.SqlToExcel;
 import com.example.sqlide.popupWindow.Notification;
@@ -31,6 +33,8 @@ import org.controlsfx.control.action.Action;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.StringTokenizer;
@@ -38,13 +42,9 @@ import java.util.concurrent.Semaphore;
 
 import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
 import static com.example.sqlide.ColumnMetadata.MetadataToMap;
-import static com.example.sqlide.popupWindow.handleWindow.ShowConfirmation;
-import static com.example.sqlide.popupWindow.handleWindow.ShowError;
+import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class JSONController {
-
-    @FXML
-    private JFXButton folderButton;
+public class JSONController implements NotificationInterface, loadingInterface {
 
     @FXML
     private JFXCheckBox MetaBox;
@@ -60,7 +60,7 @@ public class JSONController {
 
     private Stage advancedFetcherstage;
 
-    private Thread flushTask;
+    private Thread writer, fetcher;
 
     private String finalPath;
 
@@ -69,8 +69,6 @@ public class JSONController {
     private HashMap<String, ArrayList<String>> TablesAndColumnsNames;
 
     private HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns;
-
-    private final BooleanProperty TaskState = new SimpleBooleanProperty(true);
 
     private final DoubleProperty progress = new SimpleDoubleProperty(0);
 
@@ -90,23 +88,9 @@ public class JSONController {
         }
     }
 
-    public void initialize() throws InterruptedException {
+    @FXML
+    private void initialize() throws InterruptedException {
         writeSem.acquire();
-        TaskState.addListener((observable -> cancelTask()));
-
-        final String imagePath = getClass().getResource("/com/example/sqlide/images/folder.png").getPath();
-
-        // Cria um objeto File a partir do caminho
-        File imageFile = new File(imagePath);
-
-        // Converte o caminho do arquivo para uma URL
-        String imageUrl = imageFile.toURI().toString();
-
-        ImageView view = new ImageView(imageUrl);
-        view.setFitHeight(17);
-        view.setPreserveRatio(true);
-        folderButton.setPadding(Insets.EMPTY);
-        folderButton.setGraphic(view);
     }
 
     @FXML
@@ -198,26 +182,31 @@ public class JSONController {
 
            // PrepareJson(json, tables, cursor);
         String finalPath1 = path + ".json";
+        setLoadingStage();
         new Thread(()->{
-            boolean state = false;
             try {
-                Platform.runLater(this::setLoadingStage);
-                SqlToJson json = new SqlToJson(removeDot(""), finalPath1);
+             //   Platform.runLater(this::setLoadingStage);
+                createLoading(db.getDatabaseName()+"-json", "Export to JSON", "Exporting data to JSON");
+                SqlToJson json = new SqlToJson(db.getDatabaseName(), finalPath1);
                 final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
                 finalPath = finalPath1;
                 prepareWork(json, tables, db);
-                state = true;
-            //    if (!json.save(finalPath + ".json")) {
-              //      ShowError("Error generate", "Error to generate json file.\n" + json.GetException());
-                //}
+                Platform.runLater(()->createSuccessNotification(db.getDatabaseName()+"-json-1", "Json Success", "Success to export Json", finalPath));
+
+                ShowSucess("Exporting json", "Success to export database to JSON.");
             } catch (Exception e) {
-                ShowError("Json", "Error to convert SQL to JSON.\n " + e.getMessage());
+                Platform.runLater(()->createErrorNotification(db.getDatabaseName()+"-json-1", "Json Error", "Error to export Json"));
+                ShowError("Json", "Error to convert SQL to JSON.\n" + e.getMessage());
             } finally {
-                final boolean finalState = state;
                 Platform.runLater(()->
                 {
                     loadingStage.close();
-                    createNot(finalState);
+                    try {
+                        Files.deleteIfExists(Path.of("Notifications\\" + db.getDatabaseName() + "-json-1.json"));
+                        Files.deleteIfExists(Path.of("Notifications\\" + db.getDatabaseName() + "-json.json"));
+                    } catch (IOException _) {
+                    }
+
                 });
             }
 
@@ -238,11 +227,11 @@ public class JSONController {
                 json.createJsonArrayTable(sheetName);
                 final ArrayList<String> columns = TablesAndColumnsNames.get(sheetName);
 
-                final Thread writer = new Thread(() -> {
+                writer = new Thread(() -> {
                     while (!Thread.currentThread().isInterrupted()) {
                         try {
                             writeSem.acquire();
-                            json.flushData();
+                      //      json.flushData();
                         } catch (InterruptedException e) {
                             try {
                                 json.write(data);
@@ -252,8 +241,6 @@ public class JSONController {
                             data = null;
                             fetcherSem.release();
                             break;
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
                         }
                         try {
                             json.write(data);
@@ -265,10 +252,10 @@ public class JSONController {
                     }
                 });
 
-                final Thread fetcher = new Thread(() -> {
+                fetcher = new Thread(() -> {
                     long offset = 0;
                     while (true) {
-                        ArrayList<HashMap<String, String>> dataCopy = cursor.fetchDataMap(query, columns, buffer, offset);
+                        ArrayList<HashMap<String, String>> dataCopy = cursor.Fetcher().fetchDataMap(query, columns, buffer, offset);
                         if (dataCopy == null || dataCopy.isEmpty()) {
                             writer.interrupt();
                             break;
@@ -293,15 +280,19 @@ public class JSONController {
 
                 //   json.endTable();
 
-                json.flushDataAndEndTable();
+             //   json.flushDataAndEndTable();
 
-                Platform.runLater(() -> progress.set(progress.get() + interact));
+             //   Platform.runLater(() -> progress.set(progress.get() + interact));
+
+                progress.set(progress.get() + interact);
+
+                updateLoading(db.getDatabaseName()+"-json", progress.get());
 
                 System.out.println("acabou");
 
             }
         }
-        json.EndFetch();
+    //    json.EndFetch();
         json.close();
     }
 
@@ -314,11 +305,11 @@ public class JSONController {
             ArrayMeta.add(MetadataToMap(meta));
         }
         json.write(ArrayMeta);
-        json.flushDataAndEndTable();
+    //    json.flushDataAndEndTable();
      //   json.writeData(ArrayMeta);
     }
 
-    private void createNot(final boolean state) {
+    private void createNot(final boolean state) throws IOException {
 
         Action function = new Action("open", event->{
             if (Desktop.isDesktopSupported()) {
@@ -342,38 +333,12 @@ public class JSONController {
         function.setStyle("-fx-background-color: #3574f0; -fx-text-fill: white");
 
         if (state) {
-            Notification.showSuccessNotification("Json Success", "Success to export Json", function);
+            Notification.showSuccessNotification(db.getDatabaseName()+"-json", "Json Success", "Success to export Json", function);
         } else {
-            Notification.showErrorNotification("Json Error", "Error to export Json");
+            Notification.showErrorNotification(db.getDatabaseName()+"-json", "Json Error", "Error to export Json");
         }
 
 
-    }
-
-    private void PrepareJson(final SqlToJson json, final ArrayList<String> tables, final DataBase cursor) {
-        new Thread(()-> {
-            for (final String sheetName : tables) {
-                json.createJsonArrayTable(sheetName);
-                final ArrayList<String> columns = cursor.getColumnsName(sheetName);
-                try {
-                    addData(sheetName, columns, json, cursor);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            flushTask.start();
-        }).start();
-    }
-
-    private void addData(final String sheetName, final ArrayList<String> columns, final SqlToJson json, final DataBase cursor) throws IOException {
-        long offset = 0;
-        final long buffer = cursor.buffer * 10L;
-        ArrayList<HashMap<String, String>> data = cursor.fetchDataMap(sheetName, columns, buffer, offset);
-        while (data != null) {
-            json.write(data);
-            offset += 250;
-            data = cursor.fetchDataMap(sheetName, columns, buffer, offset);
-        }
     }
 
     private void setLoadingStage() {
@@ -391,7 +356,7 @@ public class JSONController {
             subStage.initOwner(stage);
             subStage.setResizable(false);
             subStage.setScene(new Scene(root));
-            secondaryController.setAttr(progress, "Exporting Json", stage, TaskState);
+            secondaryController.setAttr(progress, "Exporting Json", stage, this);
 
             subStage.initModality(Modality.NONE);
 
@@ -416,6 +381,12 @@ public class JSONController {
     }
 
     public void cancelTask() {
+        writer.interrupt();
+        fetcher.interrupt();
+    }
 
+    @Override
+    public void close() {
+        cancelTask();
     }
 }

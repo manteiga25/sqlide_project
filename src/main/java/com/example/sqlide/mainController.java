@@ -62,7 +62,7 @@ public class mainController implements requestInterface {
     private Button openScript, createScript;
 
     @FXML
-    private MenuItem backupMenu;
+    private MenuItem backupMenu, ImporterMenu;
 
     private VBox AssistantContainer, NotificationContainer;
 
@@ -122,7 +122,7 @@ public class mainController implements requestInterface {
 
         final DataBase db = DatabaseOpened.get(currentDB.get());
 
-        return db.fetchDataMap(query, db.buffer, 0);
+        return db.Fetcher().fetchRawDataMap(query);
 
     }
 
@@ -141,7 +141,7 @@ public class mainController implements requestInterface {
 
         final DataBase db = DatabaseOpened.get(currentDB.get());
         if (db != null) {
-            db.insertData(table, data);
+            db.Inserter().insertData(table, data);
 
             return db.GetException();
         }
@@ -168,6 +168,41 @@ public class mainController implements requestInterface {
             return "Table: " + db.getCurrentTable();
         }
         return "";
+    }
+
+    @Override
+    public boolean createTriggers(HashMap<String, String> triggers) {
+        Platform.runLater(()->initTriggerWindow(triggers));
+        return true;
+    }
+
+    @Override
+    public boolean createEvents(HashMap<String, String> events) {
+        Platform.runLater(()->initEventWindow(events));
+        return true;
+    }
+
+    @Override
+    public SQLTypes getSQLType() {
+        final DataBase db = DatabaseOpened.get(currentDB.get());
+        if (db != null) {
+            return db.getSQLType();
+        }
+        return null;
+    }
+
+    @Override
+    public boolean createGraphic(String table, String name, String x, String y, ArrayList<HashMap<String, String>> labels) {
+        final DatabaseInterface db = DBopened.get(currentDB.get());
+
+        if (db != null) {
+            final TableInterface tableInterface = db.getTable(table);
+
+            if (tableInterface != null) {
+                Platform.runLater(()->tableInterface.loadChart(name, x, y, labels));
+                return true;
+            } else return false;
+        } else return false;
     }
 
     @Override
@@ -527,7 +562,7 @@ public class mainController implements requestInterface {
     }
 
     @FXML
-    public void createDB(final String DBName, final Map<String, String> modes) throws IOException {
+    public void createDB(final String path, final String DBName, final Map<String, String> modes) throws IOException {
         //   Map<String, String> modes = new HashMap<>();
 
     /*    modes.put("encoding", "'" + CharMode.getValue() + "'");
@@ -543,8 +578,8 @@ public class mainController implements requestInterface {
         final boolean hasScript = modes.containsKey("innit");
 
         DataBase db = new SQLiteDB();
-        if (!db.connect(DBName, modes)) {
-            ShowError("Error SQL", "Error to create Database " + DBName + "\n" + db.GetException());
+        if (!db.connect(path, modes)) {
+            ShowError("Error SQL", "Error to create Database " + path + "\n" + db.GetException());
             return;
         }
        // db.setMessager(sender);
@@ -597,6 +632,7 @@ public class mainController implements requestInterface {
         if (!created) {
             created = true;
             backupMenu.setDisable(false);
+            ImporterMenu.setDisable(false);
             queryMenu.setDisable(false);
             ContainerForDB = new TabPane();
             ContainerForDB.setId("ContainerDB");
@@ -628,7 +664,9 @@ public class mainController implements requestInterface {
                     }
                 }
             });
-            ContainerForDB.getSelectionModel().selectedItemProperty().addListener((_,_,item)->currentDB.set(item.getId()));
+            ContainerForDB.getSelectionModel().selectedItemProperty().addListener((_,_,item)->{
+                if (item != null) currentDB.set(item.getId());
+            });
             //  BorderContainer.setCenter(ContainerForDB);
             CenterContainer.getItems().removeFirst();
             CenterContainer.getItems().addFirst(ContainerForDB);
@@ -642,6 +680,7 @@ public class mainController implements requestInterface {
         CenterContainer.getItems().removeFirst();
         CenterContainer.getItems().addFirst(LabelDB);
         backupMenu.setDisable(true);
+        ImporterMenu.setDisable(true);
         queryMenu.setDisable(true);
     }
 
@@ -791,8 +830,36 @@ public class mainController implements requestInterface {
         }
     }
 
+    private void initTriggerWindow(final HashMap<String, String> values) {
+
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("TriggerLayout/SearchTrigger.fxml"));
+            //    VBox miniWindow = loader.load();
+            Parent root = loader.load();
+
+            TriggerController secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Subjanela");
+            subStage.setScene(new Scene(root));
+            secondaryController.initTriggerController(DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()), subStage);
+            secondaryController.addTrigger(values);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            subStage.show();
+        } catch (Exception e) {
+            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+        }
+
+    }
+
     @FXML
-    public void initTriggerWindow() {
+    private void initTriggerWindow() {
 
         try {
             // Carrega o arquivo FXML
@@ -853,8 +920,41 @@ public class mainController implements requestInterface {
 
     }
 
+    private void initEventWindow(final HashMap<String, String> values) {
+
+        final DataBase dataBase = DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId());
+
+        if (dataBase.getSQLType() != SQLTypes.SQLITE) {
+
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("EventLayout/SearchEvent.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
+
+                EventController secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                Stage subStage = new Stage();
+                subStage.setTitle("Event");
+                subStage.setScene(new Scene(root));
+                secondaryController.initEventController(dataBase, subStage);
+                secondaryController.addEvent(values);
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                // Mostrar a subjanela
+                subStage.show();
+            } catch (Exception e) {
+                ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+            }
+        } else ShowError("No supported", "SQLite doesn't support event's.");
+
+    }
+
     @FXML
-    public void initEventWindow() {
+    private void initEventWindow() {
 
         final DataBase dataBase = DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId());
 
@@ -1117,7 +1217,6 @@ public class mainController implements requestInterface {
             subStage.setScene(new Scene(root));
             secondaryController.setCurrentDb(DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()));
             secondaryController.setStage(subStage);
-          //  secondaryController.initCSVController(DatabaseOpened.get(currentDB.get()), subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);

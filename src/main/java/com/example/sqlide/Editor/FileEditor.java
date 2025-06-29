@@ -92,6 +92,13 @@ public class FileEditor {
                 save();
             }
         });
+        editorText.getChanged().addListener((_,_,value)->{
+            if (value) {
+                tab.setText(tab.getText()+"*");
+            } else {
+                tab.setText(tab.getText().substring(0, tab.getText().lastIndexOf("*")));
+            }
+        });
     }
 
     public void readScript() throws IOException {
@@ -103,6 +110,7 @@ public class FileEditor {
                 s.append(line).append("\n");
             }
             editorText.setText(s.toString());
+            editorText.setChanged(false);
         }
     }
 

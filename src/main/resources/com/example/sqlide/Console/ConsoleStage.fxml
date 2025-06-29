@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<VBox fx:id="Container" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" style="-fx-background-color: #2A2A2A;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Console.ConsoleController">
+<VBox fx:id="Container" style="-fx-background-color: #2A2A2A;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Console.ConsoleController">
 
     <children>
         <ToolBar style="-fx-background-color: #2C2C2C;">
@@ -21,6 +21,7 @@
             </items>
         </ToolBar>
         <Separator style="-fx-base: black;" />
+        <ScrollPane fx:id="Scroll" fitToHeight="true" fitToWidth="true" stylesheets="@../../../../css/ScrollHbarStyle.css" VBox.vgrow="ALWAYS" />
     </children>
 
 </VBox>

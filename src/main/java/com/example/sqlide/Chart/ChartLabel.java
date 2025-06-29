@@ -74,20 +74,21 @@ public class ChartLabel {
   @FXML
   private void confirm() {
       if (!NameField.getText().isEmpty() && !CategoryField.getText().isEmpty()) {
-          if (list.stream().noneMatch(p -> p.Category.get().equals(CategoryField.getText()))) {
-              if (mode) {
-                  ChartController.Label label = list.get(key);
-                  label.Name.set(NameField.getText());
-                  label.Category.set(CategoryField.getText());
-                  label.Query.set(label.Query.get().replace(label.Func.get(), FuncBox.getValue()));
-                  label.Func.set(FuncBox.getValue());
-              } else
+          if (!mode) {
+              if (list.stream().noneMatch(p -> p.Category.get().equals(CategoryField.getText()))) {
                   list.add(new ChartController.Label(NameField.getText(), CategoryField.getText(), FuncBox.getValue(), ColumnBox.getValue(), "SELECT " + FuncBox.getValue() + "(" + ColumnBox.getValue() + ")"));
-          } else {
-              CategoryField.requestFocus();
-              ShowInformation("Exists", "The category " + CategoryField.getText() + " already exists.");
+              } else {
+                  CategoryField.requestFocus();
+                  ShowInformation("Exists", "The category " + CategoryField.getText() + " already exists.");
+              }
+              } else {
+              ChartController.Label label = list.get(key);
+              label.Name.set(NameField.getText());
+              label.Category.set(CategoryField.getText());
+              label.Query.set(label.Query.get().replace(label.Func.get(), FuncBox.getValue()));
+              label.Func.set(FuncBox.getValue());
           }
-      } else ShowInformation("No data", "You need to insert data.");
+          } else ShowInformation("No data", "You need to insert data.");
   }
 
 }

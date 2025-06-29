@@ -1,6 +1,8 @@
 package com.example.sqlide.Import;
 
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
+import javafx.beans.property.DoubleProperty;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -16,6 +18,10 @@ public class JsonImporter implements FileImporter {
     private List<String> errors = new ArrayList<>();
     private double progress = 0.0;
     private JSONObject rootObject; // To store parsed JSON for reuse across methods for the same file
+
+    private void getTableRoot(final String table) {
+
+    }
 
     @Override
     public void openFile(File file) throws IOException, IllegalArgumentException {
@@ -96,15 +102,13 @@ public class JsonImporter implements FileImporter {
         JSONObject tablesObject = getTablesObjectFromFile(file);
 
         Object tableData = tablesObject.opt(tableName);
-        if (!(tableData instanceof JSONArray)) {
+        if (!(tableData instanceof JSONArray jsonArray)) {
             throw new IllegalArgumentException("Table '" + tableName + "' not found or is not an array in the JSON file.");
         }
 
-        JSONArray jsonArray = (JSONArray) tableData;
         for (int i = 0; i < jsonArray.length() && i < 5; i++) { // Preview first 5 records
             Object item = jsonArray.get(i);
-            if (item instanceof JSONObject) {
-                JSONObject jsonObj = (JSONObject) item;
+            if (item instanceof JSONObject jsonObj) {
                 Map<String, String> rowMap = new HashMap<>();
                 for (String key : jsonObj.keySet()) {
                     rowMap.put(key, jsonObj.optString(key, "")); // Handle various types by converting to string
@@ -138,19 +142,17 @@ public class JsonImporter implements FileImporter {
         JSONObject tablesObject = getTablesObjectFromFile(file);
 
         Object tableData = tablesObject.opt(tableName);
-        if (!(tableData instanceof JSONArray)) {
+        if (!(tableData instanceof JSONArray jsonArray)) {
             throw new IllegalArgumentException("Table '" + tableName + "' not found or is not an array in the JSON file.");
         }
 
-        JSONArray jsonArray = (JSONArray) tableData;
         if (jsonArray.isEmpty()) {
             return new ArrayList<>(); // No data, no headers
         }
 
         // Assume headers are keys of the first object in the array
         Object firstItem = jsonArray.get(0);
-        if (firstItem instanceof JSONObject) {
-            JSONObject firstJsonObject = (JSONObject) firstItem;
+        if (firstItem instanceof JSONObject firstJsonObject) {
             // Return keys in the order they appear if possible, otherwise just the set of keys
             // JSONObject internal order is not guaranteed, but keySet() is what we get.
             return new ArrayList<>(firstJsonObject.keySet());
@@ -161,7 +163,7 @@ public class JsonImporter implements FileImporter {
     }
 
     @Override
-    public String importData(File file, String sourceTableName, DataBase db, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
+    public String importData(File file, String sourceTableName, DatabaseInserterInterface inserter, final int buffer, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
         openFile(file); // Validate and parse
         errors.clear();
         progress = 0.0;
@@ -192,6 +194,11 @@ public class JsonImporter implements FileImporter {
     @Override
     public double getImportProgress() {
         return progress;
+    }
+
+    @Override
+    public void setImportProprerty(DoubleProperty proprerty) {
+
     }
 
     @Override

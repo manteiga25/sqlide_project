@@ -2,32 +2,62 @@
 
 <?import com.jfoenix.controls.*?>
 <?import de.jensd.fx.glyphs.fontawesome.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 <?import org.controlsfx.control.*?>
 
-<AnchorPane fx:id="container" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="170.0" prefWidth="417.0" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.TriggerLayout.TriggerController">
+<VBox fx:id="container" alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" spacing="10.0" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.TriggerLayout.TriggerController">
    <children>
-      <Label layoutX="45.0" layoutY="67.0" prefHeight="26.0" prefWidth="35.0" text="Path:" textFill="WHITE">
-         <font>
-            <Font name="Arial" size="12.0" />
-         </font></Label>
-      <JFXTextField fx:id="ScriptPath" layoutX="80.0" layoutY="65.0" prefHeight="25.0" prefWidth="215.0" />
-      <JFXButton fx:id="search" layoutX="305.0" layoutY="68.0" mnemonicParsing="false" onAction="#searchFile">
-      <graphic>
-         <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
-      </graphic>
-      </JFXButton>
-      <JFXButton layoutX="388.0" layoutY="131.0" mnemonicParsing="false" onAction="#execute" style="-fx-background-color: #3574F0; -fx-text-fill: white;" text="Execute" />
-      <JFXButton layoutX="330.0" layoutY="131.0" mnemonicParsing="false" onAction="#close" style="-fx-background-color: #3574F0; -fx-text-fill: white;" text="Cancel" />
-      <Label alignment="CENTER" layoutY="14.0" prefHeight="34.0" prefWidth="458.0" text="Add Trigger" textAlignment="CENTER" textFill="WHITE">
+      <Label alignment="CENTER" layoutY="14.0" text="Add Trigger" textFill="WHITE">
          <font>
             <Font name="JetBrains Mono Medium" size="20.0" />
          </font>
+         <padding>
+            <Insets top="5.0" />
+         </padding>
       </Label>
-      <JFXButton layoutX="237.0" layoutY="99.0" mnemonicParsing="false" onAction="#searchTriggers" style="-fx-background-color: #3574F0; -fx-text-fill: white;" text="Search" />
-      <Label layoutX="32.0" layoutY="103.0" text="Triggers:" textFill="WHITE" />
-      <CheckComboBox fx:id="triggersSelected" layoutX="80.0" layoutY="99.0" prefWidth="150.0" stylesheets="@../../../../css/ComboboxModern.css" />
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
+         <children>
+            <Label prefHeight="26.0" prefWidth="35.0" text="Path:" textFill="WHITE">
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font>
+            </Label>
+            <JFXTextField fx:id="ScriptPath" style="-fx-text-fill: white;" stylesheets="@../../../../css/ContextMenuStyle.css" HBox.hgrow="ALWAYS" />
+            <JFXButton mnemonicParsing="false" onAction="#searchFile">
+            <graphic>
+               <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
+            </graphic>
+            </JFXButton>
+         </children>
+      </HBox>
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
+         <children>
+            <Label text="Triggers:" textFill="WHITE" />
+            <CheckComboBox fx:id="triggersSelected" prefWidth="150.0" stylesheets="@../../../../css/ComboboxModern.css" />
+            <JFXButton mnemonicParsing="false" onAction="#searchTriggers" style="-fx-background-color: #3574F0; -fx-text-fill: white;" text="Search" />
+            <JFXButton mnemonicParsing="false" onAction="#addTrigger" style="-fx-background-color: #3574F0; -fx-text-fill: white;" text="Add manual" />
+         </children>
+      </HBox>
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
+         <children>
+            <Label text="Trigger to edit:" textFill="WHITE" />
+            <ChoiceBox fx:id="comboTrigger" prefWidth="150.0" stylesheets="@../../../../css/ChoiceBoxModern.css" />
+         </children>
+      </HBox>
+      <HBox alignment="CENTER_RIGHT" spacing="5.0">
+         <children>
+            <JFXButton mnemonicParsing="false" onAction="#close" style="-fx-background-color: #3574F0; -fx-text-fill: white;" text="Cancel" />
+            <JFXButton mnemonicParsing="false" onAction="#execute" style="-fx-background-color: #3574F0; -fx-text-fill: white;" text="Execute" />
+         </children>
+         <padding>
+            <Insets bottom="5.0" />
+         </padding>
+      </HBox>
    </children>
-</AnchorPane>
+   <padding>
+      <Insets left="5.0" right="5.0" />
+   </padding>
+</VBox>

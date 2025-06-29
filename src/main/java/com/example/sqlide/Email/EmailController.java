@@ -276,7 +276,7 @@ public class EmailController {
                 for (final String table : QueryList.keySet()) {
                     final String query = QueryList.get(table);
                     if (!query.isEmpty()) {
-                        dataCopy.put(table, db.fetchDataMap(query, buffer, offset));
+                        dataCopy.put(table, db.Fetcher().fetchDataMap(query, buffer, offset));
                         if (dataCopy.get(table) == null || dataCopy.get(table).isEmpty()) {
                             end = true;
                             break;
@@ -301,7 +301,7 @@ public class EmailController {
                 } else {
                     int endIndex = Math.min(offset + buffer, emails.size());
 
-                    emailsSend.addAll(emails.subList(offset, endIndex));
+                    emailsSend.addAll(emails.subList(offset-buffer, endIndex));
                 }
 
                 if (emailsSend.size() < buffer) {
@@ -312,9 +312,8 @@ public class EmailController {
                     final String card = cards.get(cardIndex);
                     String copyCard = card;
                     for (final String table : dataCopy.keySet()) {
-                        int row = 0;
                         for (final String column : dataCopy.get(table).getFirst().keySet()) {
-                            copyCard = card.replaceAll("<DataSrc="+table+":"+column+"/>", dataCopy.get(table).get(row).get(column));
+                            copyCard = card.replaceAll("&lt;DataSrc="+table+":"+column+"/&gt;", dataCopy.get(table).get(cardIndex).get(column));
                         }
                     }
                     cards.set(cardIndex, copyCard);
@@ -368,7 +367,7 @@ public class EmailController {
 
         while (iterator.hasNext()) {
             String table = iterator.next(); // Obtém a próxima chave
-            if (!content.contains("<DataSrc=" + table + ":") && !QueryList.get(table).isEmpty()) {
+            if (!content.contains("&lt;DataSrc=" + table + ":") && !QueryList.get(table).isEmpty()) {
                 if (!FetchEmailTool.isSelected()) {
                     iterator.remove(); // Remove usando o iterador
                 } else if (!ColumnEmailBox.getValue().contains(table)) {

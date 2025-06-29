@@ -10,7 +10,7 @@ public class SqlToCSV {
 
     private FileWriter CSVFile;
 
-    private final CSVFormat[] CSVList = {
+    private static final CSVFormat[] CSVList = {
             CSVFormat.DEFAULT,
             CSVFormat.EXCEL,
             CSVFormat.INFORMIX_UNLOAD,

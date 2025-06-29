@@ -99,6 +99,7 @@ public class ReportController {
         scrollableStyleControls.getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm(),
                 Objects.requireNonNull(getClass().getResource("/css/ComboboxModern.css")).toExternalForm(),
                 Objects.requireNonNull(getClass().getResource("/css/SpinnerStyle.css")).toExternalForm(),
+                Objects.requireNonNull(getClass().getResource("/css/ColorStyle.css")).toExternalForm(),
                 Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
         scrollableStyleControls.setStyle("-fx-background-color: #2C2C2C;");
         scrollableStyleControls.setFitToWidth(true);
@@ -107,6 +108,7 @@ public class ReportController {
         final JFXButton pageViwerButton = new JFXButton("View Page Style");
         pageViwerButton.setOnAction(_->loadPage());
         pageViwerButton.setTextFill(Color.WHITE);
+        pageViwerButton.setStyle("-fx-border-radius: 5px; -fx-background-radius: 5px; -fx-border-color: white;");
 
         final Label styleLabel = new Label("Report Style:");
         styleLabel.setTextFill(Color.WHITE);
@@ -270,8 +272,7 @@ public class ReportController {
     }
 
     private ColorPicker createColorPicker(Color defaultColor) {
-        ColorPicker colorPicker = new ColorPicker(defaultColor);
-        return colorPicker;
+        return new ColorPicker(defaultColor);
     }
 
     private java.awt.Color convertToAwtColor(javafx.scene.paint.Color fxColor) {
@@ -344,13 +345,10 @@ public class ReportController {
                 (float) 400
         );
 
-        if (previewImage != null) {
-            pdfPreviewImageView.setImage(previewImage);
-        } else {
-            // Optionally, set a placeholder or error image
-            pdfPreviewImageView.setImage(null); // Clears the image
-            // You could create a simple placeholder graphic or text as an image here
-        }
+        // Optionally, set a placeholder or error image
+        // Clears the image
+        // You could create a simple placeholder graphic or text as an image here
+        pdfPreviewImageView.setImage(previewImage);
 
        // loadPage();
 
@@ -454,7 +452,7 @@ public class ReportController {
                 return;
             }
             // Assuming null for tableName is acceptable if query is self-contained.
-            fetchedData = db.fetchData(secondaryController.getQuery(), new ArrayList<>(), null);
+            fetchedData = db.Fetcher().fetchData(secondaryController.getQuery(), new ArrayList<>(), null);
         } catch (Exception e) { // Catching general Exception as specific SQLException is not guaranteed by fetchData signature
             ShowError( "Data Fetch Error", "Failed to fetch data for the report: " + e.getMessage());
             e.printStackTrace(); // For logging

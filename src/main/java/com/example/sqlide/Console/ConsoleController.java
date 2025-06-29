@@ -7,6 +7,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -18,7 +19,7 @@ import java.util.concurrent.BlockingQueue;
 public class ConsoleController {
 
     @FXML
-    private VBox Container, SQLContainer;
+    private ScrollPane Scroll;
     @FXML
     private ChoiceBox<String> ModeBox;
 
@@ -43,21 +44,18 @@ public class ConsoleController {
         });
         ModeBox.getItems().addAll("Logger", "SQL Terminal", "System Terminal");
         ModeBox.getSelectionModel().selectedIndexProperty().addListener((_,_,mode)->{
-            if (Container.getChildren().size() > 1) {
-                Container.getChildren().removeLast();
-            }
             switch (mode.intValue()) {
                 case 0:
                     if (tables.get(currentDB.get()) == null) loadLoggerStage();
-                    Container.getChildren().add(tables.get(currentDB.get()));
+                    Scroll.setContent(tables.get(currentDB.get()));
                     break;
                 case 1:
                     if (SQLConsole.get(currentDB.get()) == null) loadSQLStage();
-                    Container.getChildren().add(SQLConsole.get(currentDB.get()));
+                    Scroll.setContent(SQLConsole.get(currentDB.get()));
                     break;
                 case 2:
                     if (SystemConsole.get(currentDB.get()) == null) loadSystemStage();
-                    Container.getChildren().add(SystemConsole.get(currentDB.get()));
+                    Scroll.setContent(SystemConsole.get(currentDB.get()));
                     break;
             }
         });
@@ -71,7 +69,6 @@ public class ConsoleController {
             LoggerController controller = loader.getController();
             controller.setQueue(senders.get(currentDB.get()));
             tables.put(currentDB.get(), controller.getContainer().getChildren().removeFirst());
-            VBox.setVgrow(tables.get(currentDB.get()), Priority.ALWAYS);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {
@@ -85,7 +82,6 @@ public class ConsoleController {
             SQLTerminalController SQLcontroller = new SQLTerminalController();
             SQLcontroller.load(types.get(currentDB.get()), paths.get(currentDB.get()));
             SQLConsole.put(currentDB.get(), SQLcontroller.getContainer());
-            VBox.setVgrow(SQLConsole.get(currentDB.get()), Priority.ALWAYS);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {
@@ -99,7 +95,6 @@ public class ConsoleController {
             SystemTerminalController SQLcontroller = new SystemTerminalController();
           //  SQLcontroller.load(types.get(currentDB.get()), paths.get(currentDB.get()));
             SystemConsole.put(currentDB.get(), SQLcontroller.getContainer());
-            VBox.setVgrow(SystemConsole.get(currentDB.get()), Priority.ALWAYS);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {
@@ -122,11 +117,11 @@ public class ConsoleController {
         }
         if (SQLConsole.get(currentDB.get()) != null) {
             VBox box = (VBox) SQLConsole.get(currentDB.get());
-            box.getChildren().clear();
+            box.getChildren().remove(0, box.getChildren().size()-1);
         }
         if (SystemConsole.get(currentDB.get()) != null) {
             VBox box = (VBox) SystemConsole.get(currentDB.get());
-            box.getChildren().clear();
+            box.getChildren().remove(0, box.getChildren().size()-1);
         }
     }
 }

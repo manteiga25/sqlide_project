@@ -17,22 +17,22 @@ public class loadingController {
 
     private Stage stage;
 
-    private BooleanProperty TaskState;
+    private loadingInterface loadingInterface;
 
-    public void setAttr(DoubleProperty progressRef, final String label, Stage stage, final BooleanProperty TaskState) {
+    public void setAttr(DoubleProperty progressRef, final String label, Stage stage, final loadingInterface loadingInterface) {
         this.stage = stage;
-        this.TaskState = TaskState;
+        this.loadingInterface = loadingInterface;
         ContextLabel.setText(label);
-        progressRef.addListener((observableValue, number, newProgress) -> {
+        progressRef.addListener((_, _, newProgress) -> {
             final double value = newProgress.doubleValue();
             Progress.setProgress(value);
-            ProgressLabel.setText(value*100 + "%");
+            ProgressLabel.setText((int) value*100 + "%");
         });
     }
 
     @FXML
     private void cancel() {
-        TaskState.set(false);
+        loadingInterface.close();
     }
 
     public void close() {

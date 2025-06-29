@@ -3,6 +3,7 @@ package com.example.sqlide.exporter.XML;
 import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
+import com.example.sqlide.Container.loading.loadingInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.CSV.SqlToCSV;
 import com.example.sqlide.popupWindow.Notification;
@@ -39,10 +40,7 @@ import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
 import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class xmlController {
-
-    @FXML
-    private JFXButton folderButton;
+public class xmlController implements loadingInterface {
 
     @FXML
     private JFXCheckBox MetaBox;
@@ -71,8 +69,6 @@ public class xmlController {
 
     private final DoubleProperty progress = new SimpleDoubleProperty(0);
 
-    private final BooleanProperty TaskState = new SimpleBooleanProperty(true);
-
     private Thread main;
 
     private ArrayList<ArrayList<Object>> data = new ArrayList<>();
@@ -81,23 +77,6 @@ public class xmlController {
     private final Semaphore writeSem = new Semaphore(1);
 
     private Thread writer, fetcher;
-
-    @FXML
-    public void initialize() {
-        final String imagePath = getClass().getResource("/com/example/sqlide/images/folder.png").getPath();
-
-        // Cria um objeto File a partir do caminho
-        File imageFile = new File(imagePath);
-
-        // Converte o caminho do arquivo para uma URL
-        String imageUrl = imageFile.toURI().toString();
-
-        ImageView view = new ImageView(imageUrl);
-        view.setFitHeight(17);
-        view.setPreserveRatio(true);
-        folderButton.setPadding(Insets.EMPTY);
-        folderButton.setGraphic(view);
-    }
 
     @FXML
     public void openWindow() {
@@ -152,7 +131,6 @@ public class xmlController {
     public void initXmlController(final DataBase db, final Stage stage) throws InterruptedException {
         this.db = db;
         this.stage = stage;
-        TaskState.addListener((observable -> cancelTask()));
         writeSem.acquire();
         final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
         final HashMap<String, ArrayList<String>> TablesAndColumnsName = new HashMap<>();
@@ -161,7 +139,7 @@ public class xmlController {
             TablesAndColumnsName.put(table, db.getColumnsName(table));
         }
         for (final String table : TablesAndColumns.keySet()) {
-            QueryList.put(table, "SELECT * FROM " + table + ";");
+            QueryList.put(table, "SELECT * FROM " + table);
         }
 
         this.TablesAndColumns = TablesAndColumns;
@@ -200,6 +178,7 @@ public class xmlController {
         xml = new SqlToXml();
 
         String finalPath = path;
+        setLoadingStage();
         main = new Thread(()->{
             boolean state = false;
             try {
@@ -216,20 +195,26 @@ public class xmlController {
                 state = true;
                 ShowSucess("Exporting xml", "Success to export database to XML.");
             } catch (Exception e) {
-             //   throw new  RuntimeException();
+                //   throw new  RuntimeException();
                 if (!Thread.currentThread().isInterrupted()) {
                     try {
                         xml.abort();
                     } catch (Exception _) {
                     }
                     ShowError("XML", "Error to create XML.\n " + e.getMessage());
+                    throw new RuntimeException(e);
                 }
             }
             finally {
                 final boolean finalState = state;
                 Platform.runLater(()->{
                     loadingStage.close();
-                    createNot(finalState);
+                    try {
+                        createNot(finalState);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    stage.close();
                 });
             }
         });
@@ -238,19 +223,19 @@ public class xmlController {
 
     private void prepareWorkSingle(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
         final double interact = (double) (100 / tables.size()) / 100;
-        xml.createXML(removeDot(dbSelected), path, cursor.getCharset());
+        xml.createXML(removeDot(dbSelected), path);
         for (final String sheetName : tables) {
             final String query = QueryList.get(sheetName);
             if (!query.isEmpty()) {
                 if (MetaBox.isSelected()) createMetadata(path, sheetName);
                 xml.createTableChild(sheetName);
                 final ArrayList<String> columns = TablesAndColumnsNames.get(sheetName);
-                xml.setStructure(columns);
                 final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
                 if (RowBox.isSelected() && !hasPrimeKey) {
                     xml.setRow(true);
                     columns.addFirst(cursor.getRowId());
                 }
+                xml.setStructure(columns);
 
                 writer = new Thread(() -> writer(xml));
 
@@ -267,6 +252,8 @@ public class xmlController {
                 fetcher.join();
                 writer.join();
 
+                xml.flushIntermediate();
+
                 Platform.runLater(() -> progress.set(progress.get() + interact));
 
                 System.out.println("acabou");
@@ -279,20 +266,20 @@ public class xmlController {
 
     private void prepareWorkMultiple(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
         final double interact = (100.0 / tables.size()) / 100.0;
-        final SqlToXml xml = new SqlToXml();
         for (final String sheetName : tables) {
             final String query = QueryList.get(sheetName);
             if (!query.isEmpty()) {
+                final SqlToXml xml = new SqlToXml();
+                xml.createXML(removeDot(dbSelected), path + "-" + sheetName);
                 if (MetaBox.isSelected()) createMetadata(xml, sheetName);
-                xml.createXML(removeDot(dbSelected), path + "-" + sheetName, cursor.getCharset());
                 xml.createTableChild(sheetName);
                 final ArrayList<String> columns = cursor.getColumnsName(sheetName);
                 final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
-                xml.setStructure(columns);
                 if (RowBox.isSelected() && !hasPrimeKey) {
                     xml.setRow(true);
                     columns.addFirst(cursor.getRowId());
                 }
+                xml.setStructure(columns);
 
                 writer = new Thread(() -> writer(xml));
 
@@ -317,13 +304,12 @@ public class xmlController {
 
                 // throw new RuntimeException();
 
-                Platform.runLater(() -> progress.set(progress.get() + interact));
-
                 System.out.println("acabou");
 
                 //  xml.flushIntermediate(path + "-" + sheetName);
 
             }
+            Platform.runLater(() -> progress.set(progress.get() + interact));
         }
     }
 
@@ -354,13 +340,13 @@ public class xmlController {
         long offset = 0;
         final long buffer = cursor.buffer * 10L;
         while (true) {
-            final ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(QueryList.get(sheetName), columns, buffer, offset);
+            final ArrayList<ArrayList<Object>> dataCopy = cursor.Fetcher().fetchDataBackupObject(QueryList.get(sheetName), columns, buffer, offset);
             if (dataCopy == null) {
                 throw new Exception(cursor.GetException());
             }
-                    if (dataCopy.isEmpty()) {
-                        break;
-                    }
+            if (dataCopy.isEmpty()) {
+                break;
+            }
             final ArrayList<ArrayList<Object>> copy = (ArrayList<ArrayList<Object>>) dataCopy.clone();
             try {
                 fetcherSem.acquire();
@@ -376,7 +362,7 @@ public class xmlController {
 
     private void createMetadata(String Path, final String sheetName) throws Exception {
         final SqlToXml xml = new SqlToXml();
-        xml.createXML("", Path, db.getCharset());
+        xml.createXML("", Path);
         xml.createTableChild(sheetName + "-metadata");
         final ArrayList<ColumnMetadata> columns = TablesAndColumns.get(sheetName);
         //  final ArrayList<String> columns = TablesAndColumns.get(sheetName);
@@ -399,21 +385,10 @@ public class xmlController {
             ArrayMeta.add(MetadataToArrayList(meta));
         }
         xml.addData(ArrayMeta);
-      //  xml.flushIntermediate();
+        xml.flushIntermediate();
     }
 
-    private void createSingleXML(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
-        SqlToXml xml = new SqlToXml();
-        xml.createXML(removeDot(dbSelected), path, cursor.getCharset());
-
-        for (final String table : tables) {
-            xml.createTableChild(table);
-            addData(table, cursor.getColumnsName(table), xml, cursor);
-        }
-     //   xml.flush(path);
-    }
-
-    private void createNot(final boolean state) {
+    private void createNot(final boolean state) throws IOException {
 
         Action function = new Action("open", event->{
             if (Desktop.isDesktopSupported()) {
@@ -437,36 +412,12 @@ public class xmlController {
         function.setStyle("-fx-background-color: #3574f0; -fx-text-fill: white");
 
         if (state) {
-            Notification.showSuccessNotification("XML Success", "Success to export XML", function);
+            Notification.showSuccessNotification(db.getDatabaseName()+"-xml", "XML Success", "Success to export XML", function);
         } else {
-            Notification.showErrorNotification("XML Error", "Error to export XML");
+            Notification.showErrorNotification(db.getDatabaseName()+"-xml", "XML Error", "Error to export XML");
         }
 
 
-    }
-
-    private void createMultipleXML(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
-        SqlToXml xml = new SqlToXml();
-
-        final String dbName = removeDot(dbSelected);
-
-        for (final String table : tables) {
-            xml.createXML(dbName, path, cursor.getCharset());
-            xml.createTableChild(table);
-            addData(table, cursor.getColumnsName(table), xml, cursor);
-        //    xml.flush(path + "-" + table);
-        }
-    }
-
-    private void addData(final String childName, final ArrayList<String> columns, final SqlToXml xml, final DataBase cursor) {
-        long offset = 0;
-        final long buffer = cursor.buffer * 10L;
-        ArrayList<ArrayList<Object>> data = cursor.fetchDataBackupObject(childName, columns, buffer, offset);
-        while (data != null) {
-       //     xml.addData(data, columns);
-            offset += buffer;
-            data = cursor.fetchDataBackupObject(childName, columns, buffer, offset);
-        }
     }
 
     private String removeDot(String s) {
@@ -496,7 +447,7 @@ public class xmlController {
             subStage.initOwner(stage);
             subStage.setResizable(false);
             subStage.setScene(new Scene(root));
-            secondaryController.setAttr(progress, "Exporting XML", stage, TaskState);
+            secondaryController.setAttr(progress, "Exporting XML", stage, this);
 
             subStage.initModality(Modality.NONE);
 
@@ -509,8 +460,13 @@ public class xmlController {
     }
 
     public void cancelTask() {
-        main.interrupt();
         fetcher.interrupt();
         writer.interrupt();
+        main.interrupt();
+    }
+
+    @Override
+    public void close() {
+        cancelTask();
     }
 }

@@ -1,6 +1,8 @@
 package com.example.sqlide.Import;
 
-import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import org.apache.poi.ss.usermodel.*;
 
 import java.io.File;
@@ -15,12 +17,12 @@ import java.util.Map;
 public class ExcelImporter implements FileImporter {
 
     private List<String> errors = new ArrayList<>();
-    private double progress = 0.0;
+    private DoubleProperty progress = new SimpleDoubleProperty();
 
     @Override
     public void openFile(File file) throws IOException, IllegalArgumentException {
         this.errors.clear();
-        this.progress = 0.0;
+        this.progress.set(0);
         if (file == null || !file.exists() || !file.canRead()) {
             throw new IOException("File is null, does not exist, or cannot be read: " + (file != null ? file.getName() : "null"));
         }
@@ -170,10 +172,10 @@ public class ExcelImporter implements FileImporter {
     }
 
     @Override
-    public String importData(File file, String sourceTableName, DataBase db, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
+    public String importData(File file, String sourceTableName, DatabaseInserterInterface inserter, final int buffer, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
         openFile(file); // Validate
         errors.clear();
-        progress = 0.0;
+        progress.set(0);
 
         // TODO: Implement actual data insertion into DataBase
         // Similar to CSVImporter:
@@ -195,11 +197,33 @@ public class ExcelImporter implements FileImporter {
                 throw new IllegalArgumentException("Sheet '" + sourceTableName + "' not found.");
             }
 
+            final double interact = 100.0 / sheet.getPhysicalNumberOfRows();
+
+            final List<String> headers = getColumnHeadersFromSheet(sheet);
+
             // Iterate and count rows for now
+            int counter = 0;
+            final ArrayList<HashMap<String, String>> data = new ArrayList<>();
             for (Row row : sheet) {
                 // Skip header, assuming it's the first row if getColumnHeaders found some
                 if (row.getRowNum() == 0 && !getColumnHeaders(file, sourceTableName).isEmpty()) continue;
+                final HashMap<String, String> map = new HashMap<>();
+                for (int cellIndex = 0; cellIndex < headers.size(); cellIndex++) {map.put(headers.get(cellIndex), getCellValue(row.getCell(cellIndex)));
+
+                }
+                data.add(map);
                 totalRowsProcessed++;
+                if (counter == buffer) {
+                    if (!inserter.insertData(targetTableName, data)) throw new SQLException(inserter.getException());
+                    data.clear();
+                    counter = 0;
+                    progress.set(progress.add(interact).get());
+                } else counter++;
+            }
+
+            if (counter != 0) {
+                if (!inserter.insertData(targetTableName, data)) throw new SQLException(inserter.getException());
+                data.clear();
             }
 
         } catch (Exception e) {
@@ -207,14 +231,40 @@ public class ExcelImporter implements FileImporter {
             throw new IOException("Error during Excel import from sheet '" + sourceTableName + "': " + e.getMessage(), e);
         }
 
-        progress = 1.0;
+        progress.set(1.0);
         return String.format("Successfully processed %d rows from sheet '%s' in %s into %s (actual import pending implementation).",
                 totalRowsProcessed, sourceTableName, file.getName(), targetTableName);
     }
 
+    private String getCellValue(Cell cell) {
+        if (cell == null) return null;
+
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();  // Retorna como Date
+                } else {
+                    return String.valueOf(cell.getNumericCellValue());  // Retorna como double
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case BLANK:
+                return "";
+            default:
+                return null;
+        }
+    }
+
     @Override
     public double getImportProgress() {
-        return progress;
+        return progress.get();
+    }
+
+    @Override
+    public void setImportProprerty(final DoubleProperty proprerty) {
+        this.progress = proprerty;
     }
 
     @Override

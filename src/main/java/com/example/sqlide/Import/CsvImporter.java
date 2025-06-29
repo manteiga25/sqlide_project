@@ -1,6 +1,8 @@
 package com.example.sqlide.Import;
 
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
+import javafx.beans.property.DoubleProperty;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -154,18 +156,18 @@ public class CsvImporter implements FileImporter {
     }
 
     @Override
-    public String importData(File file, String sourceTableName, DataBase db, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
+    public String importData(File file, String sourceTableName, DatabaseInserterInterface inserter, final int buffer, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
         // It's important that errors from previous operations (like openFile->loadMetadata) are not cleared here
         // if they are meant to be persistent for the whole import operation.
         // However, for a fresh import, clearing errors specific to this method call might be desired.
         // For now, let's assume errors list accumulates until explicitly cleared by a new "overall" operation.
         // This instance's error list is used.
 
-        loadMetadata(file); // Ensure metadata is loaded or re-attempted if file changed
+      /*  loadMetadata(file); // Ensure metadata is loaded or re-attempted if file changed
 
         progress = 0.0; // Reset progress for this import attempt
 
-        if (db == null) throw new IllegalArgumentException("Database connection (DataBase object) is null.");
+        if (inserter == null) throw new IllegalArgumentException("Database connection (DataBase object) is null.");
         Connection connection = db.getConnection();
         if (connection == null) throw new SQLException("Failed to get database connection from DataBase object.");
 
@@ -366,12 +368,18 @@ public class CsvImporter implements FileImporter {
             catch (SQLException ex) { errors.add("Critical error during rollback: " + ex.getMessage()); }
             finally { if(connection != null) try {connection.setAutoCommit(true);} catch (SQLException ignored){} }
             throw new IOException("Critical error during CSV import operation: " + e.getMessage(), e);
-        }
+        } */
+        return "";
     }
 
     @Override
     public double getImportProgress() {
         return progress;
+    }
+
+    @Override
+    public void setImportProprerty(DoubleProperty proprerty) {
+
     }
 
     @Override

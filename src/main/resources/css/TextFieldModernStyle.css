@@ -1,0 +1,11 @@
+.text-field {
+    -fx-background-color:  #2E2E2E;
+    -fx-border-color:  GRAY;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: white;
+}
+.text-field:focused {
+    -fx-border-color: #89b4fa;
+    -fx-effect: dropshadow(gaussian, rgba(137, 180, 250, 0.3), 6, 0, 0, 1);
+}

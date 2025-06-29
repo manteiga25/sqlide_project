@@ -27,7 +27,7 @@
             <Font name="JetBrains Mono Regular" size="12.0" />
          </font>
       </Label>
-      <JFXCheckBox fx:id="RowIDBox" checkedColor="#3574f0" layoutX="57.0" layoutY="119.0" mnemonicParsing="false" text="ROW ID" textFill="WHITE" />
+      <JFXCheckBox fx:id="RowIDBox" checkedColor="#3574f0" layoutX="57.0" layoutY="119.0" mnemonicParsing="false" selected="true" text="ROW ID" textFill="WHITE" />
       <JFXCheckBox fx:id="TempBox" checkedColor="#3574f0" layoutX="130.0" layoutY="119.0" mnemonicParsing="false" text="Temporary" textFill="WHITE" />
       <JFXButton layoutX="243.0" layoutY="116.0" mnemonicParsing="false" onAction="#createDBColInterface" styleClass="button-secondary" text="create" textFill="#f2f2f2">
          <font>

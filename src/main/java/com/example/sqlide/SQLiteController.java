@@ -150,8 +150,11 @@ public class SQLiteController {
         modes.put("synchronous", syncBox.getValue());
         modes.put("cache_mode", sharedMode.isSelected() ? "shared" : "private");
 
+        String path = SaveDBPath.getText();
 
-        ref.createDB(TextDBName.getText(), modes);
+        path += path.isEmpty() ? TextDBName.getText() : "\\" +TextDBName.getText();
+
+        ref.createDB(path, TextDBName.getText(), modes);
 
         //   modes.put("page_size", Pagesize.getValue().toString());
 

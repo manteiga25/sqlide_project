@@ -88,7 +88,7 @@ public class EditorController {
                         System.out.println(index);
                         SchemasOpened.forEach(System.out::println);
                         final DataBase selectedDB = SchemasOpened.get(index);
-                        selectedDB.executeCode(editors.get(TabContainer.getSelectionModel().getSelectedIndex()-1).getText());
+                        selectedDB.executeScript(editors.get(TabContainer.getSelectionModel().getSelectedIndex()-1).getPath());
                     } else {
                         ShowError("No selected", "No Database selected to execute code.");
                         Platform.runLater(() -> SchemaBox.requestFocus());

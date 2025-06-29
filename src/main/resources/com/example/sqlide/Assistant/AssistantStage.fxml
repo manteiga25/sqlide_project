@@ -17,29 +17,17 @@
          </font>
       </Hyperlink>
         <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
-            <content>
-                <AnchorPane style="-fx-background-color: #2A2A2A;">
-                    <children>
-                        <VBox fx:id="MessagesBox" spacing="10.0" style="-fx-background-color: #262626;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
-                            <padding>
-                                <Insets left="15.0" right="15.0" />
-                            </padding>
-                            <children>
-                                <Pane fx:id="con" style="-fx-background-radius: 15; -fx-background-color: #393939;" VBox.vgrow="ALWAYS">
-                                    <opaqueInsets>
-                                        <Insets />
-                                    </opaqueInsets>
-                                    <VBox.margin>
-                                        <Insets right="60.0" />
-                                    </VBox.margin>
-                                </Pane>
-                            </children></VBox>
-                    </children></AnchorPane>
-            </content>
          <stylesheets>
             <URL value="@../../../../css/ScrollHbarStyle.css" />
             <URL value="@../../../../css/TextAreaStyle.css" />
          </stylesheets>
+         <content>
+                  <VBox fx:id="MessagesBox" spacing="10.0" style="-fx-background-color: #262626;">
+                      <padding>
+                          <Insets left="15.0" right="15.0" />
+                      </padding>
+            </VBox>
+         </content>
         </ScrollPane>
         <HBox alignment="CENTER" spacing="5.0" style="-fx-base: BLACK; -fx-background-color: #2C2C2C;">
             <children>
@@ -80,6 +68,13 @@
                             </tooltip>
                         </Button>
                         <Region HBox.hgrow="ALWAYS" />
+                     <!--   <Button fx:id="MicroButton" mnemonicParsing="false" onAction="#ExecuteMicrophone">
+                            <graphic>
+                                <FontAwesomeIconView fill="#e8e1e1" glyphName="MICROPHONE" size="16.0" />
+                            </graphic>
+                            <tooltip>
+                                <Tooltip text="Talk to Assistant" />
+                            </tooltip></Button> -->
                             <JFXButton mnemonicParsing="false" onAction="#SendMessage" style="-fx-background-color: #3574F0; -fx-background-radius: 30px;" textAlignment="CENTER" textFill="WHITE">
                                 <graphic>
                                     <FontAwesomeIconView glyphName="ARROW_CIRCLE_RIGHT" size="18.0" text="" />

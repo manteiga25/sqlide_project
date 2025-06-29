@@ -4,12 +4,17 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
 
 import java.io.*;
 import java.sql.*;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -31,13 +36,45 @@ public abstract class DataBase {
     protected String[] indexModes;
     protected ArrayList<String> foreignModes;
 
+    private DatabaseFetcherInterface databaseFetcherInterface = null;
+    private DatabaseUpdaterInterface databaseUpdaterInterface = null;
+    private DatabaseInserterInterface databaseInserterInterface = null;
+
+    private LocalTime init, end;
+
     private BufferedReader cursorScript;
     private String saveNext = "";
     private long executorLineNum = 0;
 
+    protected final Stack<Savepoint> savepoints = new Stack<>();
+
     public SQLiteTypes types;
 
     public TypesModelList typesOfDB;
+
+    public DatabaseFetcherInterface Fetcher() {
+        return databaseFetcherInterface;
+    }
+
+    protected void Fetcher(final DatabaseFetcherInterface databaseFetcherInterface) {
+        this.databaseFetcherInterface = databaseFetcherInterface;
+    }
+
+    public DatabaseUpdaterInterface Updater() {
+        return databaseUpdaterInterface;
+    }
+
+    protected void Updater(final DatabaseUpdaterInterface databaseUpdaterInterface) {
+        this.databaseUpdaterInterface = databaseUpdaterInterface;
+    }
+
+    public DatabaseInserterInterface Inserter() {
+        return databaseInserterInterface;
+    }
+
+    protected void Inserter(final DatabaseInserterInterface databaseInserterInterface) {
+        this.databaseInserterInterface = databaseInserterInterface;
+    }
 
     public String[] getIndexModes() {
         return indexModes;
@@ -62,7 +99,8 @@ public abstract class DataBase {
     }
 
     public String getCharset() throws SQLException {
-        return connection.getClientInfo("charset");
+        System.out.println(statement.executeQuery("PRAGMA encoding;").getString(1));
+        return statement.executeQuery("PRAGMA encoding;").getString(1);
     }
 
     protected void putMessage(final Logger message) {
@@ -70,6 +108,18 @@ public abstract class DataBase {
             sender.put(message);
         } catch (InterruptedException _) {
         }
+    }
+
+    protected void initializeTime() {
+        init = LocalTime.now();
+    }
+
+    protected void endTime() {
+        end = LocalTime.now();
+    }
+
+    protected LocalTime computeTime() {
+        return LocalTime.of(Math.abs(end.getHour()-init.getHour()), Math.abs(end.getMinute()-init.getMinute()), Math.abs(end.getSecond()-init.getSecond()), Math.abs(end.getNano()-init.getNano()));
     }
 
     protected String indexName(final String table, final String column) throws SQLException {
@@ -160,6 +210,10 @@ public abstract class DataBase {
         return databaseName;
     }
 
+    protected String fetchDatabaseName() throws SQLException {
+        return statement.executeQuery("SELECT DATABASE();").getString(1);
+    }
+
     public void setDatabaseName(String databaseName) {
         this.databaseName = databaseName;
     }
@@ -200,7 +254,7 @@ public abstract class DataBase {
 
     //public abstract ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, final boolean primeKey);
 
-    abstract public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, String primeKey);
+  /*  abstract public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, String primeKey);
 
     public abstract ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, String primeKey);
 
@@ -212,27 +266,29 @@ public abstract class DataBase {
 
     public abstract ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset);
 
-    public abstract ArrayList<Long> fetchDataMap(String Command);
+    public abstract ArrayList<HashMap<String, String>> fetchRawDataMap(String Command);
+
+    public abstract ArrayList<Double> fetchDataMap(String Command);
 
     public abstract ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset);
 
     public abstract ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long offset);
 
-    abstract public ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long limit, long offset);
+    abstract public ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long limit, long offset);*/
 
-    public abstract boolean insertData(String Table, HashMap<String, String> data);
+   /* public abstract boolean insertData(String Table, HashMap<String, String> data);
 
     public abstract boolean insertData(String Table, ArrayList<HashMap<String, String>> data);
-
-    public abstract boolean updateData(String Table, HashMap<String, String> data, long index);
 
     public abstract boolean removeData(String Table, HashMap<String, String> data, ArrayList<Long> rowid);
 
     public abstract boolean removeData(String Table, ArrayList<String> rowid) throws SQLException;
 
-    public abstract boolean removeData(String Table, HashMap<String, String> data, HashMap<String, String> prime);
+    public abstract boolean removeData(String Table, HashMap<String, String> data, HashMap<String, String> prime); */
 
    // public abstract boolean updateData(String Table, String data, long index);
+
+   /* public abstract boolean updateData(String Table, HashMap<String, String> data, long index);
 
     public abstract boolean updateData(String Table, String column, String value, long index);
 
@@ -244,7 +300,7 @@ public abstract class DataBase {
 
     public abstract boolean updateData(String Table, String column, String value, String[] index, String type, String PrimeKey, String tmp);
 
-    public abstract boolean updateData(String Table, String column, Object value, String index, String PrimeKey, String tmp);
+    public abstract boolean updateData(String Table, String column, Object value, String index, String PrimeKey, String tmp); */
 
     public abstract long totalPages(String table);
 
@@ -335,9 +391,23 @@ public abstract class DataBase {
 
     public abstract boolean getCommitMode() throws SQLException;
 
-    public abstract void back();
+    public void back() throws SQLException {
+        savepoints.push(connection.setSavepoint());
+        connection.rollback();
+    }
 
-    public abstract void commit() throws SQLException;
+    public void redo() throws SQLException {
+        if (!savepoints.isEmpty()) {
+            connection.rollback(savepoints.pop());
+        }
+    }
+
+    public void commit() throws SQLException {
+        if (!connection.getAutoCommit()) {
+            connection.commit();
+        }
+        savepoints.clear();
+    }
 
     public abstract void createTrigger(String trigger, String code);
 

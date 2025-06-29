@@ -4,6 +4,7 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater.CellFormater;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
 import com.jfoenix.controls.JFXDatePicker;
 import javafx.beans.property.StringProperty;
 import javafx.scene.control.DatePicker;
@@ -18,7 +19,7 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public abstract class DateFieldCell {
 
-    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DataBase Database, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, CellFormater format) {
+    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, CellFormater format) {
         final AtomicBoolean updateByUser = new AtomicBoolean(false);
         ColumnCellType.setCellFactory(column -> {
             return new TableCell<DataForDB, String>() {
@@ -36,10 +37,10 @@ public abstract class DateFieldCell {
                             //     final long index = indexStr != null ? Long.parseLong(indexStr) : 0;
                             final String[] indexStr = new String[1];
                             indexStr[0] = item.GetData("ROWID");
-                            if (!Database.updateData(TableName.get(), Metadata.Name, newValue.toString(), indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
+                            if (!Updater.updateData(TableName.get(), Metadata.Name, newValue.toString(), indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
                                 // if (!Database.updateData(TableName, ColName, valueFormated, pageNum.get()*tab.getSelectionModel().getSelectedIndex()+1, tablePrimeKey.get(), getTableRow().getItem().GetData(tablePrimeKey.get()))) {
                                 //  if (!Database.updateData(TableName, ColName, valueFormated, index, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
-                                ShowError("Error SQL", "Error to update data\n" + Database.GetException());
+                                ShowError("Error SQL", "Error to update data\n" + Updater.getException());
                                 return;
                             }
                             item.SetData("ROWID", indexStr[0]);
@@ -62,7 +63,7 @@ public abstract class DateFieldCell {
                             }
                         } catch (Exception e) {
                             setMaxWidth(USE_COMPUTED_SIZE);
-                            StringFieldCell.createColumn(ColumnCellType, Database, Metadata, tablePrimeKey, TableName, format);
+                            StringFieldCell.createColumn(ColumnCellType, Updater, Metadata, tablePrimeKey, TableName, format);
                         }
                         setGraphic(Calendar);
                     }

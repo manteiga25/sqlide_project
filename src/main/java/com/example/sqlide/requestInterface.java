@@ -1,5 +1,7 @@
 package com.example.sqlide;
 
+import com.example.sqlide.drivers.model.SQLTypes;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -20,5 +22,13 @@ public interface requestInterface {
     public abstract boolean createReport(final String title, final String query);
 
     public abstract String currentTable();
+
+    public boolean createTriggers(final HashMap<String, String> triggers);
+
+    public boolean createEvents(final HashMap<String, String> events);
+
+    public SQLTypes getSQLType();
+
+    public boolean createGraphic(final String table, final String name, final String x, final String y, final ArrayList<HashMap<String, String>> labels);
 
 }

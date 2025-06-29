@@ -4,6 +4,9 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
 import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
 
@@ -24,6 +27,9 @@ public class MySQLDB extends DataBase {
         typesOfDB = new MySQLTypesList();
         foreignModes = new ArrayList<>(List.of("CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"));
         SQLType = SQLTypes.MYSQL;
+        Fetcher(databaseFetcherInterface);
+        Updater(updaterInterface);
+        Inserter(inserterInterface);
     }
 
     @Override
@@ -198,282 +204,334 @@ public class MySQLDB extends DataBase {
         return true;
     }
 
-    @Override
-    public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, String primeKey) {
-        ArrayList<DataForDB> data = new ArrayList<>();
-        final String command = "SELECT * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
-        System.out.println("command " + command);
-        try {
-            ResultSet rs = statement.executeQuery(command);
-            while (rs.next()) {
-                HashMap<String, String> tmpData = new HashMap<>();
-                for (final String col : Columns) {
-                    System.out.println(col);
-                    Object val = rs.getObject(col);
-                    String valStr = "null";
-                    if (val != null) {
-                        valStr = val.toString();
+    private final DatabaseFetcherInterface databaseFetcherInterface = new DatabaseFetcherInterface() {
+        @Override
+        public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, String primeKey) {
+            ArrayList<DataForDB> data = new ArrayList<>();
+            final String command = "SELECT * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
+            System.out.println("command " + command);
+            try {
+                ResultSet rs = statement.executeQuery(command);
+                while (rs.next()) {
+                    HashMap<String, String> tmpData = new HashMap<>();
+                    for (final String col : Columns) {
+                        System.out.println(col);
+                        Object val = rs.getObject(col);
+                        String valStr = "null";
+                        if (val != null) {
+                            valStr = val.toString();
+                        }
+                        System.out.println(valStr);
+                        tmpData.put(col, valStr);
                     }
-                    System.out.println(valStr);
-                    tmpData.put(col, valStr);
+                    data.add(new DataForDB(tmpData));
                 }
-                data.add(new DataForDB(tmpData));
+                return data;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-            return  data;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
-    }
 
-    @Override
-    public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, String primeKey) {
-        return null;
-    }
-
-    @Override
-    public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long offset, final boolean primeKey) {
-        return null;
-    }
-
-    @Override
-    public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long limit, long offset, boolean PrimeKey) {
-        return null;
-    }
-
-    @Override
-    public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long limit, long offset) {
-        return null;
-    }
-
-    @Override
-    public ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset) {
-        return null;
-    }
-
-    @Override
-    public ArrayList<Long> fetchDataMap(String Command) {
-        return null;
-    }
-
-    @Override
-    public ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset) {
-        return null;
-    }
-
-    @Override
-    public ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long offset) {
-        return null;
-    }
-
-    @Override
-    public ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long limit, long offset) {
-        return null;
-    }
-
-    @Override
-    public boolean insertData(String Table, HashMap<String, String> data) {
-        StringBuilder command = new StringBuilder("INSERT INTO " + Table + " (");
-        for (final String column : data.keySet()) {
-            command.append(column).append(", ");
+        @Override
+        public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, String primeKey) {
+            return null;
         }
-        command.replace(command.length()-2, command.length(), "");
-        command.append(") VALUES (");
-        for (final String column : data.values()) {
-            command.append("'").append(column).append("'").append(", ");
-        }
-        command.replace(command.length()-2, command.length(), "");
-        command.append(");");
-        System.out.println(command);
-        final String query = command.toString();
-        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-            pstmt.execute();
-            putMessage(new Logger(getUsername(), query, pstmt.getWarnings() != null ? pstmt.getWarnings().getMessage() : "", LocalTime.now()));
-        } catch (SQLException e) {
-            MsgException = e.getMessage();
-            return false;
-        }
-        return true;
-    }
 
-    @Override
-    public boolean insertData(String Table, ArrayList<HashMap<String, String>> data) {
-        StringBuilder command = new StringBuilder("INSERT INTO " + Table + " (");
-        for (final String column : data.getFirst().keySet()) {
-            command.append(column).append(", ");
+        @Override
+        public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long offset, final boolean primeKey) {
+            return null;
         }
-        command.replace(command.length()-2, command.length(), "");
-        command.append(") VALUES (");
-        for (final String _ : data.getFirst().keySet()) {
-            command.append("?").append(", ");
-        }
-        command.replace(command.length()-2, command.length(), "");
-        command.append(");");
-        System.out.println(command);
 
-        try (PreparedStatement ps = connection.prepareStatement(command.toString())) {
-            for (final HashMap<String, String> row : data) {
-                int column = 1;
-                for (final String key : row.keySet()) {
-                    ps.setObject(column++, row.get(key));
+        @Override
+        public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long limit, long offset, boolean PrimeKey) {
+            return null;
+        }
+
+        @Override
+        public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long limit, long offset) {
+            return null;
+        }
+
+        @Override
+        public ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset) {
+            return null;
+        }
+
+        @Override
+        public ArrayList<HashMap<String, String>> fetchRawDataMap(String Command) {
+            return null;
+        }
+
+        @Override
+        public ArrayList<Double> fetchDataMap(String Command) {
+            return null;
+        }
+
+        @Override
+        public ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset) {
+            return null;
+        }
+
+        @Override
+        public ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long offset) {
+            return null;
+        }
+
+        @Override
+        public ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long limit, long offset) {
+            return null;
+        }
+    };
+
+    private final DatabaseInserterInterface inserterInterface = new DatabaseInserterInterface() {
+        @Override
+        public boolean insertData(String Table, HashMap<String, String> data) {
+            StringBuilder command = new StringBuilder("INSERT INTO " + Table + " (");
+            for (final String column : data.keySet()) {
+                command.append(column).append(", ");
+            }
+            command.replace(command.length()-2, command.length(), "");
+            command.append(") VALUES (");
+            for (final String column : data.values()) {
+                command.append("'").append(column).append("'").append(", ");
+            }
+            command.replace(command.length()-2, command.length(), "");
+            command.append(");");
+            System.out.println(command);
+            final String query = command.toString();
+            try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+                pstmt.execute();
+                putMessage(new Logger(getUsername(), query, pstmt.getWarnings() != null ? pstmt.getWarnings().getMessage() : "", LocalTime.now()));
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean insertData(String Table, ArrayList<HashMap<String, String>> data) {
+            StringBuilder command = new StringBuilder("INSERT INTO " + Table + " (");
+            for (final String column : data.getFirst().keySet()) {
+                command.append(column).append(", ");
+            }
+            command.replace(command.length()-2, command.length(), "");
+            command.append(") VALUES (");
+            for (final String _ : data.getFirst().keySet()) {
+                command.append("?").append(", ");
+            }
+            command.replace(command.length()-2, command.length(), "");
+            command.append(");");
+            System.out.println(command);
+
+            try (PreparedStatement ps = connection.prepareStatement(command.toString())) {
+                for (final HashMap<String, String> row : data) {
+                    int column = 1;
+                    for (final String key : row.keySet()) {
+                        ps.setObject(column++, row.get(key));
+                    }
+                    ps.addBatch();
                 }
-                ps.addBatch();
+                ps.executeBatch();
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
             }
-            ps.executeBatch();
-        } catch (SQLException e) {
-            MsgException = e.getMessage();
+            return true;
+        }
+
+        @Override
+        public boolean removeData(String Table, HashMap<String, String> data, ArrayList<Long> rowid) {
             return false;
         }
-        return true;
-    }
 
-    @Override
-    public boolean updateData(String Table, HashMap<String, String> data, long index) {
-        StringBuilder command = new StringBuilder("UPDATE " + Table + " SET ");
-        for (final String column : data.keySet()) {
-            command.append(column).append(" = '").append(data.get(column)).append("'").append(",");
-        }
-        command.replace(command.length()-2, command.length(), "");
-        command.append(" WHERE ROWID = '").append(index).append("';");
-        System.out.println(command);
-        try {
-            PreparedStatement pstmt = connection.prepareStatement(command.toString());
-            //  pstmt.execute(command.toString());
-            pstmt.execute();
-        } catch (SQLException e) {
-            MsgException = e.getMessage();
+        @Override
+        public boolean removeData(String Table, ArrayList<String> rowid) {
             return false;
         }
-        return true;
-    }
 
-    @Override
-    public boolean removeData(String Table, HashMap<String, String> data, ArrayList<Long> rowid) {
-        return false;
-    }
-
-    @Override
-    public boolean removeData(String Table, ArrayList<String> rowid) {
-        return false;
-    }
-
-    @Override
-    public boolean removeData(String Table, HashMap<String, String> data, HashMap<String, String> prime) {
-        return false;
-    }
-
-    @Override
-    public boolean updateData(String Table, String column, String value, long index) {
-        final String command = "UPDATE " + Table + " SET " + column + " = '" + value + "' WHERE ROWID = " + index + ";";
-        System.out.println(command);
-        try {
-            // PreparedStatement pstmt = connection.prepareStatement(command.toString());
-            //  pstmt.execute(command.toString());
-            //  pstmt.execute();
-            statement.execute(command);
-        } catch (SQLException e) {
-            MsgException = e.getMessage();
+        @Override
+        public boolean removeData(String Table, HashMap<String, String> data, HashMap<String, String> prime) {
             return false;
         }
-        return true;
-    }
 
-    @Override
-    public boolean updateData(String tableName, String colName, String newValue, long index, String s, String tmp) {
-        return false;
-    }
-
-    @Override
-    public boolean updateData(String Table, String column, Object value, long index, String PrimeKey, String tmp) {
-        String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
-        boolean prime = false;
-        if (PrimeKey == null || PrimeKey.isEmpty()) {
-            command += "ROWID = " + index + ";";
+        @Override
+        public String getException() {
+            return GetException();
         }
-        else {
-            //  command += PrimeKey + " = '" + tmp + "'";
-            command += PrimeKey + " = ?";
-            prime = true;
+    };
 
-        }
-        System.out.println(command);
-        try {
-            PreparedStatement pstmt = connection.prepareStatement(command);
-            //  pstmt.execute(command.toString());
-            pstmt.setObject(1, value);
-            if (prime) {
-                pstmt.setObject(2, tmp);
+    private final DatabaseUpdaterInterface updaterInterface = new DatabaseUpdaterInterface() {
+        @Override
+        public boolean updateData(String Table, final String column, final Object value, final String index, String PrimeKey, final String tmp) {
+            String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
+            boolean prime = false;
+            if (PrimeKey == null || PrimeKey.isEmpty()) {
+                command += "ROWID = " + index + ";";
             }
-            int affectedRows = pstmt.executeUpdate();
-            System.out.println("rows " + affectedRows);
-            //  statement.execute(command);
-        } catch (SQLException e) {
-            MsgException = e.getMessage();
-            return false;
-        }
-        return true;
-    }
+            else {
+                //  command += PrimeKey + " = '" + tmp + "'";
+                command += PrimeKey + " = ?";
+                prime = true;
 
-    @Override
-    public boolean updateData(String Table, String column, Object value, String[] index, String PrimeKey, String tmp) {
-        String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
-        boolean prime = false;
-        if (PrimeKey == null || PrimeKey.isEmpty()) {
-            command += "ROWID = " + index[0] + ";";
-        }
-        else {
-            //  command += PrimeKey + " = '" + tmp + "'";
-            command += PrimeKey + " = ?";
-            prime = true;
-
-        }
-        System.out.println(command);
-        try {
-            PreparedStatement pstmt = connection.prepareStatement(command);
-            //  pstmt.execute(command.toString());
-            pstmt.setObject(1, value);
-            if (prime) {
-                pstmt.setObject(2, tmp);
             }
-            int affectedRows = pstmt.executeUpdate();
-            System.out.println("rows " + affectedRows);
-            //  statement.execute(command);
-        } catch (SQLException e) {
-            MsgException = e.getMessage();
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public boolean updateData(String Table, String column, String value, String[] index, String type, String PrimeKey, String tmp) {
-        String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
-        boolean prime = false;
-        if (PrimeKey == null || PrimeKey.isEmpty()) {
-            command += "ROWID = " + index[0] + ";";
-        }
-        else {
-            //  command += PrimeKey + " = '" + tmp + "'";
-            command += PrimeKey + " = ?";
-            prime = true;
-
-        }
-        System.out.println(command);
-        try {
-            PreparedStatement pstmt = connection.prepareStatement(command);
-            //  pstmt.execute(command.toString());
-            pstmt.setObject(1, value);
-            if (prime) {
-                pstmt.setObject(2, tmp);
+            System.out.println(command);
+            try {
+                PreparedStatement pstmt = connection.prepareStatement(command);
+                //  pstmt.execute(command.toString());
+                pstmt.setObject(1, value);
+                if (prime) {
+                    pstmt.setObject(2, tmp);
+                }
+                int affectedRows = pstmt.executeUpdate();
+                System.out.println("rows " + affectedRows);
+                //  statement.execute(command);
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
             }
-            int affectedRows = pstmt.executeUpdate();
-            System.out.println("rows " + affectedRows);
-            //  statement.execute(command);
-        } catch (SQLException e) {
-            MsgException = e.getMessage();
+            return true;
+        }
+
+        @Override
+        public boolean updateData(String Table, HashMap<String, String> data, long index) {
+            StringBuilder command = new StringBuilder("UPDATE " + Table + " SET ");
+            for (final String column : data.keySet()) {
+                command.append(column).append(" = '").append(data.get(column)).append("'").append(",");
+            }
+            command.replace(command.length()-2, command.length(), "");
+            command.append(" WHERE ROWID = '").append(index).append("';");
+            System.out.println(command);
+            try {
+                PreparedStatement pstmt = connection.prepareStatement(command.toString());
+                //  pstmt.execute(command.toString());
+                pstmt.execute();
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean updateData(String Table, String column, String value, long index) {
+            final String command = "UPDATE " + Table + " SET " + column + " = '" + value + "' WHERE ROWID = " + index + ";";
+            System.out.println(command);
+            try {
+                // PreparedStatement pstmt = connection.prepareStatement(command.toString());
+                //  pstmt.execute(command.toString());
+                //  pstmt.execute();
+                statement.execute(command);
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean updateData(String tableName, String colName, String newValue, long index, String s, String tmp) {
             return false;
         }
-        return true;
-    }
+
+        @Override
+        public boolean updateData(String Table, String column, Object value, long index, String PrimeKey, String tmp) {
+            String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
+            boolean prime = false;
+            if (PrimeKey == null || PrimeKey.isEmpty()) {
+                command += "ROWID = " + index + ";";
+            }
+            else {
+                //  command += PrimeKey + " = '" + tmp + "'";
+                command += PrimeKey + " = ?";
+                prime = true;
+
+            }
+            System.out.println(command);
+            try {
+                PreparedStatement pstmt = connection.prepareStatement(command);
+                //  pstmt.execute(command.toString());
+                pstmt.setObject(1, value);
+                if (prime) {
+                    pstmt.setObject(2, tmp);
+                }
+                int affectedRows = pstmt.executeUpdate();
+                System.out.println("rows " + affectedRows);
+                //  statement.execute(command);
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean updateData(String Table, String column, Object value, String[] index, String PrimeKey, String tmp) {
+            String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
+            boolean prime = false;
+            if (PrimeKey == null || PrimeKey.isEmpty()) {
+                command += "ROWID = " + index[0] + ";";
+            }
+            else {
+                //  command += PrimeKey + " = '" + tmp + "'";
+                command += PrimeKey + " = ?";
+                prime = true;
+
+            }
+            System.out.println(command);
+            try {
+                PreparedStatement pstmt = connection.prepareStatement(command);
+                //  pstmt.execute(command.toString());
+                pstmt.setObject(1, value);
+                if (prime) {
+                    pstmt.setObject(2, tmp);
+                }
+                int affectedRows = pstmt.executeUpdate();
+                System.out.println("rows " + affectedRows);
+                //  statement.execute(command);
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean updateData(String Table, String column, String value, String[] index, String type, String PrimeKey, String tmp) {
+            String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
+            boolean prime = false;
+            if (PrimeKey == null || PrimeKey.isEmpty()) {
+                command += "ROWID = " + index[0] + ";";
+            }
+            else {
+                //  command += PrimeKey + " = '" + tmp + "'";
+                command += PrimeKey + " = ?";
+                prime = true;
+
+            }
+            System.out.println(command);
+            try {
+                PreparedStatement pstmt = connection.prepareStatement(command);
+                //  pstmt.execute(command.toString());
+                pstmt.setObject(1, value);
+                if (prime) {
+                    pstmt.setObject(2, tmp);
+                }
+                int affectedRows = pstmt.executeUpdate();
+                System.out.println("rows " + affectedRows);
+                //  statement.execute(command);
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public String getException() {
+            return "";
+        }
+    };
 
     @Override
     public ArrayList<String> getTables() {
@@ -664,37 +722,6 @@ public class MySQLDB extends DataBase {
     }
 
     @Override
-    public boolean updateData(String Table, final String column, final Object value, final String index, String PrimeKey, final String tmp) {
-        String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
-        boolean prime = false;
-        if (PrimeKey == null || PrimeKey.isEmpty()) {
-            command += "ROWID = " + index + ";";
-        }
-        else {
-            //  command += PrimeKey + " = '" + tmp + "'";
-            command += PrimeKey + " = ?";
-            prime = true;
-
-        }
-        System.out.println(command);
-        try {
-            PreparedStatement pstmt = connection.prepareStatement(command);
-            //  pstmt.execute(command.toString());
-            pstmt.setObject(1, value);
-            if (prime) {
-                pstmt.setObject(2, tmp);
-            }
-            int affectedRows = pstmt.executeUpdate();
-            System.out.println("rows " + affectedRows);
-            //  statement.execute(command);
-        } catch (SQLException e) {
-            MsgException = e.getMessage();
-            return false;
-        }
-        return true;
-    }
-
-    @Override
     public long totalPages(String table) {
         try {
             ResultSet ret = statement.executeQuery("SELECT COUNT(*) FROM " + table + ";");
@@ -789,6 +816,7 @@ public class MySQLDB extends DataBase {
             connection = DriverManager.getConnection(completeURL, userName, password);
             statement = connection.createStatement();
             super.databaseName = name;
+            super.username = userName;
             statement.execute("CREATE DATABASE " + name + ";");
             FormatDBCreation(modes);
             connection = DriverManager.getConnection(completeURL + "/" + name, userName, password);
@@ -827,6 +855,7 @@ public class MySQLDB extends DataBase {
             connection = DriverManager.getConnection(completeURL, userName, password);
             statement = connection.createStatement();
             super.databaseName = name;
+            super.username = userName;
             //  FormatDBCreation(formatData);
             return true;
         } catch (SQLException e) {
@@ -931,11 +960,6 @@ public class MySQLDB extends DataBase {
         } catch (SQLException e) {
 
         }
-    }
-
-    @Override
-    public void commit() throws SQLException {
-        connection.commit();
     }
 
     @Override

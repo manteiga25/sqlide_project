@@ -4,6 +4,7 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater.CellFormater;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.ComboBox;
@@ -20,7 +21,7 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class SetFieldCell {
 
-    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DataBase Database, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, CellFormater format) {
+    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, CellFormater format) {
         final AtomicBoolean updateByUser = new AtomicBoolean(false);
         ColumnCellType.setCellFactory(column -> {
             return new TableCell<DataForDB, String>() {
@@ -42,9 +43,9 @@ public class SetFieldCell {
                             System.out.println("values " + values + " item " + newValue);
                             final String[] indexStr = new String[1];
                             indexStr[0] = item.GetData("ROWID");
-                            if (!Database.updateData(TableName.get(), Metadata.Name, values, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
+                            if (!Updater.updateData(TableName.get(), Metadata.Name, values, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
                                 //  if (!Database.updateData(TableName, ColName, valueFormated, index, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
-                                ShowError("Error SQL", "Error to update data\n" + Database.GetException());
+                                ShowError("Error SQL", "Error to update data\n" + Updater.getException());
                                 return;
                             }
                             item.SetData("ROWID", indexStr[0]);

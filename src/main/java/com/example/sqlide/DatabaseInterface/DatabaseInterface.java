@@ -8,6 +8,7 @@ import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.neural.NeuralController;
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXTooltip;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.application.Platform;
@@ -197,9 +198,37 @@ public class DatabaseInterface {
         HBox ButtonsLine = new HBox(5);
         ButtonsLine.setPadding(new Insets(5,0,5,5));
 
+        JFXButton undoButton = new JFXButton();
+        undoButton.setTooltip(new Tooltip("Undo"));
+        FontAwesomeIconView iconUndo = new FontAwesomeIconView(FontAwesomeIcon.UNDO);
+        iconUndo.setSize("1.0em");
+        iconUndo.setFill(Color.WHITE);
+        undoButton.setGraphic(iconUndo);
+        undoButton.setOnAction(_ -> {
+            try {
+                DatabaseSeted.back();
+            } catch (SQLException e) {
+                ShowError("SQL Error", "Error to undo database.", e.getMessage());
+            }
+        });
+
+        JFXButton redoButton = new JFXButton();
+        FontAwesomeIconView iconRedo = new FontAwesomeIconView(FontAwesomeIcon.REPEAT);
+        iconRedo.setSize("1.0em");
+        iconRedo.setFill(Color.WHITE);
+        redoButton.setGraphic(iconRedo);
+        redoButton.setOnAction(_ -> {
+            try {
+                DatabaseSeted.redo();
+            } catch (SQLException e) {
+                ShowError("SQL Error", "Error to redo database.", e.getMessage());
+            }
+        });
+
         JFXButton save = new JFXButton();
+        save.setTooltip(new Tooltip("Save"));
         FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.SAVE);
-        icon.setSize("1.5em");
+        icon.setSize("1.0em");
         icon.setFill(Color.WHITE);
         save.setGraphic(icon);
         save.setOnAction(e -> commit());
@@ -219,7 +248,7 @@ public class DatabaseInterface {
         JFXButton TrainButton = new JFXButton("Create Model");
         TrainButton.setOnAction(e -> openTrainStage());
 
-        ButtonsLine.getChildren().addAll(save, createTab, deleteTab, SendEmailButton, ReportButton, TrainButton);
+        ButtonsLine.getChildren().addAll(undoButton, save, createTab, deleteTab, SendEmailButton, ReportButton, TrainButton);
 
         DBTabContainer = new TabPane();
         VBox.setVgrow(DBTabContainer, Priority.ALWAYS);

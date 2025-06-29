@@ -47,8 +47,8 @@ public class AdvancedSearchController {
      @FXML
     private JFXTextField QueryField;
 
-    @FXML // Added for Part 2
-    private JFXButton generateReportButton;
+    @FXML
+    private JFXButton ordenateButton;
 
      private HashMap<String, ArrayList<String>> AllColumns;
 
@@ -56,7 +56,7 @@ public class AdvancedSearchController {
 
     private String selector = "*";
 
-    private final ObservableList<String> columnSelected = FXCollections.observableArrayList();
+    private final ObservableList<String> columnSelected = FXCollections.observableArrayList(), currentColumns = FXCollections.observableArrayList();
 
     private String Table;
 
@@ -121,6 +121,7 @@ public class AdvancedSearchController {
                 for (final String column : AllColumns.get(text)) {
                     list.add(text + "." + column);
                 }
+                currentColumns.setAll(list);
                 loadWidgets(list);
                 generateQuery();
             }
@@ -179,7 +180,7 @@ public class AdvancedSearchController {
     public void setColumns(final HashMap<String, ArrayList<String>> columns) {
         this.columns = columns.get(Table);
         AllColumns = columns;
-        AllColumns.remove(Table);
+        currentColumns.setAll(AllColumns.remove(Table));
         loadWidgets(this.columns);
         loadJoin();
     }
@@ -278,6 +279,11 @@ public class AdvancedSearchController {
         this.stage = stage;
     }
 
+    public void removeOrder() {
+        final HBox node = (HBox) ordenateButton.getParent();
+        node.getChildren().remove(ordenateButton);
+    }
+
     // Classe para representar uma linha de condição
     class ConditionRow extends HBox {
         private final ComboBox<String> columnCombo;
@@ -290,7 +296,7 @@ public class AdvancedSearchController {
             super(5);
             setPadding(new Insets(5));
 
-            ColumnBox = new ComboBox<>(FXCollections.observableArrayList(columnSelected));
+            ColumnBox = new ComboBox<>(currentColumns);
             ColumnBox.setPromptText("column");
             ColumnBox.getSelectionModel().selectedItemProperty().addListener(_-> Platform.runLater(()->generateQuery()));
             //ColumnBox.setOnAction(_->generateQuery());
@@ -299,7 +305,7 @@ public class AdvancedSearchController {
             valueField.textProperty().addListener(_->generateQuery());
             valueField.setStyle("-fx-text-fill: #f2f2f2;");
 
-            columnCombo = new ComboBox<>(FXCollections.observableArrayList(columns));
+            columnCombo = new ComboBox<>(currentColumns);
             columnCombo.setPromptText("column");
             columnCombo.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
 
@@ -314,7 +320,7 @@ public class AdvancedSearchController {
             });
 
             operatorCombo = new ComboBox<>(FXCollections.observableArrayList(
-                    "=", "!=", ">", "<", ">=", "<=", "LIKE", "IN"
+                    "=", "!=", ">", "<", ">=", "<=", "LIKE", "IN", "IS"
             ));
             operatorCombo.setPromptText("operator");
             operatorCombo.getSelectionModel().selectedItemProperty().addListener(_->generateQuery());
@@ -421,6 +427,7 @@ public class AdvancedSearchController {
                 getChildren().clear();
 
                 ColumnsContainer.getChildren().remove(this);
+              //  groupConditions.getChildren().remove(this);
                 setStyle("-fx-border-width: 0;");
                 generateQuery();
             });

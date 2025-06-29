@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import com.jfoenix.controls.*?>
+<?import de.jensd.fx.glyphs.fontawesome.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
@@ -13,12 +14,15 @@
         </font>
     </Label>
     <Label layoutX="37.0" layoutY="148.0" prefHeight="27.0" prefWidth="40.0" text="Path:" textFill="WHITE" />
-    <JFXButton fx:id="folderButton" layoutX="397.0" layoutY="152.0" mnemonicParsing="false" onAction="#openWindow" style="-fx-background-color: transparent;" textFill="WHITE">
+    <JFXButton layoutX="397.0" layoutY="152.0" mnemonicParsing="false" onAction="#openWindow" style="-fx-background-color: transparent;" textFill="WHITE">
+        <graphic>
+            <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
+        </graphic>
     <tooltip>
         <Tooltip text="Selecionar pasta destino" />
     </tooltip>
     </JFXButton>
-    <Label layoutX="37.0" layoutY="122.0" text="Database:" textFill="WHITE" />
+    <Label fx:id="NameLabel" layoutX="37.0" layoutY="122.0" textFill="WHITE" />
     <JFXTextField fx:id="PathBox" layoutX="100.0" layoutY="148.0" prefHeight="25.0" prefWidth="298.0" promptText="C/...." style="-fx-text-fill: white;" unFocusColor="#3574f0" />
     <JFXButton layoutX="535.0" layoutY="313.0" mnemonicParsing="false" onAction="#createBackup" style="-fx-background-color: #3574F0;" text="Export" textFill="WHITE" />
    <Label layoutX="37.0" layoutY="221.0" text="CSV Type:" textFill="WHITE" />

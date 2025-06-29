@@ -1,5 +1,6 @@
 package com.example.sqlide.Assistant;
 
+import com.example.sqlide.Assistant.speech.MicrophoneService;
 import com.example.sqlide.Container.Assistant.AssistantBoxCode;
 import com.example.sqlide.requestInterface;
 import javafx.application.Platform;
@@ -14,6 +15,8 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -37,14 +40,16 @@ public class AssistantController {
     @FXML
     private TextArea MessageBox;
 
-    private BufferedReader processOutput, processErr;
-    private BufferedWriter processInput;
-
     private requestInterface AssistantFunctionsInterface;
+
+    private final MicrophoneService microphoneService = new MicrophoneService();
 
     private final BooleanProperty search = new SimpleBooleanProperty(false), function = new SimpleBooleanProperty(false), deep = new SimpleBooleanProperty(false);
 
     final BlockingQueue<String> sender = new LinkedBlockingQueue<>(), reciver = new LinkedBlockingQueue<>();
+
+    public AssistantController() throws IOException {
+    }
 
     public void setAssistantFunctionsInterface(final requestInterface assistantFunctionsInterface) {
         this.AssistantFunctionsInterface = assistantFunctionsInterface;
@@ -76,93 +81,7 @@ public class AssistantController {
                 String linha;
                 while ((linha = reader.readLine()) != null) {
                     System.out.println("Python: " + linha);
-                    JSONObject json = new JSONObject(linha);
-
-                    if (json.getString("status").equals("request")) {
-                        System.out.println("[Java] Resposta do Python: " + json.getString("message"));
-
-                        if (json.has("function")) {
-                            final String function = json.getString("function");
-                            JSONArray parameters = json.getJSONArray("parameters");
-
-                            switch (function) {
-                                case "Show_Data":
-                                        final boolean status = AssistantFunctionsInterface.ShowData(parameters.getString(0), parameters.getString(1));
-                                        sender.put(String.valueOf(status));
-                                    break;
-
-                                    case "Request_Data":
-                                        final ArrayList<HashMap<String, String>> data = AssistantFunctionsInterface.getData(parameters.getString(0), parameters.getString(1));
-                                        sender.put(data.toString());
-                                        break;
-
-                                    case "GetTableMeta":
-                                        final HashMap<String, ArrayList<HashMap<String, String>>> meta = AssistantFunctionsInterface.getTableMetadata();
-                                        sender.put(meta.toString());
-                                        break;
-
-                                case "CreateTable":
-
-                                    final ArrayList<HashMap<String, String>> Table = new ArrayList<>();
-                                    final JSONArray jsonArray = parameters.getJSONArray(1);
-
-                                    for (int i = 0; i < jsonArray.length(); i++) {
-                                        final JSONObject obj = jsonArray.getJSONObject(i);
-                                        final HashMap<String, String> map = new HashMap<>();
-
-                                        for (String key : obj.keySet()) {
-                                            map.put(key, obj.getString(key));
-                                        }
-
-                                        Table.add(map);
-                                    }
-
-                                    sender.put(Boolean.toString(AssistantFunctionsInterface.createTable(parameters.getString(0), Table)));
-                                    break;
-
-                                case "table":
-                                    sender.put(AssistantFunctionsInterface.currentTable());
-                                    break;
-
-                                case "InsertData":
-                                    final ArrayList<HashMap<String, String>> Rows = new ArrayList<>();
-                                    final JSONArray Data = parameters.getJSONArray(1);
-                                    for (int i = 0; i < Data.length(); i++) {
-                                        final JSONObject obj = Data.getJSONObject(i);
-                                        final HashMap<String, String> map = new HashMap<>();
-
-                                        for (String key : obj.keySet()) {
-                                            map.put(key, obj.getString(key));
-                                        }
-
-                                        Rows.add(map);
-                                    }
-
-                                    sender.put(AssistantFunctionsInterface.insertData(parameters.getString(0), Rows));
-                                    break;
-
-                                case "createReport":
-                                    sender.put(String.valueOf(AssistantFunctionsInterface.createReport(parameters.getString(0), parameters.getString(1))));
-                                    break;
-
-                                case "sendEmail":
-                                    sender.put(String.valueOf(AssistantFunctionsInterface.sendEmail(parameters.getString(0))));
-                                    break;
-
-                                    default:
-                                        System.out.println("Função não reconhecida: " + function);
-                                }
-                        }
-
-                    }
-                    else if (json.getString("status").equals("success")) {
-                        // Processar funções e parâmetros
-                        final JSONObject reciverJson = new JSONObject();
-                        reciverJson.put("message", json.getString("message"));
-                        reciverJson.put("status", true);
-                        reciver.put(reciverJson.toString());
-                        System.out.println("sucess");
-                    }
+                    computeMessage(new JSONObject(linha));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -219,6 +138,141 @@ public class AssistantController {
         });
         readerT.setDaemon(true);
         readerT.start();
+    }
+
+    private void computeMessage(final JSONObject json) throws InterruptedException {
+        if (json.getString("status").equals("request")) {
+            System.out.println("[Java] Resposta do Python: " + json.getString("message"));
+
+            if (json.has("function")) {
+                final String function = json.getString("function");
+                JSONArray parameters = json.getJSONArray("parameters");
+
+                switch (function) {
+                    case "type":
+                        System.out.println(AssistantFunctionsInterface.getSQLType().name());
+                        sender.put(AssistantFunctionsInterface.getSQLType().name());
+                        break;
+                    case "Show_Data":
+                        final boolean status = AssistantFunctionsInterface.ShowData(parameters.getString(0), parameters.getString(1));
+                        sender.put(String.valueOf(status));
+                        break;
+
+                    case "Request_Data":
+                        final ArrayList<HashMap<String, String>> data = AssistantFunctionsInterface.getData(parameters.getString(0), parameters.getString(1));
+                        sender.put(data.toString());
+                        break;
+
+                    case "GetTableMeta":
+                        final HashMap<String, ArrayList<HashMap<String, String>>> meta = AssistantFunctionsInterface.getTableMetadata();
+                        sender.put(meta.toString());
+                        break;
+
+                    case "CreateTable":
+
+                        final ArrayList<HashMap<String, String>> Table = new ArrayList<>();
+                        final JSONArray jsonArray = parameters.getJSONArray(1);
+
+                        for (int i = 0; i < jsonArray.length(); i++) {
+                            final JSONObject obj = jsonArray.getJSONObject(i);
+                            final HashMap<String, String> map = new HashMap<>();
+
+                            for (String key : obj.keySet()) {
+                                map.put(key, obj.getString(key));
+                            }
+
+                            Table.add(map);
+                        }
+
+                        sender.put(Boolean.toString(AssistantFunctionsInterface.createTable(parameters.getString(0), Table)));
+                        break;
+
+                    case "table":
+                        sender.put(AssistantFunctionsInterface.currentTable());
+                        break;
+
+                    case "InsertData":
+                        final ArrayList<HashMap<String, String>> Rows = new ArrayList<>();
+                        final JSONArray Data = parameters.getJSONArray(1);
+                        for (int i = 0; i < Data.length(); i++) {
+                            final JSONObject obj = Data.getJSONObject(i);
+                            final HashMap<String, String> map = new HashMap<>();
+
+                            for (String key : obj.keySet()) {
+                                map.put(key, obj.getString(key));
+                            }
+
+                            Rows.add(map);
+                        }
+
+                        sender.put(AssistantFunctionsInterface.insertData(parameters.getString(0), Rows));
+                        break;
+
+                    case "createReport":
+                        sender.put(String.valueOf(AssistantFunctionsInterface.createReport(parameters.getString(0), parameters.getString(1))));
+                        break;
+
+                    case "sendEmail":
+                        sender.put(String.valueOf(AssistantFunctionsInterface.sendEmail(parameters.getString(0))));
+                        break;
+
+                    case "CreateGraphic":
+                        final ArrayList<HashMap<String, String>> chart = new ArrayList<>();
+                        final JSONArray ChartData = parameters.getJSONArray(4);
+                        for (int i = 0; i < ChartData.length(); i++) {
+                            final JSONObject obj = ChartData.getJSONObject(i);
+                            final HashMap<String, String> map = new HashMap<>();
+
+                            for (String key : obj.keySet()) {
+                                map.put(key, obj.getString(key));
+                            }
+
+                            chart.add(map);
+                        }
+                        System.out.println(chart);
+                        sender.put(String.valueOf(AssistantFunctionsInterface.createGraphic(parameters.getString(0), parameters.getString(1), parameters.getString(2), parameters.getString(3), chart)));
+                        break;
+
+                    case "CreateTrigger":
+                        final HashMap<String, String> trigger = new HashMap<>();
+                        final JSONObject obj = parameters.getJSONObject(0);
+
+                        for (String key : obj.keySet()) {
+                            System.out.println(key);
+                            trigger.put(key, obj.getString(key));
+                        }
+
+                     //   trigger.put(map);
+                        sender.put(String.valueOf(AssistantFunctionsInterface.createTriggers(trigger)));
+                        break;
+
+                    case "CreateEvent":
+                        final HashMap<String, String> event = new HashMap<>();
+                        final JSONObject child = parameters.getJSONObject(0);
+
+                        for (String key : child.keySet()) {
+                            System.out.println(key);
+                            event.put(key, child.getString(key));
+                        }
+
+                        //   trigger.put(map);
+                        sender.put(String.valueOf(AssistantFunctionsInterface.createEvents(event)));
+                        break;
+
+                    default:
+                        System.out.println("Função não reconhecida: " + function);
+                }
+            }
+
+        }
+        else if (json.getString("status").equals("success")) {
+            // Processar funções e parâmetros
+            final JSONObject reciverJson = new JSONObject();
+            reciverJson.put("message", json.getString("message") != null ? json.getString("message") : "");
+            reciverJson.put("status", true);
+            reciver.put(reciverJson.toString());
+            System.out.println("sucess");
+        }
     }
 
 
@@ -332,12 +386,13 @@ public class AssistantController {
     }
 
     private TextArea createUserMessageBox(final String message, final long lines) {
-        final TextArea messageBox = new TextArea();
+        final TextArea messageBox = new TextArea("User:\n" + message);
         messageBox.setEditable(false);
-        messageBox.setPrefRowCount(2);
+        messageBox.setWrapText(true);
+      /*  messageBox.setPrefRowCount(2);
         messageBox.setPrefHeight(lines * 20.0 + 14 + 12);
         messageBox.setPrefWidth(lines * 20.0 + 14 + 12);
-        messageBox.setText("User:\n" + message);
+        messageBox.setText("User:\n" + message); */
         VBox.setMargin(messageBox, new Insets(0, 0, 0, 100));
         messageBox.setPadding(new Insets(10, 12, 10, 12));
         VBox.setVgrow(messageBox, Priority.ALWAYS);
@@ -351,6 +406,38 @@ public class AssistantController {
                 "-fx-focus-color: transparent; " +
                 "-fx-faint-focus-color: transparent; " +
                 "-fx-display-caret: false;");
+
+        Text text = new Text(message);
+        text.setFont(Font.font("JetBrains Mono Medium", 14)); // Mesmo font do CSS
+
+        // Definir a largura máxima para o cálculo de quebra de linha
+        // Subtrair o padding e as bordas para obter a largura real do texto
+        double maxWidth = messageBox.prefWidthProperty().getValue() - 40; // Ajuste para padding e bordas
+        text.setWrappingWidth(maxWidth);
+
+        // Calcular a altura necessária com base no layout do texto
+        double textHeight = text.getLayoutBounds().getHeight();
+
+        // Adicionar espaço para padding e bordas
+        double totalHeight = textHeight + 30; // Ajuste para padding e bordas
+
+        // Definir uma altura mínima
+        totalHeight = Math.max(totalHeight, 80);
+
+        // Aplicar a altura calculada
+        messageBox.setPrefHeight(totalHeight+30);
+
+        // Adicionar um listener para ajustar a altura quando o tamanho da janela mudar
+        messageBox.widthProperty().addListener((obs, oldVal, newVal) -> {
+            Platform.runLater(() -> {
+                text.setWrappingWidth(newVal.doubleValue() - 40);
+                double newTextHeight = text.getLayoutBounds().getHeight();
+                double newTotalHeight = newTextHeight + 40;
+                newTotalHeight = Math.max(newTotalHeight, 70);
+                messageBox.setPrefHeight(newTotalHeight);
+            });
+        });
+
         return messageBox;
     }
 
@@ -399,4 +486,21 @@ public class AssistantController {
     private void DeleteConversation() {
         MessagesBox.getChildren().clear();
     }
+
+   /* @FXML
+    private void ExecuteMicrophone() {
+        MicroButton.setOnAction(_->StopMicrophone());
+        Thread.ofVirtual().start(()->{
+            try {
+                microphoneService.start();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void StopMicrophone() {
+        microphoneService.finish();
+
+    }*/
 }

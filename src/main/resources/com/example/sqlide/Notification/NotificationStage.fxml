@@ -24,19 +24,19 @@
                <font>
                   <Font size="14.0" />
                </font>
-               <padding>
-                  <Insets right="15.0" />
-               </padding>
             </Hyperlink>
          </children>
       </HBox>
       <ScrollPane fitToWidth="true" stylesheets="@../../../../css/ScrollHbarStyle.css" VBox.vgrow="ALWAYS">
          <content>
-            <VBox fx:id="NotificationBox" />
+            <VBox fx:id="NotificationBox" spacing="5.0" />
          </content>
+         <VBox.margin>
+            <Insets />
+         </VBox.margin>
       </ScrollPane>
    </children>
    <padding>
-      <Insets left="15.0" top="15.0" />
+      <Insets left="15.0" right="15.0" top="15.0" />
    </padding>
 </VBox>

@@ -131,7 +131,6 @@ public class ReportService {
             PDPageContentStream contentStream = new PDPageContentStream(document, currentPage);
 
             float yPosition = currentPage.getMediaBox().getHeight() - pageMargin;
-            final float startX = pageMargin;
             final float tableWidth = currentPage.getMediaBox().getWidth() - 2 * pageMargin;
             final List<String> columnHeaders = reportData.getColumnHeaders();
             final float columnWidth = columnHeaders.isEmpty() ? tableWidth : tableWidth / columnHeaders.size();
@@ -145,14 +144,14 @@ public class ReportService {
             contentStream.beginText();
             contentStream.setFont(titleFont, titleFontSize);
             contentStream.setNonStrokingColor(titleColor);
-            contentStream.newLineAtOffset(startX, yPosition);
+            contentStream.newLineAtOffset(pageMargin, yPosition);
             contentStream.showText(reportData.getTitle() != null ? reportData.getTitle() : "Report");
             contentStream.endText();
             yPosition -= titleLeading * 2; // Space after title
 
             // Initial Headers
-            if (columnHeaders != null && !columnHeaders.isEmpty()) {
-                yPosition = drawHeaders(contentStream, columnHeaders, yPosition, startX, tableWidth, columnWidth, currentPage, styleConfig);
+            if (!columnHeaders.isEmpty()) {
+                yPosition = drawHeaders(contentStream, columnHeaders, yPosition, pageMargin, tableWidth, columnWidth, currentPage, styleConfig);
             }
 
             // Data Rows
@@ -175,8 +174,8 @@ public class ReportService {
                     contentStream = new PDPageContentStream(document, currentPage);
                     yPosition = currentPage.getMediaBox().getHeight() - pageMargin;
 
-                    if (columnHeaders != null && !columnHeaders.isEmpty()) {
-                        yPosition = drawHeaders(contentStream, columnHeaders, yPosition, startX, tableWidth, columnWidth, currentPage, styleConfig);
+                    if (!columnHeaders.isEmpty()) {
+                        yPosition = drawHeaders(contentStream, columnHeaders, yPosition, pageMargin, tableWidth, columnWidth, currentPage, styleConfig);
                     }
                 }
 
@@ -185,7 +184,7 @@ public class ReportService {
                     contentStream.saveGraphicsState();
                     contentStream.setNonStrokingColor(altRowBgColor);
                     // Rectangle Y is bottom-left, so adjust from yPosition (baseline of text)
-                    contentStream.addRect(startX, yPosition - dataFontSize + (dataLeading - dataFontSize)/2 - cellPadding / 2, tableWidth, dataLeading + cellPadding);
+                    contentStream.addRect(pageMargin, yPosition - dataFontSize + (dataLeading - dataFontSize)*2 - cellPadding * 2+cellPadding/2, tableWidth, dataLeading - cellPadding + dataFontSize/2);
                     contentStream.fill();
                     contentStream.restoreGraphicsState();
                 }
@@ -193,9 +192,9 @@ public class ReportService {
                 contentStream.beginText();
                 contentStream.setFont(dataFont, dataFontSize);
                 contentStream.setNonStrokingColor(dataTextColor);
-                contentStream.newLineAtOffset(startX + cellPadding, yPosition);
+                contentStream.newLineAtOffset(pageMargin + cellPadding, yPosition);
 
-                float currentX = startX;
+                float currentX = pageMargin;
                 for (String cellData : row) {
                     String shortCellData = cellData != null ? (cellData.length() > 20 ? cellData.substring(0, 17) + "..." : cellData) : "";
 
@@ -205,15 +204,15 @@ public class ReportService {
                         int maxChars = (int) (((columnWidth - (2 * cellPadding)) / dataFontSize) * 1.5) -3; // Estimate
                         if (maxChars < 1) maxChars = 1;
                         if (shortCellData.length() > maxChars) {
-                            shortCellData = shortCellData.substring(0, Math.min(shortCellData.length(), maxChars)) + "...";
+                            shortCellData = shortCellData.substring(0, maxChars) + "...";
                         }
                     }
                     contentStream.showText(shortCellData);
 
                     currentX += columnWidth;
-                    if (currentX < startX + tableWidth - (columnWidth / 2.0f)) {
+                    if (currentX < pageMargin + tableWidth - (columnWidth / 2.0f)) {
                         contentStream.newLineAtOffset(columnWidth, 0);
-                    } else if (!cellData.equals(row.get(row.size() -1))) {
+                    } else if (!cellData.equals(row.getLast())) {
                         break;
                     }
                 }

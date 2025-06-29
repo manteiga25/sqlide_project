@@ -1,6 +1,9 @@
 package com.example.sqlide.Import;
 
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
+import javafx.beans.property.DoubleProperty;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -310,7 +313,7 @@ public class XmlImporter implements FileImporter {
 
 
     @Override
-    public String importData(File file, String sourceTableName, DataBase db, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
+    public String importData(File file, String sourceTableName, DatabaseInserterInterface inserter, final int buffer, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
         openFile(file); // Validate
         errors.clear();
         progress = 0.0;
@@ -359,6 +362,11 @@ public class XmlImporter implements FileImporter {
     @Override
     public double getImportProgress() {
         return progress;
+    }
+
+    @Override
+    public void setImportProprerty(DoubleProperty proprerty) {
+
     }
 
     @Override

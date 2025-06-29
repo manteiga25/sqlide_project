@@ -33,7 +33,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -301,18 +300,26 @@ public class TableInterface {
     private JFXButton createAdvButton() {
         JFXButton AdvancedSearch = new JFXButton("Advanced Search");
         AdvancedSearch.setOnAction(e->loadAdvancedWin("SELECT"));
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.DATABASE);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        AdvancedSearch.setGraphic(icon);
         return AdvancedSearch;
     }
 
     private JFXButton createCleanButton() {
         JFXButton CleanAdvancedSearch = new JFXButton("Clean Advanced Search");
         CleanAdvancedSearch.setOnAction(e-> resetAdvancedSearch());
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.REMOVE);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        CleanAdvancedSearch.setGraphic(icon);
         return CleanAdvancedSearch;
     }
 
     private JFXButton createChartButton() {
         JFXButton Chart = new JFXButton("Chart");
-        Chart.setOnAction(e-> loadChart());
+        Chart.setOnAction(e-> loadChart("", "", "", null));
         FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.BAR_CHART_ALT);
         icon.setSize("1.5em");
         icon.setFill(Color.WHITE);
@@ -540,6 +547,7 @@ public class TableInterface {
             secondaryController.setStage(subStage);
             if (command.equals("DELETE")) {
                 secondaryController.setSelector(" ");
+                secondaryController.removeOrder();
                 secondaryController.removeLeft();
             }
           //  secondaryController.initWin(ColumnsNames, subStage, this);
@@ -599,7 +607,7 @@ public class TableInterface {
         }
 
         try {
-            if (!Database.removeData(TableName.get(), rowids)) {
+            if (!Database.Inserter().removeData(TableName.get(), rowids)) {
                 ShowError("Error SQL", "Error to delete items.\n" + Database.GetException());
                 return;
             }
@@ -660,7 +668,7 @@ public class TableInterface {
         }
     }
 
-    private void loadChart() {
+    public void loadChart(final String title, final String x, final String y, final ArrayList<HashMap<String, String>> labels) {
         try {
             // Carrega o arquivo FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Chart/ChartStage.fxml"));
@@ -669,6 +677,10 @@ public class TableInterface {
 
             ChartController secondaryController = loader.getController();
             secondaryController.setAttributes(TableName.get(), getColumnsMetadataName(), Database);
+            secondaryController.setTitle(title);
+            secondaryController.setNumber(y);
+            secondaryController.setAxis(x);
+            if (labels != null) secondaryController.setLabels(labels);
 
             // Criar um novo Stage para a subjanela
             Stage subStage = new Stage();
@@ -993,12 +1005,12 @@ public class TableInterface {
     }
 
     private ArrayList<DataForDB> fetchData() {
-        return Database.fetchData(TableName.get(), ColumnsNames, PageNum.get()*Database.buffer, TablePrimeKey.get());
+        return Database.Fetcher().fetchData(TableName.get(), ColumnsNames, PageNum.get()*Database.buffer, TablePrimeKey.get());
     }
 
     private ArrayList<DataForDB> fetchData(final String code) {
 
-        ArrayList<DataForDB> dataFetched = Database.fetchData(code + " OFFSET " + PageNum.get()*Database.buffer, ColumnsFetched, TablePrimeKey.get());
+        ArrayList<DataForDB> dataFetched = Database.Fetcher().fetchData(code + " OFFSET " + PageNum.get()*Database.buffer, ColumnsFetched, TablePrimeKey.get());
 
         for (String co : ColumnsFetched) {
             System.out.println("sdfd " + co);
@@ -1015,7 +1027,7 @@ public class TableInterface {
 
     private int fetchData(final ArrayList<String> columns) {
 
-        ArrayList<DataForDB> dataFetched = Database.fetchData(TableName.get(), columns, PageNum.get()*Database.buffer, TablePrimeKey.get());
+        ArrayList<DataForDB> dataFetched = Database.Fetcher().fetchData(TableName.get(), columns, PageNum.get()*Database.buffer, TablePrimeKey.get());
 
         if (dataFetched == null || dataFetched.isEmpty()) {
             return -1;
@@ -1027,7 +1039,7 @@ public class TableInterface {
 
     public boolean insertData(HashMap<String, String> values) {
         System.out.println(values);
-        if (!Database.insertData(TableName.get(), values)) {
+        if (!Database.Inserter().insertData(TableName.get(), values)) {
             ShowError("SQL Error", "Error to insert data\n" + Database.GetException());
             return false;
         }
@@ -1043,8 +1055,9 @@ public class TableInterface {
             System.out.println("fgfsg " + column);
         }
         for (String key : TemporaryColumnsContainer.keySet()) {
-            tableContainer.getColumns().remove(TemporaryColumnsContainer.remove(key));
+            tableContainer.getColumns().remove(TemporaryColumnsContainer.get(key));
         }
+        TemporaryColumnsContainer.clear();
         for (TableColumn<DataForDB, ?> tableColumn : tableContainer.getColumns()) {
             tableColumn.setVisible(columns.contains(tableColumn.getId())); }
         }

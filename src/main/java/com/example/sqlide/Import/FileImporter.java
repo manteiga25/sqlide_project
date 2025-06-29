@@ -1,8 +1,14 @@
 package com.example.sqlide.Import;
 
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 
 import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -66,7 +72,7 @@ public interface FileImporter {
      * @throws IllegalArgumentException If sourceTableName or targetTableName is invalid, or if column mapping is problematic.
      * @throws java.sql.SQLException If a database error occurs during import.
      */
-    String importData(File file, String sourceTableName, DataBase db, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws java.io.IOException, IllegalArgumentException, java.sql.SQLException;
+    String importData(File file, String sourceTableName, DatabaseInserterInterface inserter, final int buffer, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws java.io.IOException, IllegalArgumentException, java.sql.SQLException;
 
     /**
      * Gets the current progress of the import operation (e.g., percentage complete).
@@ -75,6 +81,8 @@ public interface FileImporter {
      * @return A double value between 0.0 and 1.0 representing the progress, or -1 if progress is not determinate.
      */
     double getImportProgress();
+
+    void setImportProprerty(final DoubleProperty proprerty);
 
     /**
      * Retrieves a list of errors or warnings encountered during the last import operation.

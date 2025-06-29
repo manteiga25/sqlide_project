@@ -3,34 +3,40 @@ package com.example.sqlide.Console;
 import com.jfoenix.controls.JFXTextField;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 
 import java.awt.*;
 import java.io.*;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class SystemTerminalController {
 
-    private VBox container;
-    private JFXTextField currentField;
-    private Process shellProcess;
-    private BlockingQueue<String> commandQueue; // For sending commands to the shell
+    private final VBox container = new VBox();
 
-    private static final String FONT_FAMILY = "monospaced";
-    private static final int FONT_SIZE = 13; // Example size
+    private javafx.scene.control.TextField currentField = new TextField();
+    private Label currentLabel = new Label();
+    private HBox currentBox = new HBox();
+
+    private Process shellProcess;
+    private final BlockingQueue<String> commandQueue = new LinkedBlockingQueue<>(); // For sending commands to the shell
+
+    private boolean state = false;
+
+    private static final String FONT_FAMILY = "JetBrains Mono Medium";
+
+    private String ProcessName = "";
 
     public SystemTerminalController() {
-        container = new VBox(5); // Spacing between elements
-        container.setPadding(new Insets(10));
-        container.setStyle("-fx-background-color: #2C2C2C;");
-
-        commandQueue = new LinkedBlockingQueue<>();
-
-        // Initial input field
-        setupNewInputField();
+        container.setStyle("-fx-background-color: #1E1E1E;");
+        container.getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/Console/TextStyle.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm());
 
         launchShell();
 
@@ -38,8 +44,9 @@ public class SystemTerminalController {
             initializeInputReader();
             initializeErrorReader();
             initializeOutputWriter();
+            ProcessName = shellProcess.info().user().get() + ">";
         } else {
-            addLineToTerminal("Failed to start system shell.", true);
+            addErrorLine("Failed to start system shell.");
         }
     }
 
@@ -63,12 +70,12 @@ public class SystemTerminalController {
             }
             else {
           //      Logger.error("No suitable shell found for " + osName);
-                addLineToTerminal("No suitable shell found for " + osName, true);
+                addErrorLine("No suitable shell found for " + osName);
                 return;
             }
         } else {
             //Logger.error("Unsupported OS: " + osName);
-            addLineToTerminal("Unsupported OS: " + osName, true);
+            addErrorLine("Unsupported OS: " + osName);
             return;
         }
 
@@ -81,7 +88,7 @@ public class SystemTerminalController {
          //   Logger.error("Failed to start shell process: " + e.getMessage(), e);
             shellProcess = null; // Ensure it's null if failed
             // This will be caught by the check in constructor, or display message directly
-            Platform.runLater(() -> addLineToTerminal("Error launching shell: " + e.getMessage(), true));
+            Platform.runLater(() -> addErrorLine("Error launching shell: " + e.getMessage()));
         }
     }
 
@@ -101,14 +108,14 @@ public class SystemTerminalController {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     final String finalLine = line;
-                    Platform.runLater(() -> addLineToTerminal(finalLine, false));
+                    Platform.runLater(() -> addLine(finalLine));
                 }
             } catch (IOException e) {
                 if (!shellProcess.isAlive() && e.getMessage().contains("Stream closed")) {
             //        Logger.info("Shell process input stream closed as process ended.");
                 } else {
               //      Logger.error("Error reading shell input stream: " + e.getMessage(), e);
-                    Platform.runLater(() -> addLineToTerminal("Error reading shell output: " + e.getMessage(), true));
+                    Platform.runLater(() -> addErrorLine("Error reading shell output: " + e.getMessage()));
                 }
             } finally {
                 //Logger.info("Shell input reader thread finished.");
@@ -125,14 +132,14 @@ public class SystemTerminalController {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     final String finalLine = line;
-                    Platform.runLater(() -> addLineToTerminal(finalLine, true));
+                    Platform.runLater(() -> addErrorLine(finalLine));
                 }
             } catch (IOException e) {
                 if (!shellProcess.isAlive() && e.getMessage().contains("Stream closed")) {
               //      Logger.info("Shell process error stream closed as process ended.");
                 } else {
                 //    Logger.error("Error reading shell error stream: " + e.getMessage(), e);
-                    Platform.runLater(() -> addLineToTerminal("Error reading shell error: " + e.getMessage(), true));
+                    Platform.runLater(() -> addErrorLine("Error reading shell error: " + e.getMessage()));
                 }
             } finally {
                // Logger.info("Shell error reader thread finished.");
@@ -147,6 +154,7 @@ public class SystemTerminalController {
         Thread outputWriterThread = new Thread(() -> {
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(shellProcess.getOutputStream()))) {
                 while (shellProcess.isAlive()) {
+                    state = true;
                     String command = commandQueue.take(); // Blocks until a command is available
                     writer.write(command);
                     writer.newLine();
@@ -157,7 +165,7 @@ public class SystemTerminalController {
             //        Logger.info("Shell process output stream broken as process likely ended.");
                 } else {
               //      Logger.error("Error writing to shell output stream: " + e.getMessage(), e);
-                    Platform.runLater(() -> addLineToTerminal("Error writing to shell: " + e.getMessage(), true));
+                    Platform.runLater(() -> addErrorLine("Error writing to shell: " + e.getMessage()));
                 }
             } catch (InterruptedException e) {
                 //Logger.warning("SystemTerminal OutputWriter thread interrupted.", e);
@@ -171,111 +179,114 @@ public class SystemTerminalController {
         outputWriterThread.start();
     }
 
-    private void addLineToTerminal(String text, boolean isError) {
-        JFXTextField lineField = new JFXTextField(text);
-        lineField.setEditable(false);
-        lineField.setFont(Font.font(FONT_FAMILY, FONT_SIZE));
-        lineField.setStyle("-fx-background-color: transparent;"); // No background for output lines
-        if (isError) {
-         //   lineField.setTextFill(Color.RED);
+    private void addLine(final String line) {
+
+        currentField.setEditable(false);
+        //   currentLabel.setText("");
+        if (!state) {
+            container.getChildren().remove(currentBox);
         } else {
-           // lineField.setTextFill(Color.WHITE);
-        }
-        lineField.setDisableAnimation(true);
-
-
-        // If currentField is the last child, remove it before adding the new line and new input field
-        if (!container.getChildren().isEmpty() && container.getChildren().get(container.getChildren().size() - 1) == currentField) {
-            container.getChildren().remove(currentField);
-        }
-
-        container.getChildren().add(lineField);
-
-        // If the shell process is still alive, add a new input field.
-        // Otherwise, don't add a new one.
-        if (shellProcess != null && shellProcess.isAlive()) {
-            if (currentField != null && !currentField.isEditable()) { // If the current field was just made non-editable
-                setupNewInputField(); // Add new input field
-            } else if (currentField == null) { // Initial setup or if shell died and restarted (hypothetically)
-                setupNewInputField();
-            } else { // currentField is already there and active, add it back
-                if (!container.getChildren().contains(currentField)) {
-                    container.getChildren().add(currentField);
+            state = false;
+            final HBox box = new HBox(5);
+            final javafx.scene.control.TextField newLine = new javafx.scene.control.TextField();
+            newLine.setStyle("-fx-font-family: 'JetBrains Mono Medium';");
+            newLine.setOnAction(_-> {
+                try {
+                    commandQueue.put(newLine.getText());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
-                currentField.requestFocus();
-            }
-        } else {
-          //  Logger.info("Shell process is not alive. Not adding new input field.");
-            if (currentField != null) currentField.setEditable(false); // Disable last input field
+            });
+            HBox.setHgrow(newLine, Priority.ALWAYS);
+            currentField = newLine;
+
+            final javafx.scene.control.Label labelLine = new javafx.scene.control.Label(ProcessName);
+            currentLabel = labelLine;
+
+            box.getChildren().addAll(labelLine, newLine);
+
+            currentBox = box;
+            container.getChildren().add(box);
+            return;
         }
-    }
 
-    private void setupNewInputField() {
-        if (currentField != null) {
-            currentField.setEditable(false); // Make the previous field non-editable
-            // Optionally change style of previously entered command lines
-            currentField.setStyle("-fx-background-color: transparent; -fx-text-fill: #90EE90;"); // Light green for sent commands
-        }
+        final HBox box = new HBox(5);
 
-        JFXTextField newField = new JFXTextField();
-        newField.setFont(Font.font(FONT_FAMILY, FONT_SIZE));
-      //  newField.setTextFill(Color.WHITE);
-        newField.setPromptText(">"); // Simple prompt
-        newField.setStyle("-fx-background-color: transparent; -fx-prompt-text-fill: #888888;");
-        newField.setDisableAnimation(true);
+        final HBox tmp = new HBox(5);
 
-        newField.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                String command = newField.getText().trim();
-                if (!command.isEmpty()) {
-                    // Echo command - create a new non-editable field for the command text itself
-                    JFXTextField commandEchoField = new JFXTextField(newField.getPromptText() + command);
-                    commandEchoField.setEditable(false);
-                    commandEchoField.setFont(Font.font(FONT_FAMILY, FONT_SIZE));
-                    //commandEchoField.setTextFill(Color.LIGHTGREEN); // Color for echoed command
-                    commandEchoField.setStyle("-fx-background-color: transparent;");
-                    commandEchoField.setDisableAnimation(true);
+        final javafx.scene.control.TextField textLine = new javafx.scene.control.TextField(line);
+        textLine.setStyle("-fx-font-family: 'JetBrains Mono Medium';");
+        textLine.setEditable(false);
+        HBox.setHgrow(textLine, Priority.ALWAYS);
 
-                    // Remove the current input field (newField), add echo, then add a brand new input field
-                    if (container.getChildren().contains(newField)) {
-                        container.getChildren().remove(newField);
-                    }
-                    container.getChildren().add(commandEchoField);
+        tmp.getChildren().addAll(new javafx.scene.control.Label(), textLine);
 
-                    try {
-                        commandQueue.put(command);
-                    } catch (InterruptedException e) {
-                //        Logger.error("Failed to queue command: " + e.getMessage(), e);
-                        Thread.currentThread().interrupt();
-                    }
-                    // currentField is now the commandEchoField, which is non-editable.
-                    // A new input field will be set up by setupNewInputField called from addLineToTerminal,
-                    // or we call it directly here.
-                    currentField = commandEchoField; // update currentField to the echo, which is non-editable
-                    setupNewInputField(); // This will create the *next* input field
-                } else {
-                    // If the command is empty, just create a new prompt line essentially
-                    JFXTextField promptField = new JFXTextField(newField.getPromptText());
-                    promptField.setEditable(false);
-                    promptField.setFont(Font.font(FONT_FAMILY, FONT_SIZE));
-                 //   promptField.setTextFill(Color.WHITE);
-                    promptField.setStyle("-fx-background-color: transparent;");
-
-                    if (container.getChildren().contains(newField)) {
-                        container.getChildren().remove(newField);
-                    }
-                    container.getChildren().add(promptField);
-                    currentField = promptField;
-                    setupNewInputField();
-                }
+        final javafx.scene.control.TextField newLine = new javafx.scene.control.TextField();
+        newLine.setOnAction(_-> {
+            try {
+                commandQueue.put(newLine.getText());
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         });
+        HBox.setHgrow(newLine, Priority.ALWAYS);
+        currentField = newLine;
 
-        currentField = newField; // Update the reference to the current active field
-        if (!container.getChildren().contains(currentField)) {
-            container.getChildren().add(currentField);
-        }
-        currentField.requestFocus();
+        final javafx.scene.control.Label labelLine = new javafx.scene.control.Label(ProcessName);
+        labelLine.setStyle("-fx-font-family: 'JetBrains Mono Medium';");
+        currentLabel = labelLine;
+
+        box.getChildren().addAll(labelLine, newLine);
+
+        currentBox = box;
+
+        container.getChildren().addAll(tmp, box);
+
+    }
+
+    private void addErrorLine(final String line) {
+
+        System.out.println("er");
+
+        currentField.setEditable(false);
+        currentLabel.setText("");
+        container.getChildren().remove(currentBox);
+
+        final HBox box = new HBox(5);
+
+        final HBox tmp = new HBox(5);
+
+        final javafx.scene.control.TextField textLine = new javafx.scene.control.TextField(line);
+        textLine.setEditable(false);
+        textLine.setStyle("-fx-text-fill: red; -fx-font-family: 'JetBrains Mono Medium';");
+        HBox.setHgrow(textLine, Priority.ALWAYS);
+
+        tmp.getChildren().addAll(new javafx.scene.control.Label(), textLine);
+
+        final javafx.scene.control.TextField newLine = new javafx.scene.control.TextField();
+        HBox.setHgrow(newLine, Priority.ALWAYS);
+        newLine.setOnAction(_-> {
+            try {
+                commandQueue.put(newLine.getText());
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        currentField = newLine;
+
+        final javafx.scene.control.Label labelLine = new Label(ProcessName);
+        labelLine.setStyle("-fx-font-family: 'JetBrains Mono Medium';");
+        currentLabel = labelLine;
+
+        box.getChildren().addAll(labelLine, newLine);
+
+        VBox.setVgrow(box, Priority.ALWAYS);
+        VBox.setVgrow(tmp, Priority.ALWAYS);
+
+        currentBox = box;
+
+        container.getChildren().addAll(tmp, box);
+
     }
 
 }

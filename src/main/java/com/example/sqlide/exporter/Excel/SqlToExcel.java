@@ -29,7 +29,7 @@ public class SqlToExcel {
     }
 
     public void createWorkbook(final int buffer) {
-        workbook = new SXSSFWorkbook(buffer); // Mantém 100 linhas em memória
+        workbook = new SXSSFWorkbook(buffer);
     }
 
     public void createSheet(String sheetName, ArrayList<String> columns) {
@@ -100,6 +100,24 @@ public class SqlToExcel {
         try {
             if (workbook != null) {
                 workbook.write(out); // Escreve os dados no stream
+                workbook.close(); // Fecha o workbook primeiro
+            }
+            if (out != null) {
+                out.flush(); // Libera qualquer buffer pendente
+                out.close(); // Fecha o stream após o workbook
+            }
+        } catch (IOException e) {
+            MsgException = "Erro ao salvar: " + e.getMessage();
+        } finally {
+            if (workbook != null) {
+                workbook.dispose(); // Limpa recursos temporários
+            }
+        }
+    }
+
+    public void close() {
+        try {
+            if (workbook != null) {
                 workbook.close(); // Fecha o workbook primeiro
             }
             if (out != null) {

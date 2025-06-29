@@ -4,6 +4,7 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater.CellFormater;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
 import javafx.beans.property.StringProperty;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.TextFieldTableCell;
@@ -15,7 +16,7 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public abstract class StringFieldCell {
 
-    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DataBase Database, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, final CellFormater format) {
+    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, final CellFormater format) {
         ColumnCellType.setCellFactory(TextFieldTableCell.forTableColumn());
        /* ColumnCellType.setCellFactory(new Callback<TableColumn<DataForDB, String>, TableCell<DataForDB, String>>() {
             @Override
@@ -102,10 +103,10 @@ public abstract class StringFieldCell {
             System.out.println("hi");
             if (!Objects.equals(newValue, e.getOldValue())) {
                 final DataForDB item = e.getRowValue();
-                if (!Database.types.checkValue(Metadata.Type, newValue, Metadata.size, !Metadata.NOT_NULL)) {
-                    ShowError("Error SQL", "Error to update data\n" + Database.types.getException());
+              /*  if (!Updater.types.checkValue(Metadata.Type, newValue, Metadata.size, !Metadata.NOT_NULL)) {
+                    ShowError("Error SQL", "Error to update data\n" + Updater.types.getException());
                     return;
-                }
+                } */
                 //  System.out.println("prime " + ColumnPrimaryKey.get(TableName).getFirst());
                 //   Object valueFormated = formatValue(newValue);
                 //  System.out.println("é inteiro " + (valueFormated instanceof Long));
@@ -113,8 +114,8 @@ public abstract class StringFieldCell {
                 final String[] indexStr = new String[1];
                 indexStr[0] = item.GetData("ROWID");
                 //   final long index = indexStr != null ? Long.parseLong(indexStr) : 0;
-                if (!Database.updateData(TableName.get(), Metadata.Name, newValue, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
-                    ShowError("Error SQL", "Error to update data\n" + Database.GetException());
+                if (!Updater.updateData(TableName.get(), Metadata.Name, newValue, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
+                    ShowError("Error SQL", "Error to update data\n" + Updater.getException());
                     return;
                 }
                 item.SetData("ROWID", indexStr[0]); // workaround for postgreSQL

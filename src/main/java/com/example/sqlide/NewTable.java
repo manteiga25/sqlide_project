@@ -84,6 +84,8 @@ public class NewTable {
 
       //  context.executeCode();
 
+
+
         if (ref.createDBTable(TableName, TempBox.isSelected(), RowIDBox.isSelected(), columnsMetadata)) {
             closeWindow();
          //   ref.createDBColContainer(TableName, new ColumnMetadata(false, false, null, false, null, 0, "INTEGER", "id", false, 0, 0));

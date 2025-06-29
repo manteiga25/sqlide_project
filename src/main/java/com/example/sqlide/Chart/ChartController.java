@@ -68,6 +68,18 @@ public class ChartController {
 
    private ContextMenu menu;
 
+   public void setTitle(final String title) {
+       titleField.setText(title);
+   }
+
+    public void setAxis(final String title) {
+        categoryField.setText(title);
+    }
+
+    public void setNumber(final String title) {
+        numberField.setText(title);
+    }
+
    public void setAttributes(final String table, final ArrayList<String> columns, final DataBase db) {
        this.table = table;
        this.columns = columns;
@@ -106,13 +118,13 @@ public class ChartController {
 
         LabelList.setItems(labelMap);
 
-        titleField.setOnKeyReleased(_->{
+        titleField.textProperty().addListener(_->{
             setChartTitle(titleField.getText());
         });
-        categoryField.setOnKeyReleased(_->{
+        categoryField.textProperty().addListener(_->{
             setCategoryTitle(categoryField.getText());
         });
-        numberField.setOnKeyReleased(_->{
+        numberField.textProperty().addListener(_->{
             setNumberTitle(numberField.getText());
         });
 
@@ -121,7 +133,7 @@ public class ChartController {
                 if (change.wasAdded()) {
                     for (Label lbl : change.getAddedSubList()) {
                         String novaCategoria = lbl.Name.get();
-                        lbl.Query.set(lbl.Query.get()+" FROM " + table + ";");
+                        if (!lbl.Query.get().contains("FROM")) lbl.Query.set(lbl.Query.get()+" FROM " + table + ";");
                         addLabelCategory(novaCategoria);
                         searchStage.add(null);
                         controllers.add(null);
@@ -454,7 +466,9 @@ public class ChartController {
                     secondaryController.setTable(table);
                     secondaryController.removeLeft();
                     secondaryController.setColumns(col);
-                    secondaryController.setSelectedColumn(labelMap.get(val).Func.get() + "(" + labelMap.get(val).Column.get() + ")");
+               //     secondaryController.setSelectedColumn(labelMap.get(val).Func.get() + "(" + labelMap.get(val).Column.get() + ")");
+                    secondaryController.setSelectedColumn(labelMap.get(val).Query.get());
+                    secondaryController.setQuery(labelMap.get(val).Query.get());
                     secondaryController.setStage(subStage);
                     //  secondaryController.initWin(ColumnsNames, subStage, this);
 
@@ -541,19 +555,22 @@ public class ChartController {
 
     }
 
-    private XYChart.Series<Long, Long> convertSeries(XYChart.Series<String, Long> originalSeries) {
-        XYChart.Series<Long, Long> newSeries = new XYChart.Series<>();
+    private XYChart.Series<Double, Double> convertSeries(XYChart.Series<String, Double> originalSeries) {
+        XYChart.Series<Double, Double> newSeries = new XYChart.Series<>();
         newSeries.setName(originalSeries.getName()); // Mantém o nome da série
 
-        for (XYChart.Data<String, Long> data : originalSeries.getData()) {
+        for (XYChart.Data<String, Double> data : originalSeries.getData()) {
             try {
-                // Converte o valor X de String para Long
-                Long xValue = Long.parseLong(data.getXValue());
-                Long yValue = data.getYValue();
+                // Converte o valor X de String para Double
+                Double xValue = Double.parseDouble(data.getXValue());
+                Double yValue = data.getYValue();
 
                 newSeries.getData().add(new XYChart.Data<>(xValue, yValue));
             } catch (NumberFormatException e) {
                 System.err.println("Erro na conversão: " + data.getXValue() + " não é um número válido");
+                Double xValue = (double) 0;
+                Double yValue = data.getYValue();
+                newSeries.getData().add(new XYChart.Data<>(xValue, yValue));
                 // Opções alternativas:
                 // 1. Usar um valor padrão como 0L
                 // 2. Ignorar o ponto de dados
@@ -567,27 +584,19 @@ public class ChartController {
     private void setData() {
         final ArrayList<Label> LabelCopy = new ArrayList<>(labelMap);
 
-        //    Iterator<Label> LabelIterator = LabelCopy.iterator();
-
         while (!LabelCopy.isEmpty()) {
-            // final Label label = LabelIterator.next();
             Label label = LabelCopy.getFirst();
-            XYChart.Series<String, Long> series = new XYChart.Series<String, Long>();
+            XYChart.Series<String, Double> series = new XYChart.Series<String, Double>();
             series.setName(label.Func.get() + " of " + label.Name.get());
-            // final ArrayList<Long> data = db.fetchDataMap(label.Query.get());
 
             final List<Label> reduced = labelMap.stream().filter(lab -> lab.Name.get().equals(label.Name.get())).toList();
-            // series.getData().add(new XYChart.Data<String, Long>(label.Name.get(), data.getFirst()));
 
             for (final Label subLabel : reduced) {
-                final ArrayList<Long> subData = db.fetchDataMap(subLabel.Query.get());
-                //    series.getData().add(new XYChart.Data<String, Long>(label.Category.get(), subData.getFirst()));
-                series.getData().add(new XYChart.Data<String, Long>(subLabel.Category.get(), subData.getFirst()));
+                final ArrayList<Double> subData = db.Fetcher().fetchDataMap(subLabel.Query.get());
+                series.getData().add(new XYChart.Data<String, Double>(subLabel.Category.get(), subData.getFirst()));
             }
 
             LabelCopy.removeAll(reduced);
-
-            //  System.out.println(data);
 
 
             Platform.runLater(()->setData(series));
@@ -599,10 +608,16 @@ public class ChartController {
         final ObservableList<PieChart.Data> Data = FXCollections.observableArrayList();
 
         for (final Label label : labelMap) {
-            final ArrayList<Long> subData = db.fetchDataMap(label.Query.get());
+            final ArrayList<Double> subData = db.Fetcher().fetchDataMap(label.Query.get());
             Data.add(new PieChart.Data(label.Category.get(), subData.getFirst()));
         }
         Platform.runLater(()->setData(Data));
+    }
+
+    public void setLabels(final ArrayList<HashMap<String, String>> labels) {
+        for (final HashMap<String, String> label : labels) {
+            labelMap.add(new Label(label));
+        }
     }
 
     static class Label {
@@ -614,6 +629,14 @@ public class ChartController {
             this.Category.set(Category);
             this.Query.set(Query);
             this.Column.set(Column);
+        }
+
+        public Label(final HashMap<String, String> label) {
+            this.Func.set(label.get("func"));
+            this.Name.set(label.get("group"));
+            this.Category.set(label.get("category"));
+            this.Query.set(label.get("query"));
+            this.Column.set(label.get("column"));
         }
 
         @Override

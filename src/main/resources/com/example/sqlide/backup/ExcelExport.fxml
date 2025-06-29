@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
+<?import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView?>
 <AnchorPane prefHeight="316.0" prefWidth="582.0" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.exporter.Excel.excelController">
       <Label alignment="CENTER" contentDisplay="CENTER" layoutY="14.0" prefHeight="37.0" prefWidth="600.0" text="Export to Excel" textAlignment="CENTER" textFill="#e8e8e8">
          <font>
@@ -12,7 +13,11 @@
          </font>
       </Label>
       <Label layoutX="47.0" layoutY="148.0" prefHeight="27.0" prefWidth="40.0" text="Path:" textFill="WHITE" />
-      <JFXButton fx:id="folderButton" layoutX="420.0" layoutY="147.0" mnemonicParsing="false" onAction="#openWindow" prefHeight="27.0" prefWidth="28.0" textFill="WHITE" />
+      <JFXButton layoutX="420.0" layoutY="147.0" mnemonicParsing="false" onAction="#openWindow" prefHeight="27.0" prefWidth="28.0" textFill="WHITE" >
+    <graphic>
+        <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
+    </graphic>
+      </JFXButton>
       <Label layoutX="40.0" layoutY="110.0" text="Database:" textFill="#fcfcfc" />
       <JFXTextField fx:id="PathBox" layoutX="92.0" layoutY="143.0" prefHeight="25.0" prefWidth="325.0" promptText="C/...." style="-fx-text-fill: white;" unFocusColor="#3574f0" />
       <JFXButton layoutX="536.0" layoutY="277.0" mnemonicParsing="false" onAction="#createBackup" style="-fx-background-color: #3574f0;" text="Export" textFill="WHITE" />

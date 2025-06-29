@@ -1,17 +1,28 @@
 package com.example.sqlide.TriggerLayout;
 
 import com.example.sqlide.Configuration.DatabaseConf;
+import com.example.sqlide.Container.Editor.TextAreaAutocomplete;
+import com.example.sqlide.Container.Editor.Words.SQLWords;
 import com.example.sqlide.Container.loading.loadingController;
+import com.example.sqlide.Container.loading.loadingInterface;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.exporter.JSON.JSONController;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import javafx.application.Platform;
 import javafx.beans.property.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -19,7 +30,10 @@ import org.controlsfx.control.CheckComboBox;
 
 import java.io.*;
 import java.nio.file.Path;
+import java.sql.Array;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -28,21 +42,20 @@ import java.util.regex.Pattern;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static java.nio.file.Files.exists;
 
-public class TriggerController {
+public class TriggerController implements loadingInterface {
 
     @FXML
-    TextField ScriptPath;
+    private VBox container;
 
     @FXML
-    Button search;
+    private ChoiceBox<String> comboTrigger;
+    @FXML
+    private TextField ScriptPath;
 
     @FXML
-    AnchorPane container;
+    private CheckComboBox<String> triggersSelected;
 
-    @FXML
-    CheckComboBox<String> triggersSelected;
-
-    private HashMap<String, String> triggersFound;
+    private final ObservableMap<String, String> triggersFound = FXCollections.observableHashMap();
 
     private BooleanProperty TaskState = new SimpleBooleanProperty(true);
 
@@ -50,10 +63,30 @@ public class TriggerController {
 
     private Stage stage;
 
+    private final TextAreaAutocomplete codeArea = new TextAreaAutocomplete();
+
     public void initTriggerController(DataBase db, Stage subStage) {
         this.db = db;
         this.stage = subStage;
-        TaskState.addListener((observable -> cancelTask()));
+        TaskState.addListener((_ -> cancelTask()));
+        codeArea.setAutoCompleteWords(new ArrayList<>(List.of(SQLWords.getWords(db.getSQLType().ordinal()))));
+    }
+
+    @FXML
+    private void initialize() {
+        comboTrigger.setItems(triggersSelected.getCheckModel().getCheckedItems());
+        comboTrigger.getSelectionModel().selectedItemProperty().addListener((_,_, value)->{
+            codeArea.textProperty().removeListener(_->{});
+            codeArea.setText(triggersFound.get(value));
+            codeArea.textProperty().addListener((_,_, text)->triggersFound.put(value, text));
+        });
+        VBox.setVgrow(codeArea, Priority.ALWAYS);
+        container.getChildren().add(4, codeArea);
+    }
+
+    public void addTrigger(final HashMap<String, String> triggers) {
+        triggersFound.putAll(triggers);
+        triggersSelected.getItems().addAll(triggersFound.keySet());
     }
 
     @FXML
@@ -114,7 +147,7 @@ public class TriggerController {
             subStage.setTitle("Loading");
             subStage.setScene(new Scene(root));
             subStage.setResizable(false);
-            secondaryController.setAttr(progressRef, "Importing Triggers", subStage, TaskState);
+            secondaryController.setAttr(progressRef, "Importing Triggers", subStage, this);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -135,7 +168,6 @@ public class TriggerController {
             ShowError("Error file", "File do not exists.");
             return;
         }
-        triggersFound = new HashMap<>();
         File file = new File(ScriptPath.getText());
         try (BufferedReader buffer = new BufferedReader(new FileReader(file))) { // Try-with-resources
             String line;
@@ -187,11 +219,13 @@ public class TriggerController {
                 }
             }
 
-            triggersSelected.getItems().clear(); // limpa a listview antes de adicionar novos itens
+          //  triggersSelected.getItems().clear();
 
-            for (final String name : triggersFound.keySet()) {
+          /*  for (final String name : triggersFound.keySet()) {
                 triggersSelected.getItems().add(name);
-            }
+            } */
+
+            triggersSelected.getItems().addAll(triggersFound.keySet());
 
         } catch (IOException e) {
             ShowError("Error", "Error to perform read.\n" + e.getMessage());
@@ -205,5 +239,35 @@ public class TriggerController {
     }
 
     public void cancelTask() {
+    }
+
+    @FXML
+    private void addTrigger() {
+        try {
+            // Carrega o arquivo FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("addTrigger.fxml"));
+            Parent root = loader.load();
+
+            AddTrigger secondaryController = loader.getController();
+
+            // Criar um novo Stage para a subjanela
+            Stage subStage = new Stage();
+            subStage.setTitle("Add Trigger");
+            subStage.setScene(new Scene(root));
+            secondaryController.setNames(triggersFound);
+            secondaryController.setStage(subStage);
+
+            // Opcional: definir a modalidade da subjanela
+            subStage.initModality(Modality.APPLICATION_MODAL);
+
+            // Mostrar a subjanela
+            subStage.showAndWait();
+
+            triggersSelected.getItems().clear();
+            triggersSelected.getItems().addAll(triggersFound.keySet());
+
+        } catch (Exception e) {
+            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+        }
     }
 }

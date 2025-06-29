@@ -3,6 +3,7 @@ package com.example.sqlide.exporter.Excel;
 import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
+import com.example.sqlide.Container.loading.loadingInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.CSV.SqlToCSV;
 import com.example.sqlide.popupWindow.Notification;
@@ -42,22 +43,19 @@ import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
 import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class excelController {
-
-    @FXML
-    private Button folderButton;
+public class excelController implements loadingInterface {
 
     @FXML
     private JFXCheckBox MetaBox;
 
     @FXML
-    TextField PathBox, nameOfFolder;
+    private TextField PathBox, nameOfFolder;
 
-    Stage stage;
+    private Stage stage;
 
-    DataBase db;
+    private DataBase db;
 
-    private final BooleanProperty TaskState = new SimpleBooleanProperty(true);
+    private Thread writer, fetcher;
 
     private final DoubleProperty progress = new SimpleDoubleProperty(0);
 
@@ -75,26 +73,6 @@ public class excelController {
     private Stage loadingStage;
 
     private Stage advancedFetcherstage;
-
-    @FXML
-    public void initialize() {
-
-         // "D:\\SQLIDE\\sqlide\\src\\main\\resources\\com\\example\\sqlide\\images\\folder.png"
-
-        final String imagePath = getClass().getResource("/com/example/sqlide/images/folder.png").getPath();
-
-        // Cria um objeto File a partir do caminho
-        File imageFile = new File(imagePath);
-
-        // Converte o caminho do arquivo para uma URL
-        String imageUrl = imageFile.toURI().toString();
-
-        ImageView view = new ImageView(imageUrl);
-        view.setFitHeight(17);
-        view.setPreserveRatio(true);
-        folderButton.setPadding(Insets.EMPTY);
-        folderButton.setGraphic(view);
-    }
 
     @FXML
     public void openWindow() {
@@ -149,7 +127,6 @@ public class excelController {
     public void initExcelController(final DataBase db, final Stage stage) {
         this.db = db;
         this.stage = stage;
-        TaskState.addListener((observable -> cancelTask()));
         try {
             writeSem.acquire();
         } catch (InterruptedException _) {
@@ -199,27 +176,21 @@ public class excelController {
         path = removeDot(path);
 
         final String finalPath = path;
-        new Thread(()->{
+        setLoadingStage();
+        Thread.ofVirtual().start(()->{
             boolean state = false;
             final SqlToExcel excel = new SqlToExcel();
             try {
 
                 excel.createFile(finalPath + ".xlsx");
 
-                Platform.runLater(this::setLoadingStage);
-
                 final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
-
 
                 excel.createWorkbook(db.buffer * 10);
 
                 prepareWork(excel, tables, db);
 
                 state = true;
-
-              //  if (!excel.Save()) {
-                //    System.out.println("error1 " + excel.GetException());
-                //}
 
              //   PrepareSingle(excel, tables, cursor);
             } catch (InterruptedException e) {
@@ -228,11 +199,18 @@ public class excelController {
                 throw new RuntimeException(e);
             } finally {
               //  excel.close();
-                excel.saveAndClose();
                 final boolean finalState = state;
+                if (state) {
+                    excel.saveAndClose();
+                } else excel.close();
+
                 Platform.runLater(()->{
                     loadingStage.close();
-                    createNot(finalState);
+                    try {
+                        createNot(finalState);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 });
             }
 
@@ -242,7 +220,7 @@ public class excelController {
 
     }
 
-    private void createNot(final boolean state) {
+    private void createNot(final boolean state) throws IOException {
 
         Action function = new Action("open", event->{
             if (Desktop.isDesktopSupported()) {
@@ -266,9 +244,9 @@ public class excelController {
         function.setStyle("-fx-background-color: #3574f0; -fx-text-fill: white");
 
         if (state) {
-            Notification.showSuccessNotification("Excel Success", "Success to export Excel", function);
+            Notification.showSuccessNotification(db.getDatabaseName()+"-xlsx", "Excel Success", "Success to export Excel", function);
         } else {
-            Notification.showErrorNotification("Excel Error", "Error to export Excel");
+            Notification.showErrorNotification(db.getDatabaseName()+"-xlsx", "Excel Error", "Error to export Excel");
         }
 
     }
@@ -287,7 +265,7 @@ public class excelController {
                 excel.createSheet(sheetName, columns);
                 //    excel.createColumns(columns, sheetName);
 
-                final Thread writer = new Thread(() -> {
+                writer = new Thread(() -> {
                     while (!Thread.currentThread().isInterrupted()) {
                         try {
                             writeSem.acquire();
@@ -306,10 +284,10 @@ public class excelController {
                     }
                 });
 
-                final Thread fetcher = new Thread(() -> {
+                fetcher = new Thread(() -> {
                     long offset = 0;
                     while (true) {
-                        final ArrayList<ArrayList<Object>> dataCopy = cursor.fetchDataBackupObject(query, columns, buffer, offset);
+                        final ArrayList<ArrayList<Object>> dataCopy = cursor.Fetcher().fetchDataBackupObject(query, columns, buffer, offset);
                         if (dataCopy == null || dataCopy.isEmpty()) {
                             //  writer.interrupt();
                             break;
@@ -357,36 +335,6 @@ public class excelController {
         excel.writeData(ArrayMeta);
     }
 
-    private void PrepareSingle(final SqlToExcel excel, final ArrayList<String> tables, final DataBase cursor) {
-        final Thread th = new Thread(()->{
-            for (final String sheetName : tables) {
-            //    excel.createSheet(sheetName);
-                final ArrayList<String> columns = cursor.getColumnsName(sheetName);
-              //  excel.createColumns(columns, sheetName);
-                addData(sheetName, columns, excel, cursor);
-           //     excel.closeSheet(sheetName);
-            }
-
-            //flushTask.start();
-        });
-        th.start();
-        try {
-            th.join();
-        } catch (InterruptedException _) {
-        }
-    }
-
-    private void addData(final String sheetName, final ArrayList<String> columns, final SqlToExcel excel, final DataBase cursor) {
-        long offset = 0;
-        final long buffer = cursor.buffer * 10L;
-        ArrayList<ArrayList<Object>> data = cursor.fetchDataBackupObject(sheetName, columns, buffer, offset);
-        while (data != null && !data.isEmpty()) {
-           // excel.writeData(data, sheetName);
-            offset += buffer;
-            data = cursor.fetchDataBackupObject(sheetName, columns, buffer, offset);
-        }
-    }
-
     private void setLoadingStage() {
         try {
             // Carrega o arquivo FXML
@@ -402,7 +350,7 @@ public class excelController {
             subStage.initOwner(stage);
             subStage.setResizable(false);
             subStage.setScene(new Scene(root));
-            secondaryController.setAttr(progress, "Exporting Excel", stage, TaskState);
+            secondaryController.setAttr(progress, "Exporting Excel", stage, this);
 
             subStage.initModality(Modality.NONE);
 
@@ -427,6 +375,12 @@ public class excelController {
     }
 
     public void cancelTask() {
+        writer.interrupt();
+        fetcher.interrupt();
+    }
 
+    @Override
+    public void close() {
+        cancelTask();
     }
 }

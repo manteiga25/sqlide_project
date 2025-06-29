@@ -104,7 +104,7 @@
                <children>
                   <JFXButton mnemonicParsing="false" onAction="#addConditionRow" text="Add condition" textFill="#f5f5f5" />
                   <JFXButton mnemonicParsing="false" onAction="#addConditionGroup" text="Add group condition" textFill="#fcfcfc" />
-                  <JFXButton mnemonicParsing="false" onAction="#openOrdenateStage" text="Ordenate" textFill="#f2f2f2" />
+                  <JFXButton fx:id="ordenateButton" mnemonicParsing="false" onAction="#openOrdenateStage" text="Ordenate" textFill="#f2f2f2" />
                   <Label text="Query:" textFill="#f2f2f2">
                      <font>
                         <Font name="Arial" size="12.0" />
