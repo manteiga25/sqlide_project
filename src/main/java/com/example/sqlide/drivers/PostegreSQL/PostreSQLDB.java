@@ -12,10 +12,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class PostreSQLDB extends DataBase {
 
@@ -735,6 +732,11 @@ public class PostreSQLDB extends DataBase {
         @Override
         public boolean removeData(String Table, HashMap<String, String> data, HashMap<String, String> prime) {
             return false;
+        }
+
+        @Override
+        public void createTable(String tableName, List<String> columnDefinitions, List<String> primaryKeyColumns) throws SQLException {
+
         }
 
         @Override

@@ -918,6 +918,182 @@ public class TableInterface {
         }
     }
 
+    private ColumnInterface getColumnInterfaceByName(String name) {
+        for (ColumnInterface ci : columnsInterfaceList) {
+            if (ci.getMetadata().Name.equals(name)) {
+                return ci;
+            }
+        }
+        return null;
+    }
+
+    public void alterColumnMetadata(ColumnMetadata oldMetadata, ColumnMetadata newMetadata) {
+        final String tableName = TableName.get();
+        boolean overallSuccess = true;
+        String errorMessage = "";
+        String originalOldName = oldMetadata.Name; // Keep for UI lookup even if name changes mid-process
+
+        // --- PSEUDO-CODE for Database Operations ---
+        // IMPORTANT: The actual implementation of these Database.* calls is complex
+        // and would involve detailed SQL generation and error handling per database type.
+        // For SQLite, many of these would trigger a full table rebuild.
+
+        String currentColumnNameInDB = oldMetadata.Name;
+
+        // 1. Type Change (and size/precision)
+        if (!oldMetadata.Type.equals(newMetadata.Type) ||
+                oldMetadata.size != newMetadata.size ||
+                oldMetadata.integerDigits != newMetadata.integerDigits ||
+                oldMetadata.decimalDigits != newMetadata.decimalDigits) {
+            // In a real scenario, might need to drop FKs/Indexes before type change
+            // and re-add them after. Assuming Database driver handles some of this.
+            // if (!Database.changeColumnType(tableName, currentColumnNameInDB, newMetadata.Type, newMetadata.size, newMetadata.integerDigits, newMetadata.decimalDigits)) {
+            //     overallSuccess = false; errorMessage = "Failed to change column type: " + Database.GetException();
+            // }
+            System.out.println("Simulating: Change type for " + currentColumnNameInDB + " to " + newMetadata.Type);
+        }
+
+        // 2. Rename Column
+        if (overallSuccess && !oldMetadata.Name.equals(newMetadata.Name)) {
+            // if (!Database.renameColumn(tableName, currentColumnNameInDB, newMetadata.Name)) {
+            //     overallSuccess = false; errorMessage = "Failed to rename column: " + Database.GetException();
+            // } else {
+            //     currentColumnNameInDB = newMetadata.Name; // Name in DB has changed
+            // }
+            System.out.println("Simulating: Rename column " + currentColumnNameInDB + " to " + newMetadata.Name);
+            currentColumnNameInDB = newMetadata.Name; // Assume success for simulation
+        }
+
+        // 3. NOT NULL Constraint
+        if (overallSuccess && oldMetadata.NOT_NULL != newMetadata.NOT_NULL) {
+            // if (newMetadata.NOT_NULL) {
+            //     if (!Database.addNotNullConstraint(tableName, currentColumnNameInDB)) { /* handle error */ }
+            // } else {
+            //     if (!Database.dropNotNullConstraint(tableName, currentColumnNameInDB)) { /* handle error */ }
+            // }
+            System.out.println("Simulating: Set NOT NULL to " + newMetadata.NOT_NULL + " for " + currentColumnNameInDB);
+        }
+
+        // 4. Default Value
+        if (overallSuccess && !Objects.equals(oldMetadata.defaultValue, newMetadata.defaultValue)) {
+            // if (newMetadata.defaultValue != null && !newMetadata.defaultValue.isEmpty()) {
+            //    if(!Database.setDefaultValue(tableName, currentColumnNameInDB, newMetadata.defaultValue)) { /* error */ }
+            // } else {
+            //    if(!Database.dropDefaultValue(tableName, currentColumnNameInDB)) { /* error */ }
+            // }
+            System.out.println("Simulating: Set DEFAULT to '" + newMetadata.defaultValue + "' for " + currentColumnNameInDB);
+        }
+
+        // 5. Primary Key (very simplified - actual PK changes are complex)
+        if (overallSuccess && oldMetadata.IsPrimaryKey != newMetadata.IsPrimaryKey) {
+            // Dropping/Adding PKs can be very involved, potentially requiring dropping dependent FKs.
+            // String pkName = "PK_" + tableName + "_" + currentColumnNameInDB;
+            // if (newMetadata.IsPrimaryKey) { if(!Database.addPrimaryKey(tableName, currentColumnNameInDB, pkName)) { /* error */ } }
+            // else { if(!Database.dropPrimaryKey(tableName, pkName)) { /* error */ } } // Dropping old PK
+            System.out.println("Simulating: Set IsPrimaryKey to " + newMetadata.IsPrimaryKey + " for " + currentColumnNameInDB);
+        }
+
+        // 6. Unique Constraint
+        if (overallSuccess && oldMetadata.isUnique != newMetadata.isUnique) {
+            // String uniqueConstraintName = "UQ_" + tableName + "_" + currentColumnNameInDB;
+            // if (newMetadata.isUnique) { if(!Database.addUniqueConstraint(tableName, currentColumnNameInDB, uniqueConstraintName)) { /*error*/ }}
+            // else { if(!Database.dropUniqueConstraint(tableName, "UQ_" + tableName + "_" + oldMetadata.Name /* Use old name for old constraint */ )) { /*error*/ }}
+            System.out.println("Simulating: Set isUnique to " + newMetadata.isUnique + " for " + currentColumnNameInDB);
+        }
+
+        // 7. Foreign Key (Highly simplified)
+        ColumnMetadata.Foreign oldFk = oldMetadata.foreign;
+        ColumnMetadata.Foreign newFk = newMetadata.foreign;
+        if (overallSuccess && (oldFk.isForeign != newFk.isForeign || !Objects.equals(oldFk.tableRef, newFk.tableRef) /* etc. */)) {
+            // String fkName = "FK_" + tableName + "_" + currentColumnNameInDB;
+            // if (oldFk.isForeign) { /* Database.dropForeignKeyConstraint(...) */ }
+            // if (newFk.isForeign) { /* Database.addForeignKeyConstraint(...) */ }
+            System.out.println("Simulating: Update Foreign Key for " + currentColumnNameInDB);
+        }
+
+        // 8. Index
+        if (overallSuccess && !Objects.equals(oldMetadata.index, newMetadata.index) || !Objects.equals(oldMetadata.indexType, newMetadata.indexType)) {
+            // if (oldMetadata.index != null && !oldMetadata.index.isEmpty()) { /* Database.removeIndex(oldMetadata.index) */ }
+            // if (newMetadata.index != null && !newMetadata.index.isEmpty()) { /* Database.createIndex(tableName, currentColumnNameInDB, newMetadata.index, newMetadata.indexType) */ }
+            System.out.println("Simulating: Update Index for " + currentColumnNameInDB);
+        }
+
+        // 9. Check Constraint
+        if (overallSuccess && !Objects.equals(oldMetadata.check, newMetadata.check)) {
+            // String chkName = "CHK_" + tableName + "_" + currentColumnNameInDB;
+            // if (oldMetadata.check != null && !oldMetadata.check.isEmpty()) { /* Database.dropCheckConstraint(...) */ }
+            // if (newMetadata.check != null && !newMetadata.check.isEmpty()) { /* Database.addCheckConstraint(...) */ }
+            System.out.println("Simulating: Update Check constraint for " + currentColumnNameInDB);
+        }
+
+        // 10. Comment
+        if (overallSuccess && !Objects.equals(oldMetadata.comment, newMetadata.comment)) {
+            // if(!Database.setColumnComment(tableName, currentColumnNameInDB, newMetadata.comment)) { /* error */ }
+            System.out.println("Simulating: Set comment for " + currentColumnNameInDB);
+        }
+
+
+        // --- Actual UI Refresh Logic ---
+        if (overallSuccess) {
+            ColumnInterface ci = getColumnInterfaceByName(originalOldName); // Find by the original old name
+            if (ci != null) {
+                // Update the metadata object within ColumnInterface
+                ci.getMetadata().NOT_NULL = newMetadata.NOT_NULL;
+                ci.getMetadata().IsPrimaryKey = newMetadata.IsPrimaryKey;
+                ci.getMetadata().defaultValue = newMetadata.defaultValue;
+                ci.getMetadata().Type = newMetadata.Type;
+                ci.getMetadata().Name = newMetadata.Name; // Update name last before creating new UI column
+                ci.getMetadata().size = newMetadata.size;
+                ci.getMetadata().isUnique = newMetadata.isUnique;
+                ci.getMetadata().index = newMetadata.index;
+                ci.getMetadata().integerDigits = newMetadata.integerDigits;
+                ci.getMetadata().decimalDigits = newMetadata.decimalDigits;
+                ci.getMetadata().items = newMetadata.items;
+                ci.getMetadata().indexType = newMetadata.indexType;
+                ci.getMetadata().aliasType = newMetadata.aliasType;
+                ci.getMetadata().foreign = newMetadata.foreign;
+                ci.getMetadata().check = newMetadata.check;
+                ci.getMetadata().autoincrement = newMetadata.autoincrement;
+                ci.getMetadata().comment = newMetadata.comment;
+
+                // Remove the old JavaFX TableColumn
+                final String finalOriginalOldName = originalOldName;
+                tableContainer.getColumns().removeIf(tc -> tc.getId().equals(finalOriginalOldName));
+
+                // Add a new TableColumn created with the updated metadata
+                // This ensures that any visual changes in the header (name, icons) are reflected.
+                TableColumn<DataForDB, String> newFXColumn = ci.createDBColContainer(TableName);
+                tableContainer.getColumns().add(newFXColumn); // Consider order if it matters
+
+                // If name changed, update internal lists and data maps
+                if (!originalOldName.equals(newMetadata.Name)) {
+                    ColumnsNames.remove(originalOldName);
+                    ColumnsNames.add(newMetadata.Name);
+                    for (DataForDB d : dataList) {
+                        d.RenameColumn(originalOldName, newMetadata.Name);
+                    }
+                    if (TablePrimeKey.get().equals(originalOldName)) {
+                        TablePrimeKey.set(newMetadata.Name);
+                    }
+                } else {
+                    // If only PK status changed for example, the TablePrimeKey might need update
+                    if (newMetadata.IsPrimaryKey && !TablePrimeKey.get().equals(newMetadata.Name)) {
+                        TablePrimeKey.set(newMetadata.Name);
+                    } else if (!newMetadata.IsPrimaryKey && TablePrimeKey.get().equals(newMetadata.Name)) {
+                        TablePrimeKey.set(""); // Or re-evaluate if another PK exists
+                    }
+                }
+            }
+            tableContainer.refresh(); // Refresh the whole table view
+            ShowInformation("Success", "Column metadata updated (simulated). UI refreshed.");
+        } else {
+            ShowError("Error updating column", errorMessage + " (Simulated DB operation failed)");
+            // Best effort to refresh from DB to reflect actual state if some operations failed
+            // This would involve re-fetching schema and data. For now, just an error.
+            // prepareFetch(); // This would reload data and schema
+        }
+    }
+
     private void prepareCodeFetch(final String code) {
 
         if (!isFetching.get()) {

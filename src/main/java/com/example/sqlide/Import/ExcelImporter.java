@@ -177,17 +177,7 @@ public class ExcelImporter implements FileImporter {
         errors.clear();
         progress.set(0);
 
-        // TODO: Implement actual data insertion into DataBase
-        // Similar to CSVImporter:
-        // 1. Get sheet by sourceTableName.
-        // 2. Get headers from sheet.
-        // 3. If createNewTable: determine column types, create table.
-        // 4. Prepare INSERT SQL.
-        // 5. Iterate through rows (skip header row).
-        //    - For each cell in a row, map to target column.
-        //    - Convert cell data (DataFormatter helps).
-        //    - Add to batch.
-        //    - Update progress.
+        System.out.println("target " + columnMapping);
 
         long totalRowsProcessed = 0;
         try (FileInputStream fis = new FileInputStream(file);
@@ -207,10 +197,8 @@ public class ExcelImporter implements FileImporter {
             for (Row row : sheet) {
                 // Skip header, assuming it's the first row if getColumnHeaders found some
                 if (row.getRowNum() == 0 && !getColumnHeaders(file, sourceTableName).isEmpty()) continue;
-                final HashMap<String, String> map = new HashMap<>();
-                for (int cellIndex = 0; cellIndex < headers.size(); cellIndex++) {map.put(headers.get(cellIndex), getCellValue(row.getCell(cellIndex)));
-
-                }
+                //  for (int cellIndex = 0; cellIndex < headers.size(); cellIndex++) {map.put(headers.get(cellIndex), getCellValue(row.getCell(cellIndex)));
+                final HashMap<String, String> map = new HashMap<>(columnMapping);
                 data.add(map);
                 totalRowsProcessed++;
                 if (counter == buffer) {

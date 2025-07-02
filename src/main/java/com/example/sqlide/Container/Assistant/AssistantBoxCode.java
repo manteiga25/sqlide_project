@@ -151,7 +151,7 @@ public class AssistantBoxCode extends Pane {
       //  copy.setOnMouseExited(e -> copy.setStyle("-fx-background-color: #2A2A2A; -fx-background-radius: 4px; -fx-padding: 4 8 4 8;"));
 
         copy.setOnAction(e-> {
-            ClipBoard.CopyToBoard(code);
+            ClipBoard.CopyToBoard(codeContent);
             // Feedback visual temporário
           //  copy.setText("copied!");
           //  copy.setStyle("-fx-background-color: #2E7D32; -fx-background-radius: 4px; -fx-padding: 4 8 4 8;");

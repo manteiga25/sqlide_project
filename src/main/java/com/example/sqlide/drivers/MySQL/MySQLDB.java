@@ -356,6 +356,11 @@ public class MySQLDB extends DataBase {
         }
 
         @Override
+        public void createTable(String tableName, List<String> columnDefinitions, List<String> primaryKeyColumns) throws SQLException {
+
+        }
+
+        @Override
         public String getException() {
             return GetException();
         }

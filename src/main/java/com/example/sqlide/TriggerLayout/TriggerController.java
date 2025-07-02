@@ -57,8 +57,6 @@ public class TriggerController implements loadingInterface {
 
     private final ObservableMap<String, String> triggersFound = FXCollections.observableHashMap();
 
-    private BooleanProperty TaskState = new SimpleBooleanProperty(true);
-
     private DataBase db;
 
     private Stage stage;
@@ -68,7 +66,6 @@ public class TriggerController implements loadingInterface {
     public void initTriggerController(DataBase db, Stage subStage) {
         this.db = db;
         this.stage = subStage;
-        TaskState.addListener((_ -> cancelTask()));
         codeArea.setAutoCompleteWords(new ArrayList<>(List.of(SQLWords.getWords(db.getSQLType().ordinal()))));
     }
 

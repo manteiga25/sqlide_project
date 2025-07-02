@@ -45,6 +45,7 @@ public class NewColumn {
     private String TableName, DBName;
 
     private HashMap<String, ArrayList<String>> KeysForForeign;
+    private ColumnMetadata originalMetadata;
 
     private SQLiteTypes types;
 
@@ -462,7 +463,14 @@ public class NewColumn {
        // ref.createDBCol(colName, typeBox.getValue(),"0", IsPrimeKey);
         if (Edit) {
           //  ref.AlterFBCol(meta);
-            newTable.EditColumnCallBack(meta);
+           // newTable.EditColumnCallBack(meta);
+            if (this.originalMetadata != null && ref instanceof TableInterface) {
+                ((TableInterface)ref).alterColumnMetadata(this.originalMetadata, meta);
+            } else {
+                // Fallback or error if originalMetadata is null or ref is not TableInterface
+                // This might happen if NewColumn is used in a context not anticipated for editing existing columns.
+                ShowError("Callback Error", "Could not alter column. Original metadata or table reference not found.");
+            }
         } else {
             if (newTable != null) {
                 newTable.PutColumnCallback(meta);
@@ -477,6 +485,7 @@ public class NewColumn {
 
     public void insertMetadata(final ColumnMetadata metadata) {
         Edit = true;
+        this.originalMetadata = metadata;
         ColumnNameInput.setText(metadata.Name);
         System.out.println(1);
         typeBox.setValue(metadata.Type);
