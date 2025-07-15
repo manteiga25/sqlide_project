@@ -138,7 +138,7 @@ public class ColumnInterface {
             tableView.refresh();
             // subStage.show();
         } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            ShowError("Read asset", "Error to load asset file", e.getMessage());
         }
     }
 
@@ -198,28 +198,28 @@ public class ColumnInterface {
             ColumnContainer.setText(Metadata.Name);
         }
         if (Metadata.items != null && Metadata.Type.equals("ENUM")) {
-            EnumFieldCell.createColumn(ColumnContainer, Database.Updater(), Metadata, tablePrimeKey, TableName, format);
+            EnumFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
         else if (Metadata.items != null && Metadata.Type.equals("SET")) {
-            SetFieldCell.createColumn(ColumnContainer, Database.Updater(), Metadata, tablePrimeKey, TableName, format);
+            SetFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
         else if (Metadata.Type.equals("DATE")) {
-            DateFieldCell.createColumn(ColumnContainer, Database.Updater(), Metadata, tablePrimeKey, TableName, format);
+            DateFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
         else if (Metadata.Type.equals("DATETIME") || Metadata.Type.equals("TIMESTAMP")) {
-            DateTimeFieldCell.createColumn(ColumnContainer, Database.Updater(), Metadata, tablePrimeKey, TableName, format);
+            DateTimeFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
         else if (Metadata.Type.equals("CIRCLE")) {
-            CircleFieldCell.createColumn(ColumnContainer, Database.Updater(), Metadata, tablePrimeKey, TableName, format);
+            CircleFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
         else if (Metadata.Type.equals("BOX")) {
-            BoxFieldCell.createColumn(ColumnContainer, Database.Updater(), Metadata, tablePrimeKey, TableName, format);
+            BoxFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
         else if (Metadata.Type.equals("POINT")) {
-            PointFieldCell.createColumn(ColumnContainer, Database.Updater(), Metadata, tablePrimeKey, TableName, format);
+            PointFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
         else {
-            StringFieldCell.createColumn(ColumnContainer, Database.Updater(), Metadata, tablePrimeKey, TableName, format);
+            StringFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
 
         ColumnContainer.setCellValueFactory(cellData -> {

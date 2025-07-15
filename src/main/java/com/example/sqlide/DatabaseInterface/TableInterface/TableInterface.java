@@ -5,6 +5,7 @@ import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.Chart.ChartController;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.ColumnInterface;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
+import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.DeleteColumn;
 import com.example.sqlide.misc.ClipBoard;
@@ -16,6 +17,7 @@ import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -170,16 +172,23 @@ public class TableInterface {
           //      prepareCodeFetch(codeSQL);
            // }
         });
-        Platform.runLater(this::createDatabaseTab);
+        //Platform.runLater(this::createDatabaseTab);
+        Platform.runLater(()-> {
+            try {
+                createDatabaseTab();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public void createRowId() {
         for (DataForDB d : dataList) {
-            d.AddColumn("ROWID", null);
+            d.AddColumn(Database.getRowId(), null);
         }
     }
 
-    private void createDatabaseTab() {
+    private void createDatabaseTab() throws SQLException {
         Tab newTab = new Tab(TableName.get());
         newTab.setId(TableName.get());
         newTab.setClosable(false);
@@ -192,15 +201,15 @@ public class TableInterface {
         HBox ButtonsLine = new HBox(8);
         // searchBox.setStyle("-fx-border-color: black; -fx-border-radius: 50;");
 
-        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvDelButton(), createAdvButton(), createCleanButton(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode(), createChartButton());
+        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvDelButton(), createAdvButton(), createCleanButton(), createViewBox(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode(), createChartButton());
 
         ScrollPane buttonsScroll = new ScrollPane();
         buttonsScroll.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm());
         //  buttonsScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
-        buttonsScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        buttonsScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         buttonsScroll.setContent(ButtonsLine);
 
-        tableContainer = new TableView<DataForDB>();
+        tableContainer = new TableView<>();
         tableContainer.setId(TableName.get());
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
         //  tableContainer.setPrefHeight(1280);
@@ -211,7 +220,7 @@ public class TableInterface {
             if (cntrlC.match(e)) {
                 new Thread(()->{
                     StringBuilder copy = new StringBuilder();
-                    for (final TablePosition tablePosition : tableContainer.getSelectionModel().getSelectedCells()) {
+                    for (final TablePosition<?,?> tablePosition : tableContainer.getSelectionModel().getSelectedCells()) {
                         copy.append(tablePosition.getTableColumn().getCellObservableValue(tablePosition.getRow()).getValue().toString()).append("\n");
                     }
                     ClipBoard.CopyToBoard(copy.toString());
@@ -223,7 +232,6 @@ public class TableInterface {
         newTab.setContent(tableContainer);
 
         HBox ContainerPrev = new HBox(10);
-         ContainerPrev.setPrefHeight(20);
         ContainerPrev.setAlignment(Pos.CENTER);
         VBox.setVgrow(ContainerPrev, Priority.NEVER);
 
@@ -317,6 +325,20 @@ public class TableInterface {
         return CleanAdvancedSearch;
     }
 
+    private ComboBox<ViewController.View> createViewBox() throws SQLException {
+        final ArrayList<ViewController.View> views = Database.getViews(TableName.get());
+        ComboBox<ViewController.View> viewBox = new ComboBox<>();
+        viewBox.setPromptText("select view...");
+        viewBox.getItems().addAll(views);
+        viewBox.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ComboboxModern.css")).toExternalForm());
+        viewBox.setStyle("-fx-background-radius: 5px; -fx-border-radius: 5px;");
+        viewBox.getSelectionModel().selectedItemProperty().addListener((_,_,value)->{
+            codeField.setText(value.code.get());
+            AdvancedSearchButton.fire();
+        });
+        return viewBox;
+    }
+
     private JFXButton createChartButton() {
         JFXButton Chart = new JFXButton("Chart");
         Chart.setOnAction(e-> loadChart("", "", "", null));
@@ -358,7 +380,7 @@ public class TableInterface {
     private Hyperlink createPreviou(final Font courierNewFontBold36) {
         Hyperlink previou = new Hyperlink("Previou");
      //   previou.setPrefWidth(100);
-        previou.setPrefHeight(100);
+       // previou.setPrefHeight(100);
         previou.setFont(courierNewFontBold36);
         previou.setFocusTraversable(false);
         previou.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Hyper.css")).toExternalForm());
@@ -374,7 +396,7 @@ public class TableInterface {
     private Hyperlink createNext(final Font courierNewFontBold36) {
         Hyperlink next = new Hyperlink("Next");
    //     next.setPrefWidth(100);
-        next.setPrefHeight(100);
+      //  next.setPrefHeight(100);
         next.setFont(courierNewFontBold36);
         next.setFocusTraversable(false);
         next.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Hyper.css")).toExternalForm());
@@ -408,6 +430,7 @@ public class TableInterface {
         codeField.setText("SELECT * FROM " + TableName.get() + ";" );
         codeField.setPromptText("select code...");
         codeField.setPrefWidth(300);
+        codeField.setOnAction(_->AdvancedSearchButton.fire());
         return codeField;
     }
 
@@ -426,11 +449,11 @@ public class TableInterface {
 
       //  AdvancedSearchButton.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Button.css")).toExternalForm());
         AdvancedSearchButton.setOnAction(e->{
-            final Thread advanced = new Thread(()-> {
+           // final Thread advanced = new Thread(()-> {
                 String rawCode = codeField.getText();
                 if (rawCode != null && !rawCode.isEmpty()) {
                     if (rawCode.toLowerCase().contains("select")) {
-                        if (rawCode.contains(" " + TableName.get() + " ") || rawCode.contains(" " + TableName.get() + ";")) {
+                        if (rawCode.contains(" " + TableName.get()) || rawCode.contains(" " + TableName.get() + ";")) {
                             if (!rawCode.toLowerCase().contains("limit") || !rawCode.toLowerCase().contains("offset")) {
                                 if (!isFetching.get()) {
                                     isFetching.set(true);
@@ -485,11 +508,9 @@ public class TableInterface {
 
                                     final String finalCondition = condition;
 
+                                    hideColumns(ColumnsFetched);
 
-
-                                    Platform.runLater(() -> hideColumns(ColumnsFetched));
-
-                                    Platform.runLater(this::createTemporaryColumn);
+                                    createTemporaryColumn();
 
                                     setTotalPages(ColumnsFetched, finalCondition);
 
@@ -508,9 +529,9 @@ public class TableInterface {
                 } else {
                     ShowInformation("Invalid syntaxe", "You need to write command to fetch.");
                 }
-            });
-            advanced.setDaemon(true);
-            advanced.start();
+          //  });
+           // advanced.setDaemon(true);
+           // advanced.start();
         });
         return AdvancedSearchButton;
     }
@@ -599,7 +620,7 @@ public class TableInterface {
         if (selectedRows == null || selectedRows.isEmpty()) {
             return;
         }
-        final String columnKey = !TablePrimeKey.get().isEmpty() ? TablePrimeKey.get() : "ROWID";
+        final String columnKey = !TablePrimeKey.get().isEmpty() ? TablePrimeKey.get() : Database.getRowId();
         ArrayList<String> rowids = new ArrayList<>();
         for (final DataForDB row : selectedRows) {
             System.out.println("rrrr " + row.GetData(columnKey));
@@ -676,7 +697,7 @@ public class TableInterface {
             Parent root = loader.load();
 
             ChartController secondaryController = loader.getController();
-            secondaryController.setAttributes(TableName.get(), getColumnsMetadataName(), Database);
+            secondaryController.setAttributes(TableName.get(), getColumnsMetadataName(), Database.Fetcher());
             secondaryController.setTitle(title);
             secondaryController.setNumber(y);
             secondaryController.setAxis(x);
@@ -873,6 +894,8 @@ public class TableInterface {
 
     private void prepareFetch() {
 
+        Task<Void> fetch = null;
+
         if (!isFetching.get()) {
 
             isFetching.set(true);
@@ -880,41 +903,47 @@ public class TableInterface {
             final AtomicReference<Stage> loading = new AtomicReference<>();
             Platform.runLater(()->loading.set(LoadingStage("Loading data", "You can continue to use application")));
 
-            fetcherThread = new Thread(() -> {
-
+            fetch = new Task<>() {
                 ArrayList<DataForDB> data;
 
-                if (advancedSearch) {
-              //      fetched = fetchData(advancedSearchColumns);
-                    data = fetchData(codeSQL);
-                } else {
-                    data = fetchData();
+                @Override
+                protected Void call() throws Exception {
+                    data = advancedSearch ? fetchData(codeSQL) : fetchData();
+                    if (data == null) throw new Exception(Database.GetException());
+                    return null;
                 }
 
-                if (data != null) {
-                    if (!fetcherThread.isInterrupted()) {
-                        Platform.runLater(()-> {
-                            putData(data);
-                            pageLabel.setText(PageNum.get() + ":" + totalPages);
-                        });
-                    }
-                    } else {
-                    ShowError("Error", "Error to fetch data.\n" + Database.GetException());
+                @Override
+                protected void succeeded() {
+                    super.succeeded();
+                    putData(data);
                 }
 
-                Platform.runLater(()->loading.get().close());
+                @Override
+                protected void failed() {
+                    super.failed();
+                    ShowError("Error", "Error to fetch data.", getException().getMessage());
+                }
 
-                isFetching.set(false);
+                @Override
+                protected void done() {
+                    super.done();
+                    isFetching.set(false);
+                    Platform.runLater(()->{
+                        pageLabel.setText(PageNum.get() + ":" + totalPages);
+                        loading.get().close();
+                    });
+                }
+            };
 
-                System.out.println("Executando em uma thread separada! ");
-                System.out.println("Page "+ PageNum.get());
-                System.out.println(Database.buffer);
-            });
+            fetcherThread = new Thread(fetch);
             fetcherThread.setDaemon(true);
             fetcherThread.start();
+           // fetcherThread.interrupt();
+         //   fetch.cancel(true);
         } else {
-            fetcherThread.interrupt();
-            System.out.println("ocupado");
+            fetch.cancel(true);
+           // fetcherThread.interrupt();
         }
     }
 
@@ -929,168 +958,176 @@ public class TableInterface {
 
     public void alterColumnMetadata(ColumnMetadata oldMetadata, ColumnMetadata newMetadata) {
         final String tableName = TableName.get();
-        boolean overallSuccess = true;
         String errorMessage = "";
         String originalOldName = oldMetadata.Name; // Keep for UI lookup even if name changes mid-process
+        try {
+            final boolean mode = Database.getCommitMode();
+            if (mode) Database.changeCommitMode(false);
 
-        // --- PSEUDO-CODE for Database Operations ---
-        // IMPORTANT: The actual implementation of these Database.* calls is complex
-        // and would involve detailed SQL generation and error handling per database type.
-        // For SQLite, many of these would trigger a full table rebuild.
+            // --- PSEUDO-CODE for Database Operations ---
+            // IMPORTANT: The actual implementation of these Database.* calls is complex
+            // and would involve detailed SQL generation and error handling per database type.
+            // For SQLite, many of these would trigger a full table rebuild.
 
-        String currentColumnNameInDB = oldMetadata.Name;
+            String currentColumnNameInDB = oldMetadata.Name;
 
-        // 1. Type Change (and size/precision)
-        if (!oldMetadata.Type.equals(newMetadata.Type) ||
-                oldMetadata.size != newMetadata.size ||
-                oldMetadata.integerDigits != newMetadata.integerDigits ||
-                oldMetadata.decimalDigits != newMetadata.decimalDigits) {
-            // In a real scenario, might need to drop FKs/Indexes before type change
-            // and re-add them after. Assuming Database driver handles some of this.
-            // if (!Database.changeColumnType(tableName, currentColumnNameInDB, newMetadata.Type, newMetadata.size, newMetadata.integerDigits, newMetadata.decimalDigits)) {
-            //     overallSuccess = false; errorMessage = "Failed to change column type: " + Database.GetException();
-            // }
-            System.out.println("Simulating: Change type for " + currentColumnNameInDB + " to " + newMetadata.Type);
-        }
+            // 1. Type Change (and size/precision)
+            if (!oldMetadata.Type.equals(newMetadata.Type) ||
+                    oldMetadata.size != newMetadata.size ||
+                    oldMetadata.integerDigits != newMetadata.integerDigits ||
+                    oldMetadata.decimalDigits != newMetadata.decimalDigits ||
+                    oldMetadata.NOT_NULL != newMetadata.NOT_NULL) {
+                // In a real scenario, might need to drop FKs/Indexes before type change
+                // and re-add them after. Assuming Database driver handles some of this.
+                // if (!Database.changeColumnType(tableName, currentColumnNameInDB, newMetadata.Type, newMetadata.size, newMetadata.integerDigits, newMetadata.decimalDigits)) {
+                //     overallSuccess = false; errorMessage = "Failed to change column type: " + Database.GetException();
+                // }
+                System.out.println("Simulating: Change type for " + currentColumnNameInDB + " to " + newMetadata.Type);
+                String buildType = newMetadata.Type;
+                if (Arrays.stream(Database.getListChars())
+                        .anyMatch(s -> s.equals(newMetadata.Type))) {
+                    buildType = newMetadata.Type + "(" + newMetadata.size  + ")";
+                }
+                else if (newMetadata.Type.equals("DECIMAL")) {
+                    buildType = newMetadata.Type + "(" + newMetadata.integerDigits + ", " + newMetadata.decimalDigits + ") ";
+                }
+                buildType += " " + (newMetadata.NOT_NULL ? "NOT NULL" : "NULL");
+                if (!Database.AlterTypeColumn(TableName.get(), newMetadata.Name, buildType)) throw new SQLException(Database.GetException());
+            }
 
-        // 2. Rename Column
-        if (overallSuccess && !oldMetadata.Name.equals(newMetadata.Name)) {
-            // if (!Database.renameColumn(tableName, currentColumnNameInDB, newMetadata.Name)) {
-            //     overallSuccess = false; errorMessage = "Failed to rename column: " + Database.GetException();
-            // } else {
-            //     currentColumnNameInDB = newMetadata.Name; // Name in DB has changed
-            // }
-            System.out.println("Simulating: Rename column " + currentColumnNameInDB + " to " + newMetadata.Name);
-            currentColumnNameInDB = newMetadata.Name; // Assume success for simulation
-        }
+            // 2. Rename Column
+            if (!oldMetadata.Name.equals(newMetadata.Name)) {
+                // if (!Database.renameColumn(tableName, currentColumnNameInDB, newMetadata.Name)) {
+                //     overallSuccess = false; errorMessage = "Failed to rename column: " + Database.GetException();
+                // } else {
+                //     currentColumnNameInDB = newMetadata.Name; // Name in DB has changed
+                // }
+                System.out.println("Simulating: Rename column " + currentColumnNameInDB + " to " + newMetadata.Name);
 
-        // 3. NOT NULL Constraint
-        if (overallSuccess && oldMetadata.NOT_NULL != newMetadata.NOT_NULL) {
-            // if (newMetadata.NOT_NULL) {
-            //     if (!Database.addNotNullConstraint(tableName, currentColumnNameInDB)) { /* handle error */ }
-            // } else {
-            //     if (!Database.dropNotNullConstraint(tableName, currentColumnNameInDB)) { /* handle error */ }
-            // }
-            System.out.println("Simulating: Set NOT NULL to " + newMetadata.NOT_NULL + " for " + currentColumnNameInDB);
-        }
+                Database.renameColumn(tableName, oldMetadata.Name, newMetadata.Name);
 
-        // 4. Default Value
-        if (overallSuccess && !Objects.equals(oldMetadata.defaultValue, newMetadata.defaultValue)) {
-            // if (newMetadata.defaultValue != null && !newMetadata.defaultValue.isEmpty()) {
-            //    if(!Database.setDefaultValue(tableName, currentColumnNameInDB, newMetadata.defaultValue)) { /* error */ }
-            // } else {
-            //    if(!Database.dropDefaultValue(tableName, currentColumnNameInDB)) { /* error */ }
-            // }
-            System.out.println("Simulating: Set DEFAULT to '" + newMetadata.defaultValue + "' for " + currentColumnNameInDB);
-        }
+                currentColumnNameInDB = newMetadata.Name; // Assume success for simulation
+            }
 
-        // 5. Primary Key (very simplified - actual PK changes are complex)
-        if (overallSuccess && oldMetadata.IsPrimaryKey != newMetadata.IsPrimaryKey) {
-            // Dropping/Adding PKs can be very involved, potentially requiring dropping dependent FKs.
-            // String pkName = "PK_" + tableName + "_" + currentColumnNameInDB;
-            // if (newMetadata.IsPrimaryKey) { if(!Database.addPrimaryKey(tableName, currentColumnNameInDB, pkName)) { /* error */ } }
-            // else { if(!Database.dropPrimaryKey(tableName, pkName)) { /* error */ } } // Dropping old PK
-            System.out.println("Simulating: Set IsPrimaryKey to " + newMetadata.IsPrimaryKey + " for " + currentColumnNameInDB);
-        }
+            // 4. Default Value
+            if (!Objects.equals(oldMetadata.defaultValue, newMetadata.defaultValue)) {
+                // if (newMetadata.defaultValue != null && !newMetadata.defaultValue.isEmpty()) {
+                //    if(!Database.setDefaultValue(tableName, currentColumnNameInDB, newMetadata.defaultValue)) { /* error */ }
+                // } else {
+                //    if(!Database.dropDefaultValue(tableName, currentColumnNameInDB)) { /* error */ }
+                // }
+                System.out.println("Simulating: Set DEFAULT to '" + newMetadata.defaultValue + "' for " + currentColumnNameInDB);
+                if (!Database.AlterDefaultValue(TableName.get(), newMetadata.Name, newMetadata.defaultValue)) throw new SQLException(Database.GetException());
+            }
 
-        // 6. Unique Constraint
-        if (overallSuccess && oldMetadata.isUnique != newMetadata.isUnique) {
-            // String uniqueConstraintName = "UQ_" + tableName + "_" + currentColumnNameInDB;
-            // if (newMetadata.isUnique) { if(!Database.addUniqueConstraint(tableName, currentColumnNameInDB, uniqueConstraintName)) { /*error*/ }}
-            // else { if(!Database.dropUniqueConstraint(tableName, "UQ_" + tableName + "_" + oldMetadata.Name /* Use old name for old constraint */ )) { /*error*/ }}
-            System.out.println("Simulating: Set isUnique to " + newMetadata.isUnique + " for " + currentColumnNameInDB);
-        }
+            // 5. Primary Key (very simplified - actual PK changes are complex)
+            if (oldMetadata.IsPrimaryKey != newMetadata.IsPrimaryKey) {
+                // Dropping/Adding PKs can be very involved, potentially requiring dropping dependent FKs.
+                // String pkName = "PK_" + tableName + "_" + currentColumnNameInDB;
+                // if (newMetadata.IsPrimaryKey) { if(!Database.addPrimaryKey(tableName, currentColumnNameInDB, pkName)) { /* error */ } }
+                // else { if(!Database.dropPrimaryKey(tableName, pkName)) { /* error */ } } // Dropping old PK
+                System.out.println("Simulating: Set IsPrimaryKey to " + newMetadata.IsPrimaryKey + " for " + currentColumnNameInDB);
+            }
 
-        // 7. Foreign Key (Highly simplified)
-        ColumnMetadata.Foreign oldFk = oldMetadata.foreign;
-        ColumnMetadata.Foreign newFk = newMetadata.foreign;
-        if (overallSuccess && (oldFk.isForeign != newFk.isForeign || !Objects.equals(oldFk.tableRef, newFk.tableRef) /* etc. */)) {
-            // String fkName = "FK_" + tableName + "_" + currentColumnNameInDB;
-            // if (oldFk.isForeign) { /* Database.dropForeignKeyConstraint(...) */ }
-            // if (newFk.isForeign) { /* Database.addForeignKeyConstraint(...) */ }
-            System.out.println("Simulating: Update Foreign Key for " + currentColumnNameInDB);
-        }
+            // 6. Unique Constraint
+            if (oldMetadata.isUnique != newMetadata.isUnique) {
+                // String uniqueConstraintName = "UQ_" + tableName + "_" + currentColumnNameInDB;
+                // if (newMetadata.isUnique) { if(!Database.addUniqueConstraint(tableName, currentColumnNameInDB, uniqueConstraintName)) { /*error*/ }}
+                // else { if(!Database.dropUniqueConstraint(tableName, "UQ_" + tableName + "_" + oldMetadata.Name /* Use old name for old constraint */ )) { /*error*/ }}
+                System.out.println("Simulating: Set isUnique to " + newMetadata.isUnique + " for " + currentColumnNameInDB);
+            }
 
-        // 8. Index
-        if (overallSuccess && !Objects.equals(oldMetadata.index, newMetadata.index) || !Objects.equals(oldMetadata.indexType, newMetadata.indexType)) {
-            // if (oldMetadata.index != null && !oldMetadata.index.isEmpty()) { /* Database.removeIndex(oldMetadata.index) */ }
-            // if (newMetadata.index != null && !newMetadata.index.isEmpty()) { /* Database.createIndex(tableName, currentColumnNameInDB, newMetadata.index, newMetadata.indexType) */ }
-            System.out.println("Simulating: Update Index for " + currentColumnNameInDB);
-        }
+            // 7. Foreign Key (Highly simplified)
+            ColumnMetadata.Foreign oldFk = oldMetadata.foreign;
+            ColumnMetadata.Foreign newFk = newMetadata.foreign;
+            if ((oldFk.isForeign != newFk.isForeign || !Objects.equals(oldFk.tableRef, newFk.tableRef) /* etc. */)) {
+                // String fkName = "FK_" + tableName + "_" + currentColumnNameInDB;
+                // if (oldFk.isForeign) { /* Database.dropForeignKeyConstraint(...) */ }
+                // if (newFk.isForeign) { /* Database.addForeignKeyConstraint(...) */ }
+                System.out.println("Simulating: Update Foreign Key for " + currentColumnNameInDB);
+            }
 
-        // 9. Check Constraint
-        if (overallSuccess && !Objects.equals(oldMetadata.check, newMetadata.check)) {
-            // String chkName = "CHK_" + tableName + "_" + currentColumnNameInDB;
-            // if (oldMetadata.check != null && !oldMetadata.check.isEmpty()) { /* Database.dropCheckConstraint(...) */ }
-            // if (newMetadata.check != null && !newMetadata.check.isEmpty()) { /* Database.addCheckConstraint(...) */ }
-            System.out.println("Simulating: Update Check constraint for " + currentColumnNameInDB);
-        }
+            // 8. Index
+            if (!Objects.equals(oldMetadata.index, newMetadata.index) || !Objects.equals(oldMetadata.indexType, newMetadata.indexType)) {
+                // if (oldMetadata.index != null && !oldMetadata.index.isEmpty()) { /* Database.removeIndex(oldMetadata.index) */ }
+                // if (newMetadata.index != null && !newMetadata.index.isEmpty()) { /* Database.createIndex(tableName, currentColumnNameInDB, newMetadata.index, newMetadata.indexType) */ }
+                System.out.println("Simulating: Update Index for " + currentColumnNameInDB);
+            }
 
-        // 10. Comment
-        if (overallSuccess && !Objects.equals(oldMetadata.comment, newMetadata.comment)) {
-            // if(!Database.setColumnComment(tableName, currentColumnNameInDB, newMetadata.comment)) { /* error */ }
-            System.out.println("Simulating: Set comment for " + currentColumnNameInDB);
-        }
+            // 9. Check Constraint
+            if (!Objects.equals(oldMetadata.check, newMetadata.check)) {
+                // String chkName = "CHK_" + tableName + "_" + currentColumnNameInDB;
+                // if (oldMetadata.check != null && !oldMetadata.check.isEmpty()) { /* Database.dropCheckConstraint(...) */ }
+                // if (newMetadata.check != null && !newMetadata.check.isEmpty()) { /* Database.addCheckConstraint(...) */ }
+                System.out.println("Simulating: Update Check constraint for " + currentColumnNameInDB);
+            }
+
+            // 10. Comment
+            if (!Objects.equals(oldMetadata.comment, newMetadata.comment)) {
+                // if(!Database.setColumnComment(tableName, currentColumnNameInDB, newMetadata.comment)) { /* error */ }
+                System.out.println("Simulating: Set comment for " + currentColumnNameInDB);
+            }
 
 
-        // --- Actual UI Refresh Logic ---
-        if (overallSuccess) {
-            ColumnInterface ci = getColumnInterfaceByName(originalOldName); // Find by the original old name
-            if (ci != null) {
-                // Update the metadata object within ColumnInterface
-                ci.getMetadata().NOT_NULL = newMetadata.NOT_NULL;
-                ci.getMetadata().IsPrimaryKey = newMetadata.IsPrimaryKey;
-                ci.getMetadata().defaultValue = newMetadata.defaultValue;
-                ci.getMetadata().Type = newMetadata.Type;
-                ci.getMetadata().Name = newMetadata.Name; // Update name last before creating new UI column
-                ci.getMetadata().size = newMetadata.size;
-                ci.getMetadata().isUnique = newMetadata.isUnique;
-                ci.getMetadata().index = newMetadata.index;
-                ci.getMetadata().integerDigits = newMetadata.integerDigits;
-                ci.getMetadata().decimalDigits = newMetadata.decimalDigits;
-                ci.getMetadata().items = newMetadata.items;
-                ci.getMetadata().indexType = newMetadata.indexType;
-                ci.getMetadata().aliasType = newMetadata.aliasType;
-                ci.getMetadata().foreign = newMetadata.foreign;
-                ci.getMetadata().check = newMetadata.check;
-                ci.getMetadata().autoincrement = newMetadata.autoincrement;
-                ci.getMetadata().comment = newMetadata.comment;
+            // --- Actual UI Refresh Logic ---
+                ColumnInterface ci = getColumnInterfaceByName(originalOldName); // Find by the original old name
+                if (ci != null) {
+                    // Update the metadata object within ColumnInterface
+                    ci.getMetadata().NOT_NULL = newMetadata.NOT_NULL;
+                    ci.getMetadata().IsPrimaryKey = newMetadata.IsPrimaryKey;
+                    ci.getMetadata().defaultValue = newMetadata.defaultValue;
+                    ci.getMetadata().Type = newMetadata.Type;
+                    ci.getMetadata().Name = newMetadata.Name; // Update name last before creating new UI column
+                    ci.getMetadata().size = newMetadata.size;
+                    ci.getMetadata().isUnique = newMetadata.isUnique;
+                    ci.getMetadata().index = newMetadata.index;
+                    ci.getMetadata().integerDigits = newMetadata.integerDigits;
+                    ci.getMetadata().decimalDigits = newMetadata.decimalDigits;
+                    ci.getMetadata().items = newMetadata.items;
+                    ci.getMetadata().indexType = newMetadata.indexType;
+                    ci.getMetadata().aliasType = newMetadata.aliasType;
+                    ci.getMetadata().foreign = newMetadata.foreign;
+                    ci.getMetadata().check = newMetadata.check;
+                    ci.getMetadata().autoincrement = newMetadata.autoincrement;
+                    ci.getMetadata().comment = newMetadata.comment;
 
-                // Remove the old JavaFX TableColumn
-                final String finalOriginalOldName = originalOldName;
-                tableContainer.getColumns().removeIf(tc -> tc.getId().equals(finalOriginalOldName));
+                    // Remove the old JavaFX TableColumn
+                    final String finalOriginalOldName = originalOldName;
+                    tableContainer.getColumns().removeIf(tc -> tc.getId().equals(finalOriginalOldName));
 
-                // Add a new TableColumn created with the updated metadata
-                // This ensures that any visual changes in the header (name, icons) are reflected.
-                TableColumn<DataForDB, String> newFXColumn = ci.createDBColContainer(TableName);
-                tableContainer.getColumns().add(newFXColumn); // Consider order if it matters
+                    // Add a new TableColumn created with the updated metadata
+                    // This ensures that any visual changes in the header (name, icons) are reflected.
+                    TableColumn<DataForDB, String> newFXColumn = ci.createDBColContainer(TableName);
+                    tableContainer.getColumns().add(newFXColumn); // Consider order if it matters
 
-                // If name changed, update internal lists and data maps
-                if (!originalOldName.equals(newMetadata.Name)) {
-                    ColumnsNames.remove(originalOldName);
-                    ColumnsNames.add(newMetadata.Name);
-                    for (DataForDB d : dataList) {
-                        d.RenameColumn(originalOldName, newMetadata.Name);
-                    }
-                    if (TablePrimeKey.get().equals(originalOldName)) {
-                        TablePrimeKey.set(newMetadata.Name);
-                    }
-                } else {
-                    // If only PK status changed for example, the TablePrimeKey might need update
-                    if (newMetadata.IsPrimaryKey && !TablePrimeKey.get().equals(newMetadata.Name)) {
-                        TablePrimeKey.set(newMetadata.Name);
-                    } else if (!newMetadata.IsPrimaryKey && TablePrimeKey.get().equals(newMetadata.Name)) {
-                        TablePrimeKey.set(""); // Or re-evaluate if another PK exists
+                    // If name changed, update internal lists and data maps
+                    if (!originalOldName.equals(newMetadata.Name)) {
+                        ColumnsNames.remove(originalOldName);
+                        ColumnsNames.add(newMetadata.Name);
+                        for (DataForDB d : dataList) {
+                            d.RenameColumn(originalOldName, newMetadata.Name);
+                        }
+                        if (TablePrimeKey.get().equals(originalOldName)) {
+                            TablePrimeKey.set(newMetadata.Name);
+                        }
+                    } else {
+                        // If only PK status changed for example, the TablePrimeKey might need update
+                        if (newMetadata.IsPrimaryKey && !TablePrimeKey.get().equals(newMetadata.Name)) {
+                            TablePrimeKey.set(newMetadata.Name);
+                        } else if (!newMetadata.IsPrimaryKey && TablePrimeKey.get().equals(newMetadata.Name)) {
+                            TablePrimeKey.set(""); // Or re-evaluate if another PK exists
+                        }
                     }
                 }
+                if (mode) Database.changeCommitMode(true);
+                tableContainer.refresh(); // Refresh the whole table view
+                ShowInformation("Success", "Column metadata updated (simulated). UI refreshed.");
+        } catch (Exception e) {
+            try {
+                Database.back();
+            } catch (SQLException _) {
             }
-            tableContainer.refresh(); // Refresh the whole table view
-            ShowInformation("Success", "Column metadata updated (simulated). UI refreshed.");
-        } else {
-            ShowError("Error updating column", errorMessage + " (Simulated DB operation failed)");
-            // Best effort to refresh from DB to reflect actual state if some operations failed
-            // This would involve re-fetching schema and data. For now, just an error.
-            // prepareFetch(); // This would reload data and schema
+            ShowError("Error SQL", "Error to change column metadata.", e.getMessage());
         }
     }
 
@@ -1284,7 +1321,7 @@ public class TableInterface {
             totalPages = Database.totalPages(TableName.get())-1;
             if (totalPages == -2) {
                 System.out.println(Database.GetException());
-                totalPages = 0;
+                totalPages = Long.MAX_VALUE;
             }
             System.out.println("encontrado " + totalPages);
             Platform.runLater(()->PageNum.set(0));
@@ -1305,8 +1342,8 @@ public class TableInterface {
                 conditionComplete = condition.replace(condition.substring(indexOffset-1), "");
             }
             for (final String column : columns) {
-                totalPages = Database.totalPages(TableName.get(), column, conditionComplete);
-                if (totalPages == -1) {
+                totalPages = Database.totalPages(TableName.get(), column, conditionComplete)-1;
+                if (totalPages == -2) {
                     System.out.println(Database.GetException());
                 } else if (totalPages > max) {
                     max = totalPages;

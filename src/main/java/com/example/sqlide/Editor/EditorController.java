@@ -7,6 +7,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -41,7 +42,7 @@ public class EditorController {
 
     private final static String playTool = "Execute code", StopCode = "Stop code";
 
-    private final AtomicReference<Thread> work = new AtomicReference<>();
+    private Task<Void> task;
 
     private ObservableList<DataBase> SchemasOpened;
 
@@ -77,42 +78,63 @@ public class EditorController {
         BooleanProperty state = (SimpleBooleanProperty) TaskButton.getUserData();
         state.set(!state.get());
         if (state.get()) {
-            TaskButton.setGraphic(imgPause);
-            TaskButton.setStyle("-fx-background-color: " + pauseColor + ";");
-            TaskButton.getTooltip().setText(StopCode);
 
-            work.set(new Thread(() -> {
-                try {
+            task = new Task<Void>() {
+
+                private DataBase selectedDB;
+
+                @Override
+                protected void running() {
+                    super.running();
+
                     final int index = SchemaBox.getSelectionModel().getSelectedIndex();
-                    if (index != -1) {
-                        System.out.println(index);
-                        SchemasOpened.forEach(System.out::println);
-                        final DataBase selectedDB = SchemasOpened.get(index);
-                        selectedDB.executeScript(editors.get(TabContainer.getSelectionModel().getSelectedIndex()-1).getPath());
-                    } else {
-                        ShowError("No selected", "No Database selected to execute code.");
-                        Platform.runLater(() -> SchemaBox.requestFocus());
-                    }
-                } catch (SQLException e) {
-                    ShowError("SQL Error", "Error to execute code.\n" + e.getMessage());
-                } catch (Exception e) {
-                    System.err.println("Error executing: " + e.getMessage());
-                } finally {
-                    Platform.runLater(() -> {
-                        TaskButton.setGraphic(imgPlay);
-                        TaskButton.setStyle("-fx-background-color: " + playColor + ";");
-                        TaskButton.getTooltip().setText(playTool);
-                        state.set(false); // Resetar o estado
-                    });
+                        selectedDB = SchemasOpened.get(index);
+                        updateProgress(-1, 1);
+                        updateTitle("Executing script");
+                        TaskButton.setGraphic(imgPause);
+                        TaskButton.setStyle("-fx-background-color: " + pauseColor + ";");
+                        TaskButton.getTooltip().setText(StopCode);
                 }
-            }));
 
-            work.get().start();
+                @Override
+                protected void succeeded() {
+                    super.succeeded();
+                    updateProgress(100,100);
+                    restart();
+                }
+
+                @Override
+                protected void failed() {
+                    super.failed();
+                    restart();
+                    ShowError("SQL Error", "Error to execute code.", getException().getMessage());
+                }
+
+                @Override
+                protected void cancelled() {
+                    super.cancelled();
+                    restart();
+                }
+
+                @Override
+                protected Void call() throws Exception {
+                    if (!isCancelled()) selectedDB.executeScript(editors.get(TabContainer.getSelectionModel().getSelectedIndex()-1).getPath());
+                    return null;
+                }
+
+                private void restart() {
+                    TaskButton.setGraphic(imgPlay);
+                    TaskButton.setStyle("-fx-background-color: " + playColor + ";");
+                    TaskButton.getTooltip().setText(playTool);
+                    final SimpleBooleanProperty state = (SimpleBooleanProperty) TaskButton.getUserData();
+                    state.set(false);
+                }
+
+            };
+
+            Thread.ofVirtual().start(task);
         } else {
-            TaskButton.setGraphic(imgPlay);
-            TaskButton.setStyle("-fx-background-color: " + playColor + ";");
-            TaskButton.getTooltip().setText(playTool);
-            work.get().interrupt();
+            task.cancel(true);
         }
     }
 
@@ -127,6 +149,10 @@ public class EditorController {
         editor.putContainer(newTab);
         editors.add(editor);
         TabHandler();
+        SchemaBox.getSelectionModel().selectedIndexProperty().addListener((_,_, value) -> {
+            final boolean state = value.intValue() == -1;
+            TaskButton.setDisable(state);
+        });
     }
 
     private void TabHandler() {
@@ -182,7 +208,7 @@ public class EditorController {
                     //  ScriptsOpened.add(ScriptPath);
             }
         } catch (Exception e) {
-            ShowError("Script", "Error to open SQL file.\n" + e.getMessage());
+            ShowError("Script", "Error to open SQL file.", e.getMessage());
         }
     }
 
@@ -207,14 +233,12 @@ public class EditorController {
         folderTab.setText(name);
         try {
             FileEditor editor = new FileEditor(path);
-            //    editor.loadFile();
-            //  editor.attachToTab(folderTab);
             editor.readScript();
             editor.putContainer(folderTab);
             editors.add(editor);
             TabContainer.getTabs().add(folderTab);
         } catch (IOException e) {
-            ShowError("Error to read", "Error to read script " + path + ".\n");
+            ShowError("Error to read", "Error to read script " + path + ".", e.getMessage());
         }
     }
 

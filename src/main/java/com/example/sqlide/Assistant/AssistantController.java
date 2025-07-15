@@ -6,15 +6,16 @@ import com.example.sqlide.requestInterface;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.Hyperlink;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import org.json.JSONArray;
@@ -44,6 +45,8 @@ public class AssistantController {
 
     private final MicrophoneService microphoneService = new MicrophoneService();
 
+    private final StringProperty action = new SimpleStringProperty();
+
     private final BooleanProperty search = new SimpleBooleanProperty(false), function = new SimpleBooleanProperty(false), deep = new SimpleBooleanProperty(false);
 
     final BlockingQueue<String> sender = new LinkedBlockingQueue<>(), reciver = new LinkedBlockingQueue<>();
@@ -64,7 +67,7 @@ public class AssistantController {
     }
 
     private void initializeProcess() throws IOException {
-        ProcessBuilder pb = new ProcessBuilder("python3", "src/main/java/com/example/sqlide/Assistant/service/aida.py");
+        ProcessBuilder pb = new ProcessBuilder("python", "src/main/java/com/example/sqlide/Assistant/service/aida.py");
       //  pb.directory(new File(System.getProperty("user.dir")));
         Process process = pb.start();
 
@@ -146,6 +149,7 @@ public class AssistantController {
 
             if (json.has("function")) {
                 final String function = json.getString("function");
+                Platform.runLater(()->action.set(json.getString("message")));
                 JSONArray parameters = json.getJSONArray("parameters");
 
                 switch (function) {
@@ -275,54 +279,75 @@ public class AssistantController {
         }
     }
 
-
     @FXML
     public void SendMessage(ActionEvent event) {
-        final Button sender = (Button) event.getSource();
+
+        final Button senderButton = (Button) event.getSource();
         final String message = MessageBox.getText();
+
         if (message != null && !message.isEmpty()) {
-            long num = message.chars().filter(ch -> ch == '\n').count() + 2;
-            MessagesBox.getChildren().add(createUserMessageBox(message, num));
-            MessageBox.setText("");
-            sender.setDisable(true);
-            deleteButton.setDisable(true);
-            final ProgressIndicator progress = createProgress();
-            MessagesBox.getChildren().add(progress);
-            final Thread Generator = new Thread(() -> {
-                final AssistantBoxCode box = new AssistantBoxCode();
-                try {
+
+            Task<Void> senderTask = new Task<Void>() {
+
+                private final ProgressIndicator progress = createProgress();
+                private final Label actionLabel = new Label();
+                private final AssistantBoxCode box = new AssistantBoxCode();
+                private JSONObject Assistant_message;
+
+                @Override
+                protected void running() {
+                    super.running();
+                    long num = message.chars().filter(ch -> ch == '\n').count() + 2;
+                    MessagesBox.getChildren().add(createUserMessageBox(message, num));
+                    MessageBox.setText("");
+                    senderButton.setDisable(true);
+                    deleteButton.setDisable(true);
+                    actionLabel.setTextFill(Color.WHITE);
+                    actionLabel.textProperty().bind(action);
+                    MessagesBox.getChildren().addAll(progress, actionLabel);
+                }
+
+                @Override
+                protected Void call() throws Exception {
                     System.out.println(parseMessage(message));
                     // final String generated = removeDeepSeekThink(TakToAi(parseMessage(message) + " (use '```' for programing code)"));
-                  //  final String generated = removeDeepSeekThink(TakToAi(parseMessage(message)));
-                   // System.out.println(generated);
-                 //   styleAiMessage("Assistant:" + generated, box);
-                    this.sender.put(message);
+                    //  final String generated = removeDeepSeekThink(TakToAi(parseMessage(message)));
+                    // System.out.println(generated);
+                    //   styleAiMessage("Assistant:" + generated, box);
+                    sender.put(message);
 
-                    final JSONObject Assistant_message = new JSONObject(reciver.take());
+                    Assistant_message = new JSONObject(reciver.take());
                     System.out.println("as " + Assistant_message);
-                    if (Assistant_message.getBoolean("status")) {
-                        Platform.runLater(()->styleAiMessage("Assistant:\n" + Assistant_message.getString("message"), box));
-                    } else {
-                        Platform.runLater(()->box.addErrorMessage("Assistant:\n" + Assistant_message.getString("message")));
-                    }
-
-                     //  Platform.runLater(()->MessagesBox.getChildren().add(box));
-                    //messageAi += "User: " + message + "\n" + "ChatBot:" + generated + "\n";
-                } catch (Exception e) {
-                    //   Platform.runLater(()->MessagesBox.getChildren().add(box.addErrorMessage("Error to generate response\n" + e.getMessage())));
-                    Platform.runLater(() -> box.addErrorMessage("Error to generate response\n" + e.getMessage()));
-
-                } finally {
-                    Platform.runLater(() -> {
-                        MessagesBox.getChildren().add(box);
-                        MessagesBox.getChildren().remove(progress);
-                    });
-                    deleteButton.setDisable(false);
-                    sender.setDisable(false);
+                    if (!Assistant_message.getBoolean("status")) throw new Exception(Assistant_message.getString("message"));
+                    return null;
                 }
-            });
-            Generator.setDaemon(true);
-            Generator.start();
+
+                @Override
+                protected void failed() {
+                    super.failed();
+                    box.addErrorMessage("Error to generate response\n" + getException().getMessage());
+                }
+
+                @Override
+                protected void succeeded() {
+                    super.succeeded();
+                    styleAiMessage("Assistant:\n" + Assistant_message.getString("message"), box);
+                }
+
+                @Override
+                protected void done() {
+                    super.done();
+                    Platform.runLater(()->{
+                        MessagesBox.getChildren().add(box);
+                        MessagesBox.getChildren().removeAll(progress, actionLabel);
+                        deleteButton.setDisable(false);
+                        senderButton.setDisable(false);
+                    });
+                }
+
+            };
+
+            Thread.ofVirtual().start(senderTask);
         }
     }
 

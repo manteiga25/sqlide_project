@@ -16,7 +16,7 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public abstract class StringFieldCell {
 
-    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, final CellFormater format) {
+    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final String rowID, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, final CellFormater format) {
         ColumnCellType.setCellFactory(TextFieldTableCell.forTableColumn());
        /* ColumnCellType.setCellFactory(new Callback<TableColumn<DataForDB, String>, TableCell<DataForDB, String>>() {
             @Override
@@ -112,13 +112,13 @@ public abstract class StringFieldCell {
                 //  System.out.println("é inteiro " + (valueFormated instanceof Long));
                 System.out.println("key " + tablePrimeKey.get());
                 final String[] indexStr = new String[1];
-                indexStr[0] = item.GetData("ROWID");
+                indexStr[0] = item.GetData(rowID);
                 //   final long index = indexStr != null ? Long.parseLong(indexStr) : 0;
                 if (!Updater.updateData(TableName.get(), Metadata.Name, newValue, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
-                    ShowError("Error SQL", "Error to update data\n" + Updater.getException());
+                    ShowError("Error SQL", "Error to update data", Updater.getException());
                     return;
                 }
-                item.SetData("ROWID", indexStr[0]); // workaround for postgreSQL
+                item.SetData(rowID, indexStr[0]); // workaround for postgreSQL
                 item.SetData(Metadata.Name, newValue);
             }
         });

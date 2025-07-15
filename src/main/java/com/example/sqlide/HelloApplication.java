@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class HelloApplication extends Application {
     @Override
@@ -27,11 +28,9 @@ public class HelloApplication extends Application {
         Scene scene = new Scene(fxmlLoader.load(), screenSize.getWidth() * 0.9, screenSize.getHeight() * 0.9);
         mainController controller = fxmlLoader.getController();
         controller.setPrimaryStage(stage);
-        // stage.initStyle(StageStyle.UNDECORATED);
         stage.setTitle("SQL IDE");
-        stage.getIcons().add(new Image(getClass().getResource("/img/SQLIDE.png").toExternalForm()));
+        stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResource("/img/SQLIDE.png")).toExternalForm()));
         stage.setScene(scene);
-        // Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
         stage.show();
     }
 

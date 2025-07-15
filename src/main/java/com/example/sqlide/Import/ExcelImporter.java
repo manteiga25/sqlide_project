@@ -50,7 +50,7 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public List<Map<String, String>> previewData(File file, String tableName) throws IOException {
-     //   openFile(file); // Validate
+      //  openFile(file); // Validate
         List<Map<String, String>> previewRows = new ArrayList<>();
 
         try (FileInputStream fis = new FileInputStream(file);
@@ -119,7 +119,7 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public List<String> getDetectedTableNames(File file) throws IOException {
-      //  openFile(file); // Validate
+     //   openFile(file); // Validate
         List<String> sheetNames = new ArrayList<>();
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -155,7 +155,7 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public List<String> getColumnHeaders(File file, String tableName) throws IOException, IllegalArgumentException {
-      //  openFile(file); // Validate
+     //   openFile(file); // Validate
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
             Sheet sheet = workbook.getSheet(tableName);
@@ -178,7 +178,7 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public String importData(File file, String sourceTableName, DatabaseInserterInterface inserter, final int buffer, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
-      //  openFile(file); // Validate
+     //   openFile(file); // Validate
         errors.clear();
         progress.set(0);
 
@@ -209,7 +209,6 @@ public class ExcelImporter implements FileImporter {
                 data.add(map);
                 totalRowsProcessed++;
                 if (counter == buffer) {
-                    System.out.println("data " + data);
                     if (!inserter.insertData(targetTableName, data)) throw new SQLException(inserter.getException());
                     data.clear();
                     counter = 0;
@@ -218,7 +217,6 @@ public class ExcelImporter implements FileImporter {
             }
 
             if (counter != 0) {
-                System.out.println("data " + data);
                 if (!inserter.insertData(targetTableName, data)) throw new SQLException(inserter.getException());
                 data.clear();
             }

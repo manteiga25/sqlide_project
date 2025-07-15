@@ -57,13 +57,13 @@ module com.example.sqlide {
     opens com.example.sqlide.AdvancedSearch to javafx.fxml;
     opens com.example.sqlide.Assistant to javafx.fxml;
     opens com.example.sqlide.Notification to javafx.fxml;
-    opens com.example.sqlide.loading to javafx.fxml;
     opens com.example.sqlide.Console to javafx.fxml;
     opens com.example.sqlide.Email to javafx.fxml;
     opens com.example.sqlide.Report to javafx.fxml;
     opens com.example.sqlide.neural to javafx.fxml;
     opens com.example.sqlide.Chart to javafx.fxml;
     opens com.example.sqlide.Import to javafx.fxml;
+    opens com.example.sqlide.View to javafx.fxml;
 
     exports com.example.sqlide;
     exports com.example.sqlide.exporter.Excel;
@@ -88,12 +88,12 @@ module com.example.sqlide {
     exports com.example.sqlide.AdvancedSearch;
     exports com.example.sqlide.Assistant;
     exports com.example.sqlide.Notification;
-    exports com.example.sqlide.loading;
     exports com.example.sqlide.Console;
     exports com.example.sqlide.Email;
     exports com.example.sqlide.Report;
     exports com.example.sqlide.neural;
     exports com.example.sqlide.Chart;
     exports com.example.sqlide.Import;
+    exports com.example.sqlide.View;
 
 }

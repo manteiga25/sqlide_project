@@ -5,6 +5,7 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.Container.loading.loadingInterface;
 import com.example.sqlide.Notification.NotificationInterface;
+import com.example.sqlide.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.Excel.SqlToExcel;
 import com.example.sqlide.popupWindow.Notification;
@@ -74,9 +75,10 @@ public class JSONController implements NotificationInterface, loadingInterface {
 
     private ArrayList<HashMap<String, String>> data = new ArrayList<>();
 
+    private TaskInterface taskInterface;
+
     private final Semaphore fetcherSem = new Semaphore(1);
     private final Semaphore writeSem = new Semaphore(1);
-
 
     @FXML
     public void openWindow() {
@@ -133,8 +135,9 @@ public class JSONController implements NotificationInterface, loadingInterface {
         }
     }
 
-    public void initJsonController(final DataBase db, final Stage stage) {
+    public void initJsonController(final DataBase db, final TaskInterface taskInterface, final Stage stage) {
         this.db = db;
+        this.taskInterface = taskInterface;
         this.stage = stage;
         final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
         final HashMap<String, ArrayList<String>> TablesAndColumnsName = new HashMap<>();
@@ -182,36 +185,51 @@ public class JSONController implements NotificationInterface, loadingInterface {
 
            // PrepareJson(json, tables, cursor);
         String finalPath1 = path + ".json";
-        setLoadingStage();
-        new Thread(()->{
-            try {
-             //   Platform.runLater(this::setLoadingStage);
-                createLoading(db.getDatabaseName()+"-json", "Export to JSON", "Exporting data to JSON");
-                SqlToJson json = new SqlToJson(db.getDatabaseName(), finalPath1);
-                final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
-                finalPath = finalPath1;
-                prepareWork(json, tables, db);
-                Platform.runLater(()->createSuccessNotification(db.getDatabaseName()+"-json-1", "Json Success", "Success to export Json", finalPath));
+      //  setLoadingStage();
+        final Task<Void> exporterTask = new Task<>() {
 
-                ShowSucess("Exporting json", "Success to export database to JSON.");
-            } catch (Exception e) {
-                Platform.runLater(()->createErrorNotification(db.getDatabaseName()+"-json-1", "Json Error", "Error to export Json"));
-                ShowError("Json", "Error to convert SQL to JSON.\n" + e.getMessage());
-            } finally {
-                Platform.runLater(()->
-                {
-                    loadingStage.close();
-                    try {
-                        Files.deleteIfExists(Path.of("Notifications\\" + db.getDatabaseName() + "-json-1.json"));
-                        Files.deleteIfExists(Path.of("Notifications\\" + db.getDatabaseName() + "-json.json"));
-                    } catch (IOException _) {
-                    }
-
-                });
+            @Override
+            protected void failed() {
+                super.failed();
+                createErrorNotification(db.getDatabaseName() + "-json-1", "Json Error", "Error to export Json.\n"+getException().getMessage());
+                ShowError("Json", "Error to create Json.\n" + getException().getMessage());
             }
 
+            @Override
+            protected void succeeded() {
+                super.succeeded();
+                ShowSucess("Exporting Json", "Success to export database to Json.");
+                createSuccessNotification(db.getDatabaseName() + "-json-1", "Json Success", "Success to export Json.", finalPath);
+            }
 
-        }).start();
+            @Override
+            protected void running() {
+                super.running();
+                updateTitle("Exporting Json");
+                updateProgress(0, 100);
+                progress.addListener((_,_, val)->updateProgress(val.longValue(), 100));
+            }
+
+            @Override
+            protected Void call() throws Exception {
+                    //   Platform.runLater(this::setLoadingStage);
+                 //   createLoading(db.getDatabaseName()+"-json", "Export to JSON", "Exporting data to JSON");
+                    SqlToJson json = new SqlToJson(db.getDatabaseName(), finalPath1);
+                    final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
+                    prepareWork(json, tables, db);
+                return null;
+            }
+
+            @Override
+            protected void cancelled() {
+                super.cancelled();
+                Notification.showInformationNotification("Cancel export", "Json export canceled");
+                cancelTask();
+            }
+
+        };
+        taskInterface.addTask(exporterTask);
+        Thread.ofVirtual().start(exporterTask);
     }
 
     private void prepareWork(final SqlToJson json, final ArrayList<String> tables, final DataBase cursor) throws InterruptedException, IOException {
@@ -286,9 +304,9 @@ public class JSONController implements NotificationInterface, loadingInterface {
 
                 progress.set(progress.get() + interact);
 
-                updateLoading(db.getDatabaseName()+"-json", progress.get());
+            //    updateLoading(db.getDatabaseName()+"-json", progress.get());
 
-                System.out.println("acabou");
+              //  System.out.println("acabou");
 
             }
         }

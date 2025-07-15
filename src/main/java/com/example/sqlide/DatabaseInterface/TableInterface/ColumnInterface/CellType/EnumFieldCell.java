@@ -17,7 +17,7 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public abstract class EnumFieldCell {
 
-    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, CellFormater format) {
+    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final String rowID, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, CellFormater format) {
         final AtomicBoolean updateByUser = new AtomicBoolean(false);
         ColumnCellType.setCellFactory(column -> {
             return new TableCell<DataForDB, String>() {
@@ -34,13 +34,13 @@ public abstract class EnumFieldCell {
                             //final String indexStr = item.GetData("ROWID");
                             //  final long index = indexStr != null ? Long.parseLong(indexStr) : 0;
                             final String[] indexStr = new String[1];
-                            indexStr[0] = item.GetData("ROWID");
+                            indexStr[0] = item.GetData(rowID);
                             if (!Updater.updateData(TableName.get(), Metadata.Name, newValue, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
                                 //  if (!Database.updateData(TableName, ColName, valueFormated, index, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
-                                ShowError("Error SQL", "Error to update data\n" + Updater.getException());
+                                ShowError("Error SQL", "Error to update data", Updater.getException());
                                 return;
                             }
-                            item.SetData("ROWID", indexStr[0]);
+                            item.SetData(rowID, indexStr[0]);
                             getTableRow().getItem().SetData(Metadata.Name, newValue);
                         }
                     });

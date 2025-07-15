@@ -1,0 +1,13 @@
+/* Parte preenchida da barra */
+.progress-bar > .bar {
+    -fx-background-color: #467FF2;
+    -fx-background-radius: 3px;
+    -fx-background-insets: 0;
+    -fx-padding: 0.5px;
+}
+
+/* Track (fundo) da barra */
+.progress-bar > .track {
+    -fx-background-color: #2A2A2A;
+    -fx-background-radius: 3px;
+}

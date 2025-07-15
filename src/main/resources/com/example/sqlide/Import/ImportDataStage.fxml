@@ -55,7 +55,7 @@
                 </Label>
                 <TableView fx:id="columnMappingTableView" maxHeight="200.0">
                <columns>
-                   <TableColumn fx:id="ColumnTable" editable="false" prefWidth="200.0" text="Database columns" />
+                  <TableColumn fx:id="ColumnTable" editable="false" prefWidth="200.0" text="Database columns" />
                   <TableColumn fx:id="srcTable" prefWidth="200.0" text="Import headers" />
                </columns>
                <columnResizePolicy>

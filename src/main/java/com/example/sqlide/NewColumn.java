@@ -466,6 +466,8 @@ public class NewColumn {
            // newTable.EditColumnCallBack(meta);
             if (this.originalMetadata != null && ref instanceof TableInterface) {
                 ((TableInterface)ref).alterColumnMetadata(this.originalMetadata, meta);
+            } else if (newTable != null) {
+                newTable.EditColumnCallBack(meta);
             } else {
                 // Fallback or error if originalMetadata is null or ref is not TableInterface
                 // This might happen if NewColumn is used in a context not anticipated for editing existing columns.
@@ -496,7 +498,7 @@ public class NewColumn {
         System.out.println(1);
         ForeignKeyOption.setSelected(metadata.foreign.isForeign);
         System.out.println(1);
-        DefaultOption.setSelected(metadata.defaultValue != null);
+        DefaultOption.setSelected(!metadata.defaultValue.isEmpty());
         System.out.println(1);
         UniqueOption.setSelected(metadata.isUnique);
         System.out.println(1);

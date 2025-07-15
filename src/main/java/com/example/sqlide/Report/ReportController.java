@@ -2,10 +2,14 @@ package com.example.sqlide.Report;
 
 import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.DataForDB;
+import com.example.sqlide.Notification.NotificationInterface;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
-import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.NodeOrientation;
@@ -26,16 +30,16 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
-import org.checkerframework.checker.units.qual.C;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class ReportController {
+public class ReportController implements NotificationInterface {
 
     @FXML
     private Pane TempPane;
@@ -87,7 +91,11 @@ public class ReportController {
     private ImageView pdfPreviewImageView;
     private PdfPreviewService pdfPreviewService;
 
+    private List<List<String>> data;
+    private final DoubleProperty progress = new SimpleDoubleProperty(0);
 
+    private final Semaphore fetcherSem = new Semaphore(1);
+    private final Semaphore writeSem = new Semaphore(1);
 
     public void initializeDialog(DataBase db, Stage stage) {
         this.db = db;
@@ -465,14 +473,7 @@ public class ReportController {
         }
 
         // 4. Prepare Data for ReportData
-        List<List<String>> dataRows = new ArrayList<>();
-        for (DataForDB dataForDB : fetchedData) {
-            List<String> row = new ArrayList<>();
-            for (String columnName : selectedReportColumns) {
-                row.add(dataForDB.GetData(columnName));
-            }
-            dataRows.add(row);
-        }
+
 
         // 5. Prompt for File Save Location
         FileChooser fileChooser = new FileChooser();
@@ -512,21 +513,65 @@ public class ReportController {
         styleConfig.setPageMargin(pageMarginSpinner.getValue().floatValue());
         styleConfig.setCellPadding(cellPaddingSpinner.getValue().floatValue());
 
-        ReportData reportData = new ReportData(title, selectedReportColumns, dataRows, styleConfig);
-        Thread.ofVirtual().start(()-> {
-            try {
-                reportService.generatePdfReport(reportData, file.getAbsolutePath());
-            } catch (IOException e) {
-                ShowError("PDF Generation Error", "Failed to generate PDF report.", e.getMessage());
-                e.printStackTrace(); // For logging
-            }
-        });
+        Task<Void> exporter = new Task<Void>() {
 
-        // 7. Show Success Message and Close Dialog
-        ShowSucess("Success", "Report generated successfully at:\n" + file.getAbsolutePath());
-        if (dialogStage != null) {
-            dialogStage.close();
-        }
+            private ReportService.PDF pdf;
+
+            @Override
+            protected void failed() {
+                super.failed();
+                createErrorNotification(db.getDatabaseName() + "-pdf-1", "PDF Error", "Error to create Relatory.\n"+getException().getMessage());
+                ShowError("PDF Generation Error", "Failed to generate PDF report.", getException().getMessage());
+                try {
+                    pdf.close();
+                } catch (IOException _) {
+                }
+                getException().printStackTrace();
+            }
+
+            @Override
+            protected void succeeded() {
+                super.succeeded();
+                updateProgress(100, 100);
+                ShowSucess("Create Relatory", "Success to create database Relatory.");
+                createSuccessNotification(db.getDatabaseName() + "-pdf-1", "PDF Success", "Success to create Relatory.", file.getAbsolutePath());
+            }
+
+            @Override
+            protected void running() {
+                super.running();
+                updateTitle("Creating Relatory");
+                updateProgress(0, 100);
+                progress.addListener((_,_, val)->updateProgress(val.longValue(), 100));
+            }
+
+            @Override
+            protected Void call() throws Exception {
+                ReportData reportData = new ReportData(title, selectedReportColumns, null, styleConfig);
+                pdf = reportService.createPDF(file.getAbsolutePath());
+                pdf.setStyle(reportData.getReportStyleConfig());
+                pdf.createHeaders(reportData);
+              //  pdf.save();
+                fetch(pdf);
+                pdf.save();
+                pdf.close();
+                return null;
+            }
+
+            @Override
+            protected void cancelled() {
+                super.cancelled();
+                Notification.showInformationNotification("Cancel export", "Relatory export canceled");
+               // cancelTask();
+                try {
+                    pdf.close();
+                } catch (IOException _) {
+                }
+            }
+
+        };
+
+        Thread.ofVirtual().start(exporter);
     }
 
     @FXML
@@ -534,6 +579,66 @@ public class ReportController {
         if (dialogStage != null) {
             dialogStage.close();
         }
+    }
+
+    private void fetch(final ReportService.PDF pdf) {
+        final long buffer = db.buffer * 100L;
+        final Thread writer = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    writeSem.acquire();
+                } catch (InterruptedException e) {
+                    try {
+                        pdf.addData(new ReportData(getReportTitle(), secondaryController.getSelected(), data, pdf.getStyleConfig()));
+                    //    pdf.save();
+                    } catch (Exception _) {
+                    }
+                    data = null;
+                    fetcherSem.release();
+                    break;
+                }
+                try {
+                    pdf.addData(new ReportData(getReportTitle(), secondaryController.getSelected(), data, pdf.getStyleConfig()));
+                  //  pdf.save();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                data = null;
+                fetcherSem.release();
+            }
+        });
+
+       final Thread fetcher = new Thread(() -> {
+            long offset = 0;
+            while (true) {
+                ArrayList<DataForDB> dataCopy = db.Fetcher().fetchData(secondaryController.getQuery().replace(";", "")+" OFFSET " + offset + " LIMIT " + db.buffer + ";", secondaryController.getSelected(), null);
+                if (dataCopy == null || dataCopy.isEmpty()) {
+                    break;
+                }
+                final List<List<String>> copy = createData((ArrayList<DataForDB>) dataCopy.clone());
+                try {
+                    fetcherSem.acquire();
+                    data = copy;
+                } catch (InterruptedException _) {
+                    break;
+                }
+                writeSem.release();
+                offset += buffer;
+            }
+            writer.interrupt();
+        });
+    }
+
+    private List<List<String>> createData(final ArrayList<DataForDB> fetchedData) {
+        final List<List<String>> dataRows = new ArrayList<>();
+        for (DataForDB dataForDB : fetchedData) {
+            List<String> row = new ArrayList<>();
+            for (String columnName : secondaryController.getSelected()) {
+                row.add(dataForDB.GetData(columnName));
+            }
+            dataRows.add(row);
+        }
+        return dataRows;
     }
 
     public String getReportTitle() {

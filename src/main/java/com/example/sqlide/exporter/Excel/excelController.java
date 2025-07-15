@@ -4,6 +4,8 @@ import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.Container.loading.loadingInterface;
+import com.example.sqlide.Notification.NotificationInterface;
+import com.example.sqlide.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.CSV.SqlToCSV;
 import com.example.sqlide.popupWindow.Notification;
@@ -13,6 +15,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -43,7 +46,7 @@ import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
 import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class excelController implements loadingInterface {
+public class excelController implements loadingInterface, NotificationInterface {
 
     @FXML
     private JFXCheckBox MetaBox;
@@ -66,6 +69,8 @@ public class excelController implements loadingInterface {
     private HashMap<String, ArrayList<String>> TablesAndColumnsNames;
 
     private HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns;
+
+    private TaskInterface taskInterface;
 
     private final Semaphore fetcherSem = new Semaphore(1);
     private final Semaphore writeSem = new Semaphore(1);
@@ -124,8 +129,9 @@ public class excelController implements loadingInterface {
         }
     }
 
-    public void initExcelController(final DataBase db, final Stage stage) {
+    public void initExcelController(final DataBase db, final TaskInterface taskInterface, final Stage stage) {
         this.db = db;
+        this.taskInterface = taskInterface;
         this.stage = stage;
         try {
             writeSem.acquire();
@@ -176,78 +182,65 @@ public class excelController implements loadingInterface {
         path = removeDot(path);
 
         final String finalPath = path;
-        setLoadingStage();
-        Thread.ofVirtual().start(()->{
-            boolean state = false;
+        //setLoadingStage();
+        final Task<Void> exporterTask = new Task<>() {
+
             final SqlToExcel excel = new SqlToExcel();
-            try {
 
-                excel.createFile(finalPath + ".xlsx");
-
-                final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
-
-                excel.createWorkbook(db.buffer * 10);
-
-                prepareWork(excel, tables, db);
-
-                state = true;
-
-             //   PrepareSingle(excel, tables, cursor);
-            } catch (InterruptedException e) {
-                ShowError("EXCEL", "Error to create Excel.\n " + e.getMessage());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            } finally {
-              //  excel.close();
-                final boolean finalState = state;
-                if (state) {
-                    excel.saveAndClose();
-                } else excel.close();
-
-                Platform.runLater(()->{
-                    loadingStage.close();
-                    try {
-                        createNot(finalState);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+            @Override
+            protected void failed() {
+                super.failed();
+                excel.close();
+                createErrorNotification(db.getDatabaseName() + "-xlsx-1", "Excel Error", "Error to export Excel.\n"+getException().getMessage());
+                ShowError("Excel", "Error to create Excel.\n" + getException().getMessage());
             }
 
-            System.out.println("hello");
-
-        }).start();
-
-    }
-
-    private void createNot(final boolean state) throws IOException {
-
-        Action function = new Action("open", event->{
-            if (Desktop.isDesktopSupported()) {
-                Desktop desktop = Desktop.getDesktop();
-
-                // Verifica se a ação de abrir uma pasta é suportada
-                if (desktop.isSupported(Desktop.Action.OPEN)) {
-                    try {
-                        // Cria um objeto File com o caminho da pasta
-                        File folder = new File(PathBox.getText());
-
-                        // Verifica se o caminho é uma pasta válida
-                        if (folder.exists() && folder.isDirectory()) {
-                            desktop.open(folder); // Abre a pasta no explorador de arquivos
-                        }
-                    } catch (IOException _) {
-                    }
-                }
+            @Override
+            protected void succeeded() {
+                super.succeeded();
+                excel.saveAndClose();
+                updateProgress(100, 100);
+                ShowSucess("Exporting Excel", "Success to export database to Excel.");
+                createSuccessNotification(db.getDatabaseName() + "-xlsx-1", "Excel Success", "Success to export Excel.", finalPath);
             }
-        });
-        function.setStyle("-fx-background-color: #3574f0; -fx-text-fill: white");
 
-        if (state) {
-            Notification.showSuccessNotification(db.getDatabaseName()+"-xlsx", "Excel Success", "Success to export Excel", function);
-        } else {
-            Notification.showErrorNotification(db.getDatabaseName()+"-xlsx", "Excel Error", "Error to export Excel");
-        }
+            @Override
+            protected void running() {
+                super.running();
+                updateTitle("Exporting Excel");
+                updateProgress(0, 100);
+                progress.addListener((_,_, val)->updateProgress(val.longValue(), 100));
+            }
+
+            @Override
+            protected Void call() throws IOException {
+
+                    excel.createFile(finalPath + ".xlsx");
+
+                    final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
+
+                    excel.createWorkbook(db.buffer * 10);
+
+                    try {
+                        prepareWork(excel, tables, db);
+                    } catch (InterruptedException e) {
+                        if (!Thread.currentThread().isInterrupted()) throw new RuntimeException(e);
+                    }
+
+                return null;
+            }
+
+            @Override
+            protected void cancelled() {
+                super.cancelled();
+                Notification.showInformationNotification("Cancel export", "Excel export canceled");
+                cancelTask();
+                excel.close();
+            }
+
+        };
+        taskInterface.addTask(exporterTask);
+        Thread.ofVirtual().start(exporterTask);
 
     }
 
@@ -312,13 +305,7 @@ public class excelController implements loadingInterface {
                 fetcher.join();
                 writer.join();
 
-                //   excel.Save();
-
-                Platform.runLater(() -> progress.set(progress.get() + interact));
-
-                //   excel.closeSheet(sheetName);
-
-                System.out.println("acabou");
+                progress.set(progress.get() + interact);
 
             }
         }

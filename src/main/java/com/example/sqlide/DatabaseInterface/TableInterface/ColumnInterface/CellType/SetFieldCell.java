@@ -21,7 +21,7 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class SetFieldCell {
 
-    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, CellFormater format) {
+    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final String rowID, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, CellFormater format) {
         final AtomicBoolean updateByUser = new AtomicBoolean(false);
         ColumnCellType.setCellFactory(column -> {
             return new TableCell<DataForDB, String>() {
@@ -42,13 +42,13 @@ public class SetFieldCell {
                             String values = String.join(",", comboBox.getCheckModel().getCheckedItems());
                             System.out.println("values " + values + " item " + newValue);
                             final String[] indexStr = new String[1];
-                            indexStr[0] = item.GetData("ROWID");
+                            indexStr[0] = item.GetData(rowID);
                             if (!Updater.updateData(TableName.get(), Metadata.Name, values, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
                                 //  if (!Database.updateData(TableName, ColName, valueFormated, index, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
-                                ShowError("Error SQL", "Error to update data\n" + Updater.getException());
+                                ShowError("Error SQL", "Error to update data", Updater.getException());
                                 return;
                             }
-                            item.SetData("ROWID", indexStr[0]);
+                            item.SetData(rowID, indexStr[0]);
                        //     getTableRow().getItem().SetData(Metadata.Name, newValue);
                         }
                     });

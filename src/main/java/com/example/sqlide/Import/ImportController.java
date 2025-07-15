@@ -381,6 +381,8 @@ public class ImportController {
                         previewH.addAll(columnMappingTableView.getItems().stream().map(ColumnMappingRow::getSourceColumnName).toList());
                     } else if (!preview.isEmpty() && !preview.getFirst().isEmpty()) {
                         previewH.addAll(preview.getFirst().keySet());
+                    } else if (!preview.isEmpty() && !preview.getFirst().isEmpty()) {
+                        previewH.addAll(preview.getFirst().keySet());
                     }
 
                     if (!previewH.isEmpty()) {
@@ -456,7 +458,7 @@ public class ImportController {
         final String effectiveTargetTableName = targetDbTableName; // Final name for use in thread
 
         if (isEffCreatingNew) {
-            statusTextArea.appendText("Attempting to create new table '" + effectiveTargetTableName + "' with columns (all TEXT type for now): " + newTableColDefs.stream().map(d -> d.split(" ")[0]).collect(Collectors.toList()) + "\n");
+            statusTextArea.appendText("Attempting to create new table '" + effectiveTargetTableName + "' with columns (all TEXT type for now): " + newTableColDefs.stream().map(d -> d.split(" ")[0]).toList() + "\n");
             try {
                 currentDb.Inserter().createTable(effectiveTargetTableName, newTableColDefs, null); // Pass null for PKs for now
                 statusTextArea.appendText("Table '" + effectiveTargetTableName + "' created successfully or already existed with compatible schema.\n");

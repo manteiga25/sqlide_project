@@ -225,7 +225,7 @@ public class TriggerController implements loadingInterface {
             triggersSelected.getItems().addAll(triggersFound.keySet());
 
         } catch (IOException e) {
-            ShowError("Error", "Error to perform read.\n" + e.getMessage());
+            ShowError("Error", "Error to perform read.", e.getMessage());
         }
 
     }

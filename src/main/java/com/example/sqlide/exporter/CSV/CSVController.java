@@ -5,6 +5,7 @@ import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.Container.loading.loadingInterface;
 import com.example.sqlide.Notification.NotificationInterface;
+import com.example.sqlide.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.popupWindow.Notification;
 import com.jfoenix.controls.JFXButton;
@@ -15,6 +16,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -78,6 +80,8 @@ public class CSVController implements NotificationInterface, loadingInterface {
     private HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns;
 
     private Stage advancedFetcherstage;
+
+    private TaskInterface taskInterface;
 
     private final Semaphore fetcherSem = new Semaphore(1);
     private final Semaphore writeSem = new Semaphore(1);
@@ -147,8 +151,9 @@ public class CSVController implements NotificationInterface, loadingInterface {
         }
     }
 
-    public void initCSVController(final DataBase db, final Stage stage) {
+    public void initCSVController(final DataBase db, final TaskInterface taskInterface, final Stage stage) {
         this.db = db;
+        this.taskInterface = taskInterface;
         this.stage = stage;
         final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
         final HashMap<String, ArrayList<String>> TablesAndColumnsName = new HashMap<>();
@@ -200,32 +205,57 @@ public class CSVController implements NotificationInterface, loadingInterface {
 
         String finalPath = path;
         Notification.showInformationNotification("Export to CSV", "Exporting data to CSV file.");
-        setLoadingStage();
-        main = new Thread(()->{
-            try {
+        //setLoadingStage();
+        final Task<Void> exporterTask = new Task<>() {
 
-              //  Platform.runLater(this::setLoadingStage);
-
-                createLoading(db.getDatabaseName()+"-csv", "Export to CSV", "Exporting data to CSV");
-
-               // final ArrayList<String> tables = cursor.getTables();
-
-                prepareWork(finalPath, db, CSVmode);
-                ShowSucess("Exporting csv", "Success to export database to CSV.");
-                Platform.runLater(()->createSuccessNotification(db.getDatabaseName() + "-csv-1", "CSV Success", "Success to export CSV.", finalPath));
-            } catch (Exception e) {
-                if (Thread.currentThread().isInterrupted()) {
-                    Platform.runLater(() -> createErrorNotification(db.getDatabaseName() + "-csv-1", "CSV Error", "Error to export CSV.\n"+e.getMessage()));
-                    ShowError("CSV", "Error to create CSV.\n" + e.getMessage());
-                }
-                Platform.runLater(()->loadingStage.close());
+            @Override
+            protected void failed() {
+                super.failed();
+                createErrorNotification(db.getDatabaseName() + "-csv-1", "CSV Error", "Error to export CSV.\n"+getException().getMessage());
+                ShowError("CSV", "Error to create CSV.", getException().getMessage());
             }
-        });
-        main.start();
+
+            @Override
+            protected void succeeded() {
+                super.succeeded();
+                ShowSucess("Exporting csv", "Success to export database to CSV.");
+                createSuccessNotification(db.getDatabaseName() + "-csv-1", "CSV Success", "Success to export CSV.", finalPath);
+            }
+
+            @Override
+            protected void running() {
+                super.running();
+                updateTitle("Exporting CSV");
+                updateProgress(0, 100);
+                progress.addListener((_,_, val)->updateProgress(val.longValue(), 100));
+            }
+
+            @Override
+            protected Void call() {
+                try {
+                    prepareWork(finalPath, db, CSVmode);
+                } catch (Exception e) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return null;
+        }
+
+            @Override
+            protected void cancelled() {
+                super.cancelled();
+                Notification.showInformationNotification("Cancel export", "CSV export canceled");
+                cancelTask();
+            }
+
+        };
+        taskInterface.addTask(exporterTask);
+        Thread.ofVirtual().start(exporterTask);
     }
 
     private void prepareWork(String Path, final DataBase cursor, final int CSVmode) throws InterruptedException, IOException {
-        final long buffer = cursor.buffer * 10L;
+        final long buffer = cursor.buffer * 100L;
         final double interact = (100.0 / TablesAndColumns.size()) / 100.0;
         for (final String sheetName : TablesAndColumns.keySet()) {
 

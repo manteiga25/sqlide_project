@@ -191,7 +191,7 @@ public class NewTable {
             columnsMetadata.clear();
             for (final HashMap<String, String> column : columns) {
                 items.add(new TableColumnMeta(column));
-                columnsMetadata.add(new ColumnMetadata(Boolean.parseBoolean(column.get("NotNull")), column.get("Key").equals("PRIMARY KEY"), new ColumnMetadata.Foreign(), "", 0, column.get("Type"), column.get("Name"), true, 0, 0, ""));
+                columnsMetadata.add(new ColumnMetadata(Boolean.parseBoolean(column.get("NotNull")), column.get("Key").equals("PRIMARY KEY"), new ColumnMetadata.Foreign(), "", 0, column.get("Type"), column.get("Name"), false, 0, 0, ""));
             }
         }
 

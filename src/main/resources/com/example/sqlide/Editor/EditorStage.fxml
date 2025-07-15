@@ -10,7 +10,7 @@
    <children>
       <ToolBar nodeOrientation="RIGHT_TO_LEFT" style="-fx-background-color: #2A2A2A;" stylesheets="@../../../../css/BarButtonStyle.css">
         <items>
-          <Button fx:id="TaskButton" mnemonicParsing="false" onAction="#RunButton" style="-fx-background-color: #4E8752;">
+          <Button fx:id="TaskButton" disable="true" mnemonicParsing="false" onAction="#RunButton" style="-fx-background-color: #4E8752;">
                <graphic>
                   <ImageView fitHeight="15.0" fitWidth="15.0" pickOnBounds="true" preserveRatio="true">
                      <image>
@@ -26,7 +26,7 @@
             </Label>
         </items>
       </ToolBar>
-      <TabPane fx:id="TabContainer" stylesheets="@../../../../css/TabPane.css" VBox.vgrow="ALWAYS">
+      <TabPane fx:id="TabContainer" stylesheets="@../../../../css/TabPane.css" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS">
         <tabs>
           <Tab closable="false" disable="true" style="-fx-background-color: transparent;">
               <TilePane alignment="CENTER" orientation="VERTICAL">

@@ -9,6 +9,7 @@ import com.example.sqlide.EventLayout.EditEventController;
 import com.example.sqlide.EventLayout.EventController;
 import com.example.sqlide.Import.ImportController;
 import com.example.sqlide.Logger.Logger;
+import com.example.sqlide.Notification.NotificationInterface;
 import com.example.sqlide.ScriptLayout.SearchScriptController;
 import com.example.sqlide.TriggerLayout.EditTriggerController;
 import com.example.sqlide.TriggerLayout.TriggerController;
@@ -22,14 +23,18 @@ import com.example.sqlide.exporter.JSON.JSONController;
 import com.example.sqlide.exporter.XML.xmlController;
 import com.jfoenix.controls.JFXButton;
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -39,6 +44,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.*;
+import org.controlsfx.control.TaskProgressView;
+import org.xlsx4j.sml.Col;
 
 import java.io.*;
 import java.sql.SQLException;
@@ -48,8 +55,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class mainController implements requestInterface {
+public class mainController implements requestInterface, NotificationInterface {
 
+    @FXML
+    private Label TaskMessage;
+    @FXML
+    private HBox ProgressBox;
     @FXML
     private JFXButton AssistantButton, NotificationButton;
 
@@ -85,6 +96,8 @@ public class mainController implements requestInterface {
     private final ObservableList<String> DatabasesName = FXCollections.observableArrayList();
     private final ObservableList<DataBase> DatabasesOpened = FXCollections.observableArrayList();
 
+    private TaskManager task;
+
     @FXML
     private Menu queryMenu;
 
@@ -100,8 +113,11 @@ public class mainController implements requestInterface {
 
     private final SimpleStringProperty currentDB = new SimpleStringProperty();
 
+    private final Popup popup = new Popup();
+
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
+        initTaskView();
     }
 
     @Override
@@ -259,6 +275,85 @@ public class mainController implements requestInterface {
         loadNotification();
     }
 
+    private void initTaskView() {
+
+        task = new TaskManager();
+        task.getTaskView().getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/TaskStyle.css")).toExternalForm());
+
+        popup.setAutoHide(true);
+        popup.setHideOnEscape(true);
+
+        VBox box = new VBox(5);
+        box.setStyle("-fx-background-color: #3C3C3C; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0.1, 0, 2); -fx-background-radius: 8px;");
+        box.setAlignment(Pos.CENTER_RIGHT);
+
+        ObjectProperty<Point2D> mouseLoc = new SimpleObjectProperty<>();
+
+        box.setOnMousePressed(ev ->
+                mouseLoc.set(new Point2D(ev.getScreenX(), ev.getScreenY()))
+        );
+
+        box.setOnMouseDragged(ev -> {
+            Point2D prev = mouseLoc.get();
+            if (prev != null) {
+                double deltaX = ev.getScreenX() - prev.getX();
+                double deltaY = ev.getScreenY() - prev.getY();
+                popup.setX(popup.getX() + deltaX);
+                popup.setY(popup.getY() + deltaY);
+                mouseLoc.set(new Point2D(ev.getScreenX(), ev.getScreenY()));
+            }
+        });
+
+        box.setOnMouseReleased(ev -> mouseLoc.set(null));
+
+        Button hide = new Button("-");
+        hide.setTextFill(Color.valueOf("#e1e1e1"));
+        hide.setTooltip(new Tooltip("hide"));
+        hide.setStyle("-fx-background-color: #3C3C3C;");
+        hide.setOnAction(_->popup.hide());
+
+        box.getChildren().addAll(hide, task.getTaskView());
+
+        popup.getContent().add(box);
+
+        task.getTaskList().addListener((ListChangeListener<? super Task<?>>) change->{
+            while (change.next()) {
+                if (change.wasRemoved()) {
+                    if (task.getTaskList().isEmpty()) {
+                        popup.hide();
+                        ProgressBox.setVisible(false);
+                    }
+                } else {
+                    ProgressBox.setVisible(true);
+                    TaskMessage.textProperty().bind(task.getTaskList().getFirst().titleProperty());
+                }
+            }
+        });
+
+// Configure a janela para ancorar no canto inferior direito
+
+
+// Exibe logo após a Stage principal estar visível
+
+
+    }
+
+    @FXML
+    private void PopUpTask() {
+        if (popup.isShowing()) {
+            popup.hide();
+        } else {
+            popup.setAnchorLocation(PopupWindow.AnchorLocation.WINDOW_BOTTOM_RIGHT);
+
+// Posicione-a no canto
+            double screenX = primaryStage.getX() + primaryStage.getWidth();
+            double screenY = primaryStage.getY() + primaryStage.getHeight();
+            popup.setAnchorX(screenX - 50);
+            popup.setAnchorY(screenY - 30);
+            popup.show(primaryStage);
+        }
+    }
+
     @FXML
     private void MenuButtonOver(MouseEvent event) {
 
@@ -361,271 +456,131 @@ public class mainController implements requestInterface {
             // Mostrar a subjanela
             subStage.show();
         } catch (Exception e) {
-            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
-        }
-    }
-
-    @FXML
-    public void SQLiteInterface() {
-
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("DBLiteInterface.fxml"));
-            //    VBox miniWindow = loader.load();
-            Parent root = loader.load();
-
-            SQLiteController secondaryController = loader.getController();
-
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Subjanela");
-            subStage.setScene(new Scene(root));
-            secondaryController.initWin(this, subStage);
-
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
-
-            // Mostrar a subjanela
-            subStage.show();
-        } catch (Exception e) {
-            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+            ShowError("Error to load", "Error tom load stage.", e.getMessage());
         }
     }
 
     public void openDB(final DataBase db, final String URL, final String DBName, final String UserName, final String password) {
         if (!db.connect(URL, DBName, UserName, password)) {
-            ShowError("Error SQL", "Error to open Database " + URL + "\n" + db.GetException());
+            ShowError("Error SQL", "Error to open Database " + URL, db.GetException());
             return;
         }
 
-        for (final DataBase dataBase : DatabasesOpened) {
-            if (dataBase.getUrl().equals(db.getUrl())) return;
+        for (final DataBase dataBase : DatabasesOpened) if (dataBase.getUrl().equals(db.getUrl())) return;
+
+        renderDatabase(db, DBName);
+
+    }
+
+    public void openDB(final String path, final String DBName) {
+        DataBase db = new SQLiteDB();
+        if (!db.connect(path)) {
+            ShowError("Error SQL", "Error to open Database " + path, db.GetException());
+            return;
         }
 
-        final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
-        db.setMessager(sender);
-        //  final String DBName = db.getDatabaseName();
-        createContainerDB();
-        db.buffer = buffer;
+        for (final DataBase dataBase : DatabasesOpened) if (dataBase.getUrl().equals(db.getUrl())) return;
 
-        DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
+        renderDatabase(db, DBName);
 
-        final Stage loader = LoadingStage("Opening Database.", "You can continue t se application.");
+    }
 
-        final Thread open = new Thread(()->{
-            try {
+    private void renderDatabase(final DataBase db, final String DBName) {
+        Task<Void> openTask = new Task<Void>() {
+            private final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
 
+            private final Stage loader;
+
+            private final NotificationInterface notificationInterface = mainController.this;
+
+            private final DatabaseInterface openDB;
+
+            {
+                loader = LoadingStage("Opening Database.", "You can continue to use application.");
+                db.setMessager(sender);
+                createContainerDB();
+                db.buffer = buffer;
+                openDB = new DatabaseInterface(db, DBName);
+                ContainerForDB.getTabs().add(openDB.getContainer());
+                ContainerForDB.getSelectionModel().select(openDB.getContainer());
+            }
+
+            @Override
+            protected void scheduled() {
+                super.scheduled();
+                updateProgress(-1, 1);
+                updateTitle("Opening Database");
+            }
+
+            @Override
+            protected Void call() throws Exception {
                 openDB.readTables();
-
-                if (consoleController == null) Platform.runLater(this::loadConsole);
-
-                Platform.runLater(this::setDividerSpace);
-                Platform.runLater(this::setHDividerSpace);
-
-                Platform.runLater(()->consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType()));
+                DatabaseOpened.put(DBName, db);
                 DBopened.put(DBName, openDB);
                 DatabasesOpened.add(db);
-                DatabaseOpened.put(DBName, db);
                 DatabasesName.add(DBName);
                 currentDB.set(DBName);
-            } catch (Exception e) {
+                return null;
+            }
+
+            @Override
+            protected void succeeded() {
+                super.succeeded();
+                notificationInterface.createSuccessNotification("open-"+DBName, "Opening Database", "Database was open with success.","open-"+DBName);
+                if (consoleController == null) loadConsole();
+
+                setDividerSpace();
+                setHDividerSpace();
+                consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType());
+            }
+
+            @Override
+            protected void failed() {
+                super.failed();
+                notificationInterface.createSuccessNotification("open-"+DBName, "Opening Database", "Error to open Database.\n"+getException().getMessage(),"open-"+DBName);
                 try {
                     openDB.closeInterface();
                     db.disconnect();
                 } catch (SQLException _) {
                 }
-                ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
-            } finally {
+                ContainerForDB.getTabs().remove(openDB.getContainer());
+                ShowError("Error Open", "Error to open Database " + DBName, getException().getMessage());
+            }
+
+            @Override
+            protected void done() {
+                super.done();
                 Platform.runLater(loader::close);
             }
-        });
+
+        };
+
+        final Thread open = new Thread(openTask);
         open.setDaemon(true);
-        open.start();
-
-    }
-
-    public void openDB(final String path, final String DBName) throws IOException {
-        DataBase db = new SQLiteDB();
-        if (!db.connect(path)) {
-            ShowError("Error SQL", "Error to open Database " + path + "\n" + db.GetException());
-            return;
-        }
-
-        for (final DataBase dataBase : DatabasesOpened) {
-            if (dataBase.getUrl().equals(db.getUrl())) return;
-        }
-
-        final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
-
-        db.setMessager(sender);
-        createContainerDB();
-        db.buffer = buffer;
-
-        final Stage loader = LoadingStage("Opening Database.", "You can continue t se application.");
-
-        DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
-
-        if (consoleController == null) loadConsole();
-
-        final Thread open = new Thread(()->{
-            try {
-
-                openDB.readTables();
-
-
-                Platform.runLater(this::setDividerSpace);
-                Platform.runLater(this::setHDividerSpace);
-
-                Platform.runLater(()->consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType()));
-            DatabaseOpened.put(DBName, db);
-            DBopened.put(DBName, openDB);
-                DatabasesOpened.add(db);
-                DatabasesName.add(DBName);
-                currentDB.set(DBName);
-        } catch (Exception e) {
-            try {
-                openDB.closeInterface();
-                db.disconnect();
-            } catch (SQLException _) {
-            }
-            ContainerForDB.getTabs().remove(ContainerForDB.getSelectionModel().selectedItemProperty().get());
-            ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
-        } finally {
-            Platform.runLater(loader::close);
-        }
-        });
-        open.setDaemon(true);
+        task.addTask(openTask);
         open.start();
     }
 
-    public void createDB(final DataBase db, final String url, final String DBName, final String user, final String pass, final Map<String, String> modes) throws IOException {
-        //   Map<String, String> modes = new HashMap<>();
-
-    /*    modes.put("encoding", "'" + CharMode.getValue() + "'");
-        modes.put("journal_mode", JournalMode.getValue());
-        final String innit = ScriptPath.getText();
-        if (!innit.isEmpty()) {
-            modes.put("innit", ScriptPath.getText());
-        }
-        modes.put("cache_spill", sharedMode.isSelected() ? "SHARED" : "PRIVATE");
-        modes.put("cache_size", cacheSize.getValue().toString()); */
-        //   modes.put("page_size", Pagesize.getValue().toString());
-
-        final boolean hasScript = modes.containsKey("innit");
+    public void createDB(final DataBase db, final String url, final String DBName, final String user, final String pass, final Map<String, String> modes) {
 
         if (!db.CreateSchema(url, DBName, user, pass, modes)) {
-            ShowError("Error SQL", "Error to create Database " + DBName + "\n" + db.GetException());
+            ShowError("Error SQL", "Error to create Database " + DBName, db.GetException());
             return;
         }
-        // db.setMessager(sender);
-        //if (db.Connect(DBName + ".db", modes)) {
-        //  System.out.println("sucess");
-        //if (!created) {
-        final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
 
-        db.setMessager(sender);
-        createContainerDB();
-        db.buffer = buffer;
-        //}
-        //    createTabDB(DBName);
-
-        DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
-
-        if (consoleController == null) loadConsole();
-
-        setDividerSpace();
-
-        if (hasScript) {
-            Thread init = new Thread(()-> {
-                try {
-                    openDB.readTables();
-                    Platform.runLater(()->consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType()));
-                    DatabaseOpened.put(DBName, db);
-                    DBopened.put(DBName, openDB);
-                    DatabasesOpened.add(db);
-                    DatabasesName.add(DBName);
-                    currentDB.set(DBName);
-                } catch (Exception e) {
-                    try {
-                        openDB.closeInterface();
-                        db.disconnect();
-                    } catch (SQLException _) {
-                    }
-                    ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
-                }
-            });
-            init.setDaemon(true);
-            init.start();
-
-        }
+         renderDatabase(db, DBName);
 
     }
 
     @FXML
-    public void createDB(final String path, final String DBName, final Map<String, String> modes) throws IOException {
-        //   Map<String, String> modes = new HashMap<>();
-
-    /*    modes.put("encoding", "'" + CharMode.getValue() + "'");
-        modes.put("journal_mode", JournalMode.getValue());
-        final String innit = ScriptPath.getText();
-        if (!innit.isEmpty()) {
-            modes.put("innit", ScriptPath.getText());
-        }
-        modes.put("cache_spill", sharedMode.isSelected() ? "SHARED" : "PRIVATE");
-        modes.put("cache_size", cacheSize.getValue().toString()); */
-        //   modes.put("page_size", Pagesize.getValue().toString());
-
-        final boolean hasScript = modes.containsKey("innit");
+    public void createDB(final String path, final String DBName, final Map<String, String> modes) {
 
         DataBase db = new SQLiteDB();
         if (!db.connect(path, modes)) {
-            ShowError("Error SQL", "Error to create Database " + path + "\n" + db.GetException());
+            ShowError("Error SQL", "Error to create Database " + path, db.GetException());
             return;
         }
-       // db.setMessager(sender);
-        //if (db.Connect(DBName + ".db", modes)) {
-        //  System.out.println("sucess");
-        //if (!created) {
-        final BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
-
-        db.setMessager(sender);
-        createContainerDB();
-        db.buffer = buffer;
-        //}
-        //    createTabDB(DBName);
-
-        DatabaseInterface openDB = new DatabaseInterface(db, ContainerForDB, DBName, this);
-
-        if (consoleController == null) Platform.runLater(this::loadConsole);
-
-        setDividerSpace();
-
-        if (hasScript) {
-            Thread init = new Thread(()->{
-                try {
-                    openDB.readTables();
-                    Platform.runLater(()->consoleController.addData(DBName, sender, db.getUrl(), db.getSQLType()));
-                    DatabaseOpened.put(DBName, db);
-                    DBopened.put(DBName, openDB);
-                    DatabasesOpened.add(db);
-                    DatabasesName.add(DBName);
-                    currentDB.set(DBName);
-                } catch (Exception e) {
-                    try {
-                        openDB.closeInterface();
-                        db.disconnect();
-                    } catch (SQLException _) {
-                    }
-                    ShowError("Error Open", "Error to open Database " + DBName + "\n" + e.getMessage());
-                }
-            });
-            init.setDaemon(true);
-            init.start();
-
-        }
-
-
-
+        renderDatabase(db, DBName);
     }
 
     private void createContainerDB() {
@@ -651,7 +606,7 @@ public class mainController implements requestInterface {
                             DatabasesName.addAll(DatabaseOpened.keySet());
                             if (DatabaseToClose != null) DatabaseToClose.closeInterface();
                         } catch (SQLException e) {
-                            ShowError("Error SQL", "Error to close database");
+                            ShowError("Error SQL", "Error to close database", e.getMessage());
                         }
                         if (ContainerForDB.getTabs().isEmpty()) {
                             DatabaseOpened.clear();
@@ -659,6 +614,7 @@ public class mainController implements requestInterface {
                             HorizontalSplit.getItems().removeLast();
                             DBopened.clear();
                             removeContainerTab();
+                            consoleController = null;
                             created = false;
                         }
                     }
@@ -699,7 +655,7 @@ public class mainController implements requestInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initExcelController(DatabaseOpened.get(currentDB.get()), subStage);
+            secondaryController.initExcelController(DatabaseOpened.get(currentDB.get()), task, subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -727,7 +683,7 @@ public class mainController implements requestInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initCSVController(DatabaseOpened.get(currentDB.get()), subStage);
+            secondaryController.initCSVController(DatabaseOpened.get(currentDB.get()), task, subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -755,7 +711,7 @@ public class mainController implements requestInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initXmlController(DatabaseOpened.get(currentDB.get()), subStage);
+            secondaryController.initXmlController(DatabaseOpened.get(currentDB.get()), task, subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -783,7 +739,7 @@ public class mainController implements requestInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initJsonController(DatabaseOpened.get(currentDB.get()), subStage);
+            secondaryController.initJsonController(DatabaseOpened.get(currentDB.get()), task, subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);

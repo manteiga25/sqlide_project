@@ -1,0 +1,106 @@
+/* Estilo principal do container do TaskProgressView */
+.task-progress-view {
+    -fx-background-color: #3C3C3C;
+    -fx-padding: 15px;
+
+}
+
+/* Estilo da lista de tarefas */
+.task-progress-view .list-view {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: transparent;
+    -fx-border-color: #555555;
+    -fx-border-radius: 4px;
+    -fx-padding: 5px;
+}
+
+/* Estilo das células individuais */
+.task-progress-view .list-cell {
+    -fx-background-color: #454545;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 10px;
+    -fx-margin: 5px 0;
+}
+
+/* Estilo do texto */
+.task-progress-view .label {
+    -fx-text-fill: #EEEEEE;
+    -fx-font-size: 14px;
+}
+
+/* Título da tarefa */
+.task-progress-view .title-label {
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+.task-progress-view .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 12px;
+    -fx-padding: 0;
+}
+
+/* Track (fundo) da barra vertical */
+.task-progress-view .scroll-bar:vertical .track {
+    -fx-background-color: #2A2A2A;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+}
+
+/* Thumb (alça) da barra vertical */
+.task-progress-view .scroll-bar:vertical .thumb {
+    -fx-background-color: #505050;
+    -fx-background-radius: 4px;
+    -fx-background-insets: 2px;
+}
+
+/* Barra de progresso */
+.task-progress-view .progress-bar {
+    -fx-accent: #467FF2;
+    -fx-background-color: #2A2A2A;
+    -fx-background-insets: 0;
+    -fx-background-radius: 3px;
+    -fx-padding: 1px;
+    -fx-min-height: 12px;
+    -fx-max-height: 12px;
+}
+
+/* Parte preenchida da barra */
+.task-progress-view .progress-bar > .bar {
+    -fx-background-color: #467FF2;
+    -fx-background-radius: 3px;
+    -fx-background-insets: 0;
+    -fx-padding: 0.5px;
+}
+
+/* Track (fundo) da barra */
+.task-progress-view .progress-bar > .track {
+    -fx-background-color: #2A2A2A;
+    -fx-background-radius: 3px;
+}
+
+/* Botões */
+.task-progress-view .button {
+    -fx-background-color: #CC3C3C;
+    -fx-text-fill: white;
+    -fx-background-radius: 4px;
+    -fx-padding: 5px 12px;
+}
+
+.task-progress-view .button:hover {
+    -fx-background-color: #CC4C4C;
+}
+
+/* Cabeçalho */
+.task-progress-view .header-panel {
+    -fx-background-color: #343434;
+    -fx-border-color: #555555;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 10px 15px;
+}
+
+/* Ícones */
+.task-progress-view .graphic-container {
+    -fx-text-fill: #AAAAAA;
+}

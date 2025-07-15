@@ -3,6 +3,7 @@ package com.example.sqlide.drivers.model;
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.Logger.Logger;
+import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
@@ -11,10 +12,7 @@ import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
 import java.io.*;
 import java.sql.*;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -36,9 +34,460 @@ public abstract class DataBase {
     protected String[] indexModes;
     protected ArrayList<String> foreignModes;
 
-    private DatabaseFetcherInterface databaseFetcherInterface = null;
+    private final DatabaseFetcherInterface databaseFetcherInterface = new DatabaseFetcherInterface() {
+        @Override
+        public synchronized ArrayList<DataForDB> fetchData(final String Table, ArrayList<String> Columns, final long offset, final String primeKey) {
+            Columns = new ArrayList<>(Columns);
+            ArrayList<DataForDB> data = new ArrayList<>();
+            String rowid = "";
+            if (primeKey.isEmpty()) {
+                rowid = getRowId()+",";
+                Columns.add(getRowId());
+            } else {
+                if (!Columns.contains(primeKey)) {
+                    Columns.add(primeKey);
+                }
+            }
+            final String command = "SELECT " + rowid + " * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
+            System.out.println("command " + command);
+            try {
+                initializeTime();
+                ResultSet rs = statement.executeQuery(command);
+                endTime();
+                while (rs.next()) {
+                    HashMap<String, String> tmpData = new HashMap<>();
+                    for (final String col : Columns) {
+                        System.out.println(col);
+                        Object val = rs.getObject(col);
+                        String valStr = "null";
+                        if (val != null) {
+                            valStr = val.toString();
+                        }
+                        System.out.println(valStr);
+                        tmpData.put(col, valStr);
+                    }
+                    data.add(new DataForDB(tmpData));
+                }
+                putMessage(new Logger(getUsername(), command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
+                return  data;
+            } catch (SQLException e) {
+                System.err.println(e.getMessage());
+                return null;
+            }
+        }
+
+        @Override
+        public synchronized ArrayList<DataForDB> fetchData(String command, ArrayList<String> Columns, final String primeKey) {
+            ArrayList<DataForDB> data = new ArrayList<>();
+            try {
+                System.out.println(command);
+                ResultSet rs = statement.executeQuery(command);
+                ResultSetMetaData metaData = rs.getMetaData();
+
+                // 1. Obter colunas reais do ResultSet
+                Set<String> realColumns = new HashSet<>();
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                    realColumns.add(metaData.getColumnName(i));
+                    System.out.println("label " + metaData.getColumnName(i));
+                    System.out.println("label2 " + metaData.getColumnLabel(i));
+                    System.out.println("label3 " + metaData.getColumnClassName(i));
+                }
+
+                // 2. Ajustar lista de colunas para incluir apenas colunas existentes
+                ArrayList<String> validColumns = new ArrayList<>(realColumns);
+
+                // 3. Lógica de chave primária
+                String keyToCheck = getRowId();
+                boolean keyExists = realColumns.contains(keyToCheck);
+
+                // 4. Adicionar chave se necessário
+                if (keyExists) {
+                    if (primeKey.isEmpty() && !validColumns.contains(getRowId())) {
+                        validColumns.add(getRowId());
+                    } else if (!primeKey.isEmpty() && !validColumns.contains(primeKey)) {
+                        validColumns.add(primeKey);
+                    }
+                }
+
+                // 5. Coletar dados
+                while (rs.next()) {
+                    HashMap<String, String> row = new HashMap<>();
+                    for (String col : validColumns) {
+                        Object value = rs.getObject(col);
+                        row.put(col, (value != null) ? value.toString() : "null");
+                    }
+                    data.add(new DataForDB(row));
+                }
+
+                // 6. Atualizar lista Columns
+                Columns.clear();
+                //  Columns.addAll(validColumns);
+                Columns.addAll(validColumns);
+
+                for (String column : Columns) {
+                    System.out.println("giygiy " + column);
+                }
+
+                // 7. Remover chave se não existir
+                if (!keyExists) {
+                    Columns.removeIf(col -> col.equalsIgnoreCase(keyToCheck));
+                }
+
+                return data;
+
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return null;
+            }
+        }
+
+        // faz um fetch das colunas que esta em code e as colunas na Columns e se a primeKey não estiver em code remove para Columns não o ter
+ /*   @Override
+    public synchronized ArrayList<DataForDB> fetchData(String command, ArrayList<String> Columns, final String primeKey) {
+        ArrayList<DataForDB> data = new ArrayList<>();
+        ArrayList<String> columns = new ArrayList<>();
+        String rowid = "";
+        boolean remove = false;
+        if (primeKey.isEmpty()) {
+            rowid = "ROWID,";
+            Columns.add("ROWID");
+            if (!command.contains(primeKey.toUpperCase())) {
+                remove = true;
+            }
+        } else {
+            if (!Columns.contains(primeKey)) {
+                Columns.add(primeKey);
+            }
+        }
+      //  final String command = "SELECT " + rowid + " * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
+        System.out.println("command " + command);
+        try {
+            ResultSet rs = statement.executeQuery(command);
+            while (rs.next()) {
+                HashMap<String, String> tmpData = new HashMap<>();
+                for (final String col : Columns) {
+                    System.out.println(col);
+                    Object val = rs.getObject(col);
+                    String valStr = "null";
+                    if (val != null) {
+                        valStr = val.toString();
+                    }
+                    System.out.println(valStr);
+                    tmpData.put(col, valStr);
+                }
+                data.add(new DataForDB(tmpData));
+            }
+
+            columns = data.getFirst().getColumns();
+
+            if (remove) {
+                columns.remove(primeKey.toUpperCase());
+            }
+            Columns = columns;
+
+            return data;
+        } catch (SQLException e) {
+            System.err.println(e.getMessage());
+            return null;
+        }
+    }*/
+
+        @Override
+        public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long offset, boolean primeKey) {
+            return null;
+        }
+
+        @Override
+        public synchronized ArrayList<HashMap<String, String>> fetchDataMap(final String Table, final ArrayList<String> Columns, final long limit, final long offset, final boolean PrimeKey) {
+            ArrayList<HashMap<String, String>> data = new ArrayList<>();
+            String rowid = "";
+            if (!PrimeKey) {
+                rowid = getRowId()+",";
+                Columns.add(getRowId());
+            }
+            final String command = "SELECT " + rowid + " * FROM " + Table + " LIMIT " + limit + " OFFSET " + offset;
+            System.out.println("command " + command);
+            try {
+                ResultSet rs = statement.executeQuery(command);
+                if (!rs.next()) {
+                    return null;
+                }
+                do {
+                    HashMap<String, String> tmpData = new HashMap<>();
+                    for (final String col : Columns) {
+                        System.out.println(col);
+                        Object val = rs.getObject(col);
+                        String valStr = "null";
+                        if (val != null) {
+                            valStr = val.toString();
+                        }
+                        System.out.println(valStr);
+                        tmpData.put(col, valStr);
+                    }
+                    data.add(tmpData);
+                } while (rs.next());
+                return data;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public ArrayList<HashMap<String, String>> fetchDataMap(String command, ArrayList<String> Columns, long limit, long offset) {
+            ArrayList<HashMap<String, String>> data = new ArrayList<>();
+            command = command.replace(";", "");
+            command += " LIMIT " + limit + " OFFSET " + offset + ";";
+            System.out.println("command " + command);
+            try {
+                initializeTime();
+                ResultSet rs = statement.executeQuery(command);
+                endTime();
+                if (!rs.next()) {
+                    return null;
+                }
+                do {
+                    HashMap<String, String> tmpData = new HashMap<>();
+                    for (final String col : Columns) {
+                        System.out.println(col);
+                        Object val = rs.getObject(col);
+                        String valStr = "null";
+                        if (val != null) {
+                            valStr = val.toString();
+                        }
+                        System.out.println(valStr);
+                        tmpData.put(col, valStr);
+                    }
+                    data.add(tmpData);
+                } while (rs.next());
+                putMessage(new Logger(getUsername(), command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
+                return data;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+   /* @Override
+    public synchronized ArrayList<HashMap<String, String>> fetchDataMap(final String Table, final ArrayList<String> Columns, final long limit, final long offset) {
+        ArrayList<HashMap<String, String>> data = new ArrayList<>();
+        final String command = "SELECT " + " * FROM " + Table + " LIMIT " + limit + " OFFSET " + offset;
+        System.out.println("command " + command);
+        try {
+            ResultSet rs = statement.executeQuery(command);
+            if (!rs.next()) {
+                return null;
+            }
+            do {
+                HashMap<String, String> tmpData = new HashMap<>();
+                for (final String col : Columns) {
+                    System.out.println(col);
+                    Object val = rs.getObject(col);
+                    String valStr = "null";
+                    if (val != null) {
+                        valStr = val.toString();
+                    }
+                    System.out.println(valStr);
+                    tmpData.put(col, valStr);
+                }
+                data.add(tmpData);
+            } while (rs.next());
+            return data;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    } */
+
+        @Override
+        public synchronized ArrayList<HashMap<String, String>> fetchDataMap(final String Command, final long limit, final long offset) {
+            ArrayList<HashMap<String, String>> data = new ArrayList<>();
+            final String command = Command + " LIMIT " + limit + " OFFSET " + offset + ";";
+            System.out.println("command " + command);
+            initializeTime();
+            try (final ResultSet rs = statement.executeQuery(command)) {
+                endTime();
+                if (!rs.next()) {
+                    return null;
+                }
+                ResultSetMetaData metaData = rs.getMetaData();
+
+                ArrayList<String> Columns = new ArrayList<>();
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                    Columns.add(metaData.getColumnName(i));
+                }
+                do {
+                    HashMap<String, String> tmpData = new HashMap<>();
+                    for (final String col : Columns) {
+                        System.out.println(col);
+                        Object val = rs.getObject(col);
+                        String valStr = "null";
+                        if (val != null) {
+                            valStr = val.toString();
+                        }
+                        //    System.out.println(valStr);
+                        tmpData.put(col, valStr);
+                    }
+                    data.add(tmpData);
+                } while (rs.next());
+                putMessage(new Logger(getUsername(), command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
+                return data;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public synchronized ArrayList<HashMap<String, String>> fetchRawDataMap(final String Command) {
+            ArrayList<HashMap<String, String>> data = new ArrayList<>();
+            System.out.println("command " + Command);
+            initializeTime();
+            try (final ResultSet rs = statement.executeQuery(Command)) {
+                endTime();
+                if (!rs.next()) {
+                    return null;
+                }
+                ResultSetMetaData metaData = rs.getMetaData();
+
+                ArrayList<String> Columns = new ArrayList<>();
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                    Columns.add(metaData.getColumnName(i));
+                }
+                do {
+                    HashMap<String, String> tmpData = new HashMap<>();
+                    for (final String col : Columns) {
+                        System.out.println(col);
+                        Object val = rs.getObject(col);
+                        String valStr = "null";
+                        if (val != null) {
+                            valStr = val.toString();
+                        }
+                        //    System.out.println(valStr);
+                        tmpData.put(col, valStr);
+                    }
+                    data.add(tmpData);
+                } while (rs.next());
+                putMessage(new Logger(getUsername(), Command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
+                return data;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public synchronized ArrayList<Double> fetchDataMap(final String Command) {
+            ArrayList<Double> data = new ArrayList<>();
+            // final String command = Command + " LIMIT " + limit + " OFFSET " + offset + ";";
+            System.out.println("command " + Command);
+            initializeTime();
+            try (final ResultSet rs = statement.executeQuery(Command)) {
+                endTime();
+                if (!rs.next()) {
+                    return null;
+                }
+                ResultSetMetaData metaData = rs.getMetaData();
+
+                ArrayList<String> Columns = new ArrayList<>();
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                    Columns.add(metaData.getColumnName(i));
+                }
+
+                data.add(rs.getDouble(Columns.getFirst()));
+                putMessage(new Logger(getUsername(), Command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
+                return data;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        synchronized public ArrayList<ArrayList<String>> fetchDataBackup(final String Table, final ArrayList<String> Columns, long offset) {
+            ArrayList<ArrayList<String>> data = new ArrayList<>();
+            final String command = "SELECT * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
+            System.out.println("command " + command);
+            try {
+                initializeTime();
+                ResultSet rs = statement.executeQuery(command);
+                endTime();
+                while (rs.next()) {
+                    ArrayList<String> rowData = new ArrayList<>();
+                    for (final String col : Columns) {
+                        System.out.println(col);
+                        Object val = rs.getObject(col);
+                        String valStr = "null";
+                        if (val != null) {
+                            valStr = val.toString();
+                        }
+                        System.out.println(valStr);
+                        rowData.add(valStr);
+                    }
+                    data.add(rowData);
+                }
+                putMessage(new Logger(getUsername(), command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
+                return data.isEmpty() ? null : data;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        synchronized public ArrayList<ArrayList<Object>> fetchDataBackupObject(final String Table, final ArrayList<String> Columns, long offset) {
+            ArrayList<ArrayList<Object>> data = new ArrayList<>();
+            final String command = "SELECT * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
+            System.out.println("command " + command);
+            try {
+                initializeTime();
+                ResultSet rs = statement.executeQuery(command);
+                endTime();
+                while (rs.next()) {
+                    ArrayList<Object> rowData = new ArrayList<>();
+                    for (final String col : Columns) {
+                        System.out.println(col);
+                        Object val = rs.getObject(col);
+                        if (val != null) {
+                            System.out.println("TIPOOOOO: " + val.getClass());
+                        }
+                        rowData.add(val);
+                    }
+                    data.add(rowData);
+                }
+                putMessage(new Logger(getUsername(), command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
+                return data.isEmpty() ? null : data;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        synchronized public ArrayList<ArrayList<Object>> fetchDataBackupObject(final String Command, final ArrayList<String> Columns, final long limit, long offset) {
+            ArrayList<ArrayList<Object>> data = new ArrayList<>();
+            final String command = Command + " LIMIT " + limit + " OFFSET " + offset;
+            System.out.println("command " + command);
+            try {
+                initializeTime();
+                ResultSet rs = statement.executeQuery(command);
+                endTime();
+                while (rs.next()) {
+                    ArrayList<Object> rowData = new ArrayList<>();
+                    for (final String col : Columns) {
+                        //System.out.println(col);
+                        Object val = rs.getObject(col);
+                        if (val != null) {
+                            //   System.out.println("TIPOOOOO: " + val.getClass());
+                        }
+                        rowData.add(val);
+                    }
+                    data.add(rowData);
+                }
+                putMessage(new Logger(getUsername(), command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
+                return data;
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return null;
+            }
+        }
+    };
     private DatabaseUpdaterInterface databaseUpdaterInterface = null;
     private DatabaseInserterInterface databaseInserterInterface = null;
+
+    protected String MsgException;
 
     private LocalTime init, end;
 
@@ -54,10 +503,6 @@ public abstract class DataBase {
 
     public DatabaseFetcherInterface Fetcher() {
         return databaseFetcherInterface;
-    }
-
-    protected void Fetcher(final DatabaseFetcherInterface databaseFetcherInterface) {
-        this.databaseFetcherInterface = databaseFetcherInterface;
     }
 
     public DatabaseUpdaterInterface Updater() {
@@ -337,6 +782,48 @@ public abstract class DataBase {
 
     public abstract String getUrl();
 
+
+    public boolean createView(final ViewController.View view) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            System.out.println("CREATE VIEW " + view.Name + " AS " + view.code);
+            stmt.execute("CREATE VIEW " + view.Name + " AS " + view.code);
+            return true;
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+    }
+
+    public boolean dropView(final String view) {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("DROP VIEW " + view + ";");
+            return true;
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+    }
+
+    public boolean AlterDefaultValue(final String table, final String column, final String value) {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("ALTER TABLE " + table + "ALTER COLUMN " + column + " SET DEFAULT " + value + ";");
+            return true;
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+    }
+
+    public boolean AlterTypeColumn(final String table, final String column,final String type) {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("ALTER TABLE " + table + "ALTER COLUMN " + column + " SET " + type + ";");
+            return true;
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+    }
+
     public abstract boolean createTable(String table, boolean temporary, boolean rowid);
 
     public abstract boolean createTable(String table, boolean temporary, boolean rowid, ArrayList<ColumnMetadata> columnMetadata);
@@ -408,6 +895,10 @@ public abstract class DataBase {
         }
         savepoints.clear();
     }
+
+    public abstract ArrayList<ViewController.View> getViews(String table) throws SQLException;
+
+    public abstract ArrayList<ViewController.View> getViews() throws SQLException;
 
     public abstract void createTrigger(String trigger, String code);
 

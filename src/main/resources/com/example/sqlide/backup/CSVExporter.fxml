@@ -2,38 +2,60 @@
 
 <?import com.jfoenix.controls.*?>
 <?import de.jensd.fx.glyphs.fontawesome.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane prefHeight="352.0" prefWidth="588.0" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.exporter.CSV.CSVController">
+<VBox alignment="TOP_CENTER" spacing="10.0" style="-fx-background-color: #2B2D30;" stylesheets="@../../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.exporter.CSV.CSVController">
 
-    <Label alignment="CENTER" contentDisplay="CENTER" layoutX="-1.0" layoutY="14.0" prefHeight="37.0" prefWidth="600.0" text="Export to CSV" textAlignment="CENTER" textFill="WHITE">
+    <Label alignment="CENTER" contentDisplay="CENTER" layoutX="-1.0" layoutY="14.0" text="Export to CSV" textAlignment="CENTER" textFill="WHITE">
         <font>
             <Font name="Arial" size="24.0" />
         </font>
     </Label>
-    <Label layoutX="37.0" layoutY="148.0" prefHeight="27.0" prefWidth="40.0" text="Path:" textFill="WHITE" />
-    <JFXButton layoutX="397.0" layoutY="152.0" mnemonicParsing="false" onAction="#openWindow" style="-fx-background-color: transparent;" textFill="WHITE">
-        <graphic>
-            <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
-        </graphic>
-    <tooltip>
-        <Tooltip text="Selecionar pasta destino" />
-    </tooltip>
-    </JFXButton>
-    <Label fx:id="NameLabel" layoutX="37.0" layoutY="122.0" textFill="WHITE" />
-    <JFXTextField fx:id="PathBox" layoutX="100.0" layoutY="148.0" prefHeight="25.0" prefWidth="298.0" promptText="C/...." style="-fx-text-fill: white;" unFocusColor="#3574f0" />
-    <JFXButton layoutX="535.0" layoutY="313.0" mnemonicParsing="false" onAction="#createBackup" style="-fx-background-color: #3574F0;" text="Export" textFill="WHITE" />
-   <Label layoutX="37.0" layoutY="221.0" text="CSV Type:" textFill="WHITE" />
-   <ComboBox fx:id="ComboMode" layoutX="103.0" layoutY="217.0" prefHeight="28.0" prefWidth="150.0" stylesheets="@../../../../css/ComboboxModern.css" />
-   <Label layoutX="37.0" layoutY="186.0" text="Name:" textFill="WHITE" />
-   <JFXTextField fx:id="FileName" layoutX="100.0" layoutY="179.0" prefHeight="25.0" prefWidth="176.0" promptText="Folder to create" style="-fx-text-fill: white;" unFocusColor="#3574f0" />
-   <JFXCheckBox fx:id="MetaBox" checkedColor="#3574f0" layoutX="36.0" layoutY="262.0" mnemonicParsing="false" text="Metadata" textFill="WHITE" />
-   <JFXButton layoutX="127.0" layoutY="260.0" mnemonicParsing="false" onAction="#openFetchStage" style="-fx-background-color: #3574F0;" text="Advanced serach" textFill="WHITE">
-      <font>
-         <Font name="Arial" size="12.0" />
-      </font>
-   </JFXButton>
+   <HBox>
+      <children>
+          <Label fx:id="NameLabel" textFill="WHITE" />
+      </children>
+   </HBox>
+   <HBox alignment="CENTER" spacing="5.0">
+      <children>
+          <Label text="Path:" textFill="WHITE" />
+          <JFXTextField fx:id="PathBox" promptText="C/...." style="-fx-text-fill: white;" unFocusColor="#3574f0" HBox.hgrow="ALWAYS" />
+          <JFXButton mnemonicParsing="false" onAction="#openWindow" style="-fx-background-color: transparent;" textFill="WHITE">
+              <graphic>
+                  <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
+              </graphic>
+          <tooltip>
+              <Tooltip text="Selecionar pasta destino" />
+          </tooltip>
+          </JFXButton>
+      </children>
+   </HBox>
+   <HBox alignment="CENTER" spacing="5.0">
+      <children>
+         <Label text="Name:" textFill="WHITE" />
+         <JFXTextField fx:id="FileName" promptText="Folder to create" style="-fx-text-fill: white;" unFocusColor="#3574f0" HBox.hgrow="ALWAYS" />
+         <JFXButton mnemonicParsing="false" onAction="#openFetchStage" style="-fx-background-color: #3574F0;" text="Advanced serach" textFill="WHITE">
+            <font>
+               <Font name="Arial" size="12.0" />
+            </font>
+         </JFXButton>
+      </children></HBox>
+   <HBox alignment="CENTER_LEFT" spacing="5.0">
+      <children>
+         <Label text="CSV Type:" textFill="WHITE" />
+         <ComboBox fx:id="ComboMode" promptText="Type of CSV...." stylesheets="@../../../../css/ComboboxModern.css" />
+         <JFXCheckBox fx:id="MetaBox" checkedColor="#3574f0" mnemonicParsing="false" text="Metadata" textFill="WHITE" />
+      </children></HBox>
+   <HBox alignment="CENTER_RIGHT" spacing="5.0">
+      <children>
+          <JFXButton mnemonicParsing="false" onAction="#createBackup" style="-fx-background-color: #3574F0;" text="Cancel" textFill="WHITE" />
+         <JFXButton layoutX="10.0" layoutY="10.0" mnemonicParsing="false" onAction="#createBackup" style="-fx-background-color: #3574F0;" text="Export" textFill="WHITE" />
+      </children></HBox>
+   <padding>
+      <Insets bottom="5.0" left="10.0" right="5.0" top="5.0" />
+   </padding>
 
-</AnchorPane>
+</VBox>

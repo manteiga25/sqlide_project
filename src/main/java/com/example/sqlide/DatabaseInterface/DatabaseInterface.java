@@ -4,6 +4,7 @@ import com.example.sqlide.*;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.Email.EmailController;
 import com.example.sqlide.Report.ReportController;
+import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.neural.NeuralController;
@@ -15,6 +16,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -40,13 +42,18 @@ public class DatabaseInterface {
 
     private final ArrayList<TableInterface> TableInterfaceList = new ArrayList<>();
 
-    private final TabPane Container;
+    final Tab DBPane;
+
     private TabPane DBTabContainer;
 
     private boolean removing = false;
 
     public String getCurrentTable() {
         return DBTabContainer.getSelectionModel().getSelectedItem().getText();
+    }
+
+    public Tab getContainer() {
+        return DBPane;
     }
 
     public HashMap<String, ArrayList<String>> getColumnPrimaryKeyName(final String tableToIgnore) {
@@ -58,11 +65,12 @@ public class DatabaseInterface {
         return list;
     }
 
-    public DatabaseInterface(final DataBase GenericDB, final TabPane Container, final String dbName, final mainController ref) {
+    public DatabaseInterface(final DataBase GenericDB, final String dbName) {
         DatabaseSeted = GenericDB;
         DatabaseSeted.types = new SQLiteTypes();
-        this.Container = Container;
         this.dbName = dbName;
+        this.DBPane = new Tab(dbName);
+        this.DBPane.setId(dbName);
         createTable();
     }
 
@@ -140,6 +148,25 @@ public class DatabaseInterface {
         }
     }
 
+    public void openViewStage() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/View/ViewInterface.fxml"));
+            Parent root = loader.load();
+
+            ViewController dialogController = loader.getController();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("View");
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+            dialogController.initViewController(DatabaseSeted, dialogStage);
+            dialogStage.setScene(new Scene(root));
+            dialogStage.show();
+
+        } catch (IOException | SQLException e) {
+            ShowError("Load Error", "Could not load view stage.", e.getMessage());
+        }
+    }
+
     private void openTrainStage() {
 
         try {
@@ -188,8 +215,6 @@ public class DatabaseInterface {
     }
 
     private void createTable() {
-        Tab DBPane = new Tab(dbName);
-        DBPane.setId(dbName);
 
         VBox DBContainer = new VBox();
 
@@ -239,6 +264,9 @@ public class DatabaseInterface {
         JFXButton deleteTab = new JFXButton("Delete table");
         deleteTab.setOnAction(e -> deleteDBTab());
 
+        JFXButton ViewButton = new JFXButton("Manage View");
+        ViewButton.setOnAction(_->openViewStage());
+
         JFXButton SendEmailButton = new JFXButton("Send email");
         SendEmailButton.setOnAction(e -> openEmailStage(""));
 
@@ -248,7 +276,7 @@ public class DatabaseInterface {
         JFXButton TrainButton = new JFXButton("Create Model");
         TrainButton.setOnAction(e -> openTrainStage());
 
-        ButtonsLine.getChildren().addAll(undoButton, save, createTab, deleteTab, SendEmailButton, ReportButton, TrainButton);
+        ButtonsLine.getChildren().addAll(undoButton, save, createTab, deleteTab, ViewButton, SendEmailButton, ReportButton, TrainButton);
 
         DBTabContainer = new TabPane();
         VBox.setVgrow(DBTabContainer, Priority.ALWAYS);
@@ -261,9 +289,6 @@ public class DatabaseInterface {
         DBContainer.getChildren().addAll(ButtonsLine, DBTabContainer);
 
         DBPane.setContent(DBContainer);
-
-        Container.getTabs().add(DBPane);
-        Container.getSelectionModel().select(DBPane);
     }
 
     private void commit() {

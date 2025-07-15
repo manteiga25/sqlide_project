@@ -4,6 +4,7 @@ import com.example.sqlide.Container.Editor.TextAreaAutocomplete;
 import com.example.sqlide.Container.Editor.Words.SQLWords;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -52,10 +53,10 @@ public class FileEditor {
     public FileEditor(final String path) {
         this.path = path;
 
-        HBox toolsBox = new HBox(10);
+        HBox toolsBox = new HBox(5);
         toolsBox.setPadding(new Insets(0,0,5,10));
 
-        Label dialetLabel = new Label("Script dialet");
+        Label dialetLabel = new Label("Script dialet:");
         dialetLabel.setTextFill(Color.WHITE);
 
         ComboBox<String> selectDialet = new ComboBox<>();
@@ -74,8 +75,7 @@ public class FileEditor {
         selectDialet.getSelectionModel().select(0);
 
         toolsBox.getChildren().addAll(dialetLabel, selectDialet);
-
-        VBox.setVgrow(toolsBox, Priority.NEVER);
+        toolsBox.setAlignment(Pos.CENTER_LEFT);
 
         VBox.setVgrow(EditorContainer, Priority.ALWAYS);
 
@@ -93,10 +93,9 @@ public class FileEditor {
             }
         });
         editorText.getChanged().addListener((_,_,value)->{
-            if (value) {
-                tab.setText(tab.getText()+"*");
-            } else {
-                tab.setText(tab.getText().substring(0, tab.getText().lastIndexOf("*")));
+            if (tab != null) {
+                final String name = value ? tab.getText() + "*" : tab.getText().substring(0, tab.getText().lastIndexOf("*"));
+                tab.setText(name);
             }
         });
     }

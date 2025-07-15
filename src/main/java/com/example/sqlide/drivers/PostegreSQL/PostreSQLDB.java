@@ -2,6 +2,7 @@ package com.example.sqlide.drivers.PostegreSQL;
 
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.DataForDB;
+import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
@@ -25,7 +26,7 @@ public class PostreSQLDB extends DataBase {
     public PostreSQLDB() {
         typesOfDB = new PostgreSQLTypeList();
         idType = "CTID";
-        Fetcher(databaseFetcherInterface);
+        //Fetcher(databaseFetcherInterface);
         Updater(updater);
         Inserter(inserterInterface);
     }
@@ -1104,6 +1105,16 @@ public class PostreSQLDB extends DataBase {
         } catch (SQLException e) {
 
         }
+    }
+
+    @Override
+    public ArrayList<ViewController.View> getViews(String table) throws SQLException {
+        return null;
+    }
+
+    @Override
+    public ArrayList<ViewController.View> getViews() throws SQLException {
+        return null;
     }
 
     @Override

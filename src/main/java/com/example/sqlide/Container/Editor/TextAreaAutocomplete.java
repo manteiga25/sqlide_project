@@ -1,6 +1,7 @@
 package com.example.sqlide.Container.Editor;
 
 
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ObservableList;
@@ -38,7 +39,7 @@ public class TextAreaAutocomplete extends CodeArea {
 
     private ArrayList<String> words = new ArrayList<>();
 
-    private BooleanProperty changed = new SimpleBooleanProperty(false);
+    private final BooleanProperty changed = new SimpleBooleanProperty(false);
 
     private int size = 14;
 
@@ -133,6 +134,7 @@ public class TextAreaAutocomplete extends CodeArea {
         getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/Editor/MenuStyle.css")).toExternalForm());
 
         MenuItem UndoItem = new MenuItem();
+        UndoItem.visibleProperty().bind(this.undoAvailableProperty());
         HBox undoBox = new HBox(
                 new Label("Undo"),
                 new Region(), // Spacer dinâmico
@@ -146,6 +148,7 @@ public class TextAreaAutocomplete extends CodeArea {
 
 // Repita o mesmo padrão para os demais itens
         MenuItem RedoItem = new MenuItem();
+        RedoItem.visibleProperty().bind(this.redoAvailableProperty());
         HBox redoBox = new HBox(
                 new Label("Redo"),
                 new Region(),
@@ -240,12 +243,27 @@ public class TextAreaAutocomplete extends CodeArea {
 
         setContextMenu(new ContextMenu(UndoItem, RedoItem, new SeparatorMenuItem(), CutItem, CopyItem, PasteItem, new SeparatorMenuItem(), DeleteItem, SelectWord, SelectLine, SelectItem));
 
+        DeleteItem.setVisible(false);
+        CopyItem.setVisible(false);
+        CutItem.setVisible(false);
+
+        this.selectionProperty().addListener((_,_,val)->{
+            System.out.println(val.getLength());
+            final boolean state = val.getLength() != 0;
+            DeleteItem.setVisible(state);
+            CopyItem.setVisible(state);
+            CutItem.setVisible(state);
+        });
+
     }
 
     private void initializeHandlers() {
         textProperty().addListener((_, _, text) -> {
             changed.set(true);
-            setStyleSpans(0, computeHighlighting(text));
+            Thread.ofVirtual().start(()->{
+                final StyleSpans<Collection<String>> style = computeHighlighting(text);
+                Platform.runLater(()->setStyleSpans(0, style));
+            });
         });
         WordsBox.setOnKeyPressed(event-> {
             if (event.getCode() == KeyCode.UP) {
@@ -281,14 +299,19 @@ public class TextAreaAutocomplete extends CodeArea {
                     //Bounds screenLoc = findCaret();
                     //entriesPopup.show(TextAreaAutocomplete.this, screenLoc.getMaxX(), screenLoc.getMinY());
                     System.out.println();
-                    Optional<Bounds> caretBounds = getCharacterBoundsOnScreen(getText(getCurrentParagraph()).length(), getCaretPosition());
+                    try {
+                        Optional<Bounds> caretBounds = getCharacterBoundsOnScreen(getText(getCurrentParagraph()).length(), getCaretPosition());
 
-                    caretBounds.ifPresent(bounds -> {
-                        // Mostra o popup usando as coordenadas do caret
-                        // bounds.getMinX() -> Posição X (início horizontal do caractere)
-                        // bounds.getMaxY() -> Posição Y (base da linha de texto do caractere)
-                        entriesPopup.show(this, bounds.getMaxX(), bounds.getMaxY()+10);
-                    });
+                        caretBounds.ifPresent(bounds -> {
+                            // Mostra o popup usando as coordenadas do caret
+                            // bounds.getMinX() -> Posição X (início horizontal do caractere)
+                            // bounds.getMaxY() -> Posição Y (base da linha de texto do caractere)
+                            entriesPopup.show(this, bounds.getMaxX(), bounds.getMaxY()+10);
+                        });
+                    } catch (Exception ex) {
+
+                    }
+
                 }
             }
         });

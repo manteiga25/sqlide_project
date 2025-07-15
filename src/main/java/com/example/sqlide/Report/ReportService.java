@@ -116,19 +116,34 @@ public class ReportService {
         contentStream.endText();
     }
 
-    public void generatePdfReport(ReportData reportData, String filePath) throws IOException {
-        ReportStyleConfig styleConfig = reportData.getReportStyleConfig();
-        if (styleConfig == null) {
-            styleConfig = new ReportStyleConfig(); // Use defaults if not provided
+    public PDF createPDF(final String path) throws IOException {
+        return new PDF(path);
+    }
+
+    public class PDF {
+
+        private final PDDocument document;
+        private PDPage currentPage;
+        private PDPageContentStream contentStream;
+        private ReportStyleConfig styleConfig;
+
+        private final String path;
+
+        public PDF(final String path) throws IOException {
+            this.path = path;
+            document = new PDDocument();
+            currentPage = new PDPage();
+            document.addPage(currentPage);
+            contentStream = new PDPageContentStream(document, currentPage);
         }
 
-        float pageMargin = styleConfig.getPageMargin();
-        float cellPadding = styleConfig.getCellPadding();
+        public void setStyle(ReportStyleConfig styleConfig) {
+            this.styleConfig = styleConfig;
+        }
 
-        try (PDDocument document = new PDDocument()) {
-            PDPage currentPage = new PDPage();
-            document.addPage(currentPage);
-            PDPageContentStream contentStream = new PDPageContentStream(document, currentPage);
+        public void createHeaders(ReportData reportData) throws IOException {
+            float pageMargin = styleConfig.getPageMargin();
+            float cellPadding = styleConfig.getCellPadding();
 
             float yPosition = currentPage.getMediaBox().getHeight() - pageMargin;
             final float tableWidth = currentPage.getMediaBox().getWidth() - 2 * pageMargin;
@@ -153,13 +168,22 @@ public class ReportService {
             if (!columnHeaders.isEmpty()) {
                 yPosition = drawHeaders(contentStream, columnHeaders, yPosition, pageMargin, tableWidth, columnWidth, currentPage, styleConfig);
             }
+        }
 
-            // Data Rows
+        public void addData(ReportData reportData) throws IOException {
             PDType1Font dataFont = getPdFont(styleConfig.getDataFontFamily(), Standard14Fonts.FontName.HELVETICA);
             float dataFontSize = styleConfig.getDataFontSize();
             float dataLeading = dataFontSize * 1.2f;
             Color dataTextColor = styleConfig.getDataTextColor() != null ? styleConfig.getDataTextColor() : Color.BLACK;
             Color altRowBgColor = styleConfig.getAlternatingRowBackgroundColor();
+
+            float pageMargin = styleConfig.getPageMargin();
+            float cellPadding = styleConfig.getCellPadding();
+
+            float yPosition = currentPage.getMediaBox().getHeight() - pageMargin;
+            final float tableWidth = currentPage.getMediaBox().getWidth() - 2 * pageMargin;
+            final List<String> columnHeaders = reportData.getColumnHeaders();
+            final float columnWidth = columnHeaders.isEmpty() ? tableWidth : tableWidth / columnHeaders.size();
 
             int rowCount = 0;
             for (List<String> row : reportData.getDataRows()) {
@@ -169,9 +193,7 @@ public class ReportService {
                     drawPageNumber(document, contentStream, currentPage, styleConfig);
                     contentStream.close();
 
-                    currentPage = new PDPage();
-                    document.addPage(currentPage);
-                    contentStream = new PDPageContentStream(document, currentPage);
+                    NewPage();
                     yPosition = currentPage.getMediaBox().getHeight() - pageMargin;
 
                     if (!columnHeaders.isEmpty()) {
@@ -221,9 +243,28 @@ public class ReportService {
             }
 
             drawPageNumber(document, contentStream, currentPage, styleConfig);
-            contentStream.close();
-            document.save(filePath);
         }
+
+        private void NewPage() throws IOException {
+            currentPage = new PDPage();
+            document.addPage(currentPage);
+            contentStream = new PDPageContentStream(document, currentPage);
+        }
+
+        public ReportStyleConfig getStyleConfig() {
+            return styleConfig;
+        }
+
+        public void save() throws IOException {
+            document.save(path);
+        }
+
+        public void close() throws IOException {
+            contentStream.close();
+            document.close();
+
+        }
+
     }
 
 }

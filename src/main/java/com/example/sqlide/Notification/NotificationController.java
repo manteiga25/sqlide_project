@@ -132,9 +132,9 @@ public class NotificationController {
                                 JSONObject json = new JSONObject(content);
 
                                 if (json.getInt("type") == Notification.MessageNotification.UPDATE) {
-                                    updateNotificationProgress(json.getString("id"), Double.parseDouble(json.get("param").toString()));
+                                   // updateNotificationProgress(json.getString("id"), Double.parseDouble(json.get("param").toString()));
                                 } else {
-                                    Notification.MessageNotification message = new Notification.MessageNotification(json.getString("id"), json.getString("title"), json.getString("message"), json.getInt("type"), LocalTime.now());
+                                    Notification.MessageNotification message = new Notification.MessageNotification(json.getString("id"), json.getString("title"), json.getString("message"), json.getInt("type"), LocalTime.now().withNano(0));
                                     System.out.println("Mensagem recebida: " + message);
                                     final NotificationContainer newContainer = new NotificationContainer();
                                     NotificationList.put(message.id(), newContainer);
@@ -147,6 +147,14 @@ public class NotificationController {
                                     }
                                 }
                             }
+
+                            Platform.runLater(()-> {
+                                try {
+                                    Files.delete(Path.of("Notifications/" + event.context()));
+                                } catch (IOException _) {
+                                  //  throw new RuntimeException(e);
+                                }
+                            });
 
 
                           //

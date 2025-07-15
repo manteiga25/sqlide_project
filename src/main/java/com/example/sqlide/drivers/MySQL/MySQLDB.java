@@ -1,10 +1,9 @@
 package com.example.sqlide.drivers.MySQL;
 
 import com.example.sqlide.ColumnMetadata;
-import com.example.sqlide.DataForDB;
 import com.example.sqlide.Logger.Logger;
+import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.model.DataBase;
-import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
 import com.example.sqlide.drivers.model.SQLTypes;
@@ -27,7 +26,6 @@ public class MySQLDB extends DataBase {
         typesOfDB = new MySQLTypesList();
         foreignModes = new ArrayList<>(List.of("CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"));
         SQLType = SQLTypes.MYSQL;
-        Fetcher(databaseFetcherInterface);
         Updater(updaterInterface);
         Inserter(inserterInterface);
     }
@@ -203,85 +201,6 @@ public class MySQLDB extends DataBase {
         }
         return true;
     }
-
-    private final DatabaseFetcherInterface databaseFetcherInterface = new DatabaseFetcherInterface() {
-        @Override
-        public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, String primeKey) {
-            ArrayList<DataForDB> data = new ArrayList<>();
-            final String command = "SELECT * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
-            System.out.println("command " + command);
-            try {
-                ResultSet rs = statement.executeQuery(command);
-                while (rs.next()) {
-                    HashMap<String, String> tmpData = new HashMap<>();
-                    for (final String col : Columns) {
-                        System.out.println(col);
-                        Object val = rs.getObject(col);
-                        String valStr = "null";
-                        if (val != null) {
-                            valStr = val.toString();
-                        }
-                        System.out.println(valStr);
-                        tmpData.put(col, valStr);
-                    }
-                    data.add(new DataForDB(tmpData));
-                }
-                return data;
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, String primeKey) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long offset, final boolean primeKey) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long limit, long offset, boolean PrimeKey) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<HashMap<String, String>> fetchDataMap(String Table, ArrayList<String> Columns, long limit, long offset) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<HashMap<String, String>> fetchDataMap(String Command, long limit, long offset) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<HashMap<String, String>> fetchRawDataMap(String Command) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<Double> fetchDataMap(String Command) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<ArrayList<String>> fetchDataBackup(String Table, ArrayList<String> Columns, long offset) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long offset) {
-            return null;
-        }
-
-        @Override
-        public ArrayList<ArrayList<Object>> fetchDataBackupObject(String Table, ArrayList<String> Columns, long limit, long offset) {
-            return null;
-        }
-    };
 
     private final DatabaseInserterInterface inserterInterface = new DatabaseInserterInterface() {
         @Override
@@ -965,6 +884,16 @@ public class MySQLDB extends DataBase {
         } catch (SQLException e) {
 
         }
+    }
+
+    @Override
+    public ArrayList<ViewController.View> getViews(String table) throws SQLException {
+        return null;
+    }
+
+    @Override
+    public ArrayList<ViewController.View> getViews() throws SQLException {
+        return null;
     }
 
     @Override

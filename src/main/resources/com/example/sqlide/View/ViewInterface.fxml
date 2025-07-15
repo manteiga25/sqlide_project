@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import de.jensd.fx.glyphs.fontawesome.*?>
+<?import java.net.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import org.controlsfx.control.*?>
+
+<VBox spacing="10.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.View.ViewController">
+   <children>
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
+         <children>
+            <Label text="Path:" textFill="#e2e2e2">
+               <font>
+                  <Font name="JetBrains Mono Medium" size="12.0" />
+               </font></Label>
+            <JFXTextField fx:id="pathField" style="-fx-text-fill: white;" stylesheets="@../../../../css/ContextMenuStyle.css" HBox.hgrow="ALWAYS" />
+            <JFXButton mnemonicParsing="false" onAction="#searchFile">
+               <graphic>
+                  <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
+               </graphic>
+            </JFXButton>
+         </children>
+      </HBox>
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
+         <children>
+            <Label text="Views:" textFill="#e2e2e2">
+               <font>
+                  <Font name="JetBrains Mono Medium" size="12.0" />
+               </font>
+            </Label>
+            <CheckComboBox fx:id="ViewSelectedBox" style="-fx-text-fill: white;" stylesheets="@../../../../css/ComboboxModern.css" HBox.hgrow="ALWAYS" />
+            <JFXButton mnemonicParsing="false" onAction="#searchView" style="-fx-background-color: #3574F0;" text="Search" textFill="#f2f2f2">
+               <font>
+                  <Font name="JetBrains Mono Medium" size="12.0" />
+               </font></JFXButton>
+         </children>
+      </HBox>
+      <VBox fx:id="ViewContainer" spacing="5.0" VBox.vgrow="ALWAYS">
+         <children>
+            <HBox alignment="CENTER_LEFT" spacing="5.0">
+               <children>
+                  <Label text="View/Edit:" textFill="#f2f2f2">
+                     <font>
+                        <Font name="JetBrains Mono Medium" size="14.0" />
+                     </font></Label>
+                  <ChoiceBox fx:id="ViewBox" stylesheets="@../../../../css/ChoiceBoxModern.css" HBox.hgrow="ALWAYS" />
+                  <Button mnemonicParsing="false" onAction="#add" style="-fx-background-color: #3574F0;" text="Add" textFill="#f2f2f2">
+                     <font>
+                        <Font name="JetBrains Mono Medium" size="12.0" />
+                     </font></Button>
+                  <Button layoutX="198.0" layoutY="10.0" mnemonicParsing="false" onAction="#remove" style="-fx-background-color: #3574F0;" text="Remove" textFill="#f2f2f2">
+                     <font>
+                        <Font name="JetBrains Mono Medium" size="12.0" />
+                     </font></Button>
+               </children>
+            </HBox>
+         </children>
+         <padding>
+            <Insets top="5.0" />
+         </padding></VBox>
+      <Label text="Comment:" textFill="#f2f2f2">
+         <font>
+            <Font name="JetBrains Mono Medium" size="16.0" />
+         </font>
+
+      </Label>
+      <TextArea fx:id="CommentArea" prefHeight="100.0" style="-fx-background-color: #3C3C3C;">
+         <stylesheets>
+            <URL value="@../../../../css/TextAreaStyle.css" />
+            <URL value="@../../../../css/ContextMenuStyle.css" />
+         </stylesheets></TextArea>
+      <HBox nodeOrientation="RIGHT_TO_LEFT" spacing="5.0">
+         <children>
+            <Button mnemonicParsing="false" onAction="#confirm" style="-fx-background-color: #3574F0;" text="Ok" textFill="#f2f2f2" />
+            <Button mnemonicParsing="false" style="-fx-background-color: #3574F0;" text="Cancel" textFill="#f2f2f2" />
+         </children>
+      </HBox>
+   </children>
+   <padding>
+      <Insets bottom="5.0" left="5.0" right="5.0" />
+   </padding>
+</VBox>

@@ -11,6 +11,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
@@ -28,7 +29,7 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 public class NewRow {
 
     @FXML
-    private GridPane GridContainer;
+    private FlowPane GridContainer;
     @FXML
     private Label DBInfo;
 
@@ -63,7 +64,7 @@ public class NewRow {
             columnBox.setPadding(new Insets(0,0,0,10));
             columnBox.getChildren().addAll(columnLabel, (Node) widget);
             GridPane.setHalignment(columnBox, HPos.CENTER);
-            GridContainer.add(columnBox, column, row);
+            GridContainer.getChildren().add(columnBox);
        //     Object s = WidgetGenericType(col);
             WidgetsList.add(widget);
           //  GridContainer.add((Node) s, ++column, row);

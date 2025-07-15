@@ -91,31 +91,11 @@ abstract public class handleWindow {
     }
 
     public static Stage LoadingStage(final String title, final String content) {
-        Stage stage = null;
-        try {
-            // Carrega o arquivo FXML
-
-            FXMLLoader loader = new FXMLLoader(handleWindow.class.getResource("/com/example/sqlide/loading/loadingIndeterminateStage.fxml"));
-            //    VBox miniWindow = loader.load();
-            Parent root = loader.load();
-
-            LoadingController secondaryController = loader.getController();
-
-            // Criar um novo Stage para a subjanela
-            stage = new Stage();
-            stage.setTitle("Subjanela");
-            stage.setScene(new Scene(root));
-            secondaryController.setTitle(title);
-            secondaryController.setContent(content);
-
-            // Opcional: definir a modalidade da subjanela
-            stage.initModality(Modality.WINDOW_MODAL);
-
-            // Mostrar a subjanela
-            stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        final Stage stage = new Stage();
+        stage.setTitle("loading");
+        stage.setScene(new Scene(new LoadingController(title, content)));
+        stage.initModality(Modality.WINDOW_MODAL);
+        stage.show();
         return stage;
     }
 

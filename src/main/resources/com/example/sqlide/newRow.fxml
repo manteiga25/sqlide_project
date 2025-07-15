@@ -1,46 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.net.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<VBox spacing="5.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewRow">
-    <Label fx:id="DBInfo" alignment="CENTER" prefHeight="58.0" prefWidth="606.0" textAlignment="CENTER" textFill="WHITE">
+<VBox alignment="TOP_CENTER" spacing="10.0" style="-fx-background-color: #2C2C2C; -fx-padding: 15;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewRow">
+
+    <!-- Cabeçalho informativo -->
+    <Label fx:id="DBInfo" alignment="CENTER" textAlignment="CENTER" textFill="#E0E0E0">
         <font>
-          <Font name="JetBrains Mono Regular" size="18.0" />
+            <Font name="JetBrains Mono Regular" size="18.0" />
         </font>
+        <VBox.margin>
+            <Insets bottom="15" />
+        </VBox.margin>
     </Label>
-   <ScrollPane layoutY="71.0" maxHeight="1.7976931348623157E308" pannable="true" style="-fx-background-color: #2C2C2C;" stylesheets="@../../../css/ScrollHbarStyle.css" VBox.vgrow="ALWAYS">
-     <content>
-       <AnchorPane maxHeight="1.7976931348623157E308" minHeight="0.0" minWidth="0.0" style="-fx-background-color: #2C2C2C;">
-            <children>
-                <GridPane fx:id="GridContainer" hgap="5.0" prefWidth="606.0" style="-fx-background-color: #2C2C2C;" vgap="25.0">
-                  <columnConstraints>
-                      <ColumnConstraints hgrow="SOMETIMES" />
-                      <ColumnConstraints hgrow="SOMETIMES" />
-                  </columnConstraints>
-                  <rowConstraints>
-                     <RowConstraints />
-                  </rowConstraints>
-                  <stylesheets>
-                     <URL value="@../../../css/DatePicker.css" />
-                     <URL value="@../../../css/ContextMenuStyle.css" />
-                     <URL value="@../../../css/ComboboxModern.css" />
-                  </stylesheets>
-                </GridPane>
-            </children>
-         </AnchorPane>
-     </content>
-   </ScrollPane>
-   <HBox alignment="CENTER_RIGHT" spacing="5.0">
-      <children>
-         <Button mnemonicParsing="false" onAction="#exit" text="Cancel" />
-         <Button mnemonicParsing="false" onAction="#addData" text="Save" />
-      </children>
-      <VBox.margin>
-         <Insets bottom="5.0" right="5.0" />
-      </VBox.margin>
-   </HBox>
+
+    <!-- Área de conteúdo principal com rolagem -->
+            <FlowPane fx:id="GridContainer" hgap="15" style="-fx-background-color: #2C2C2C;" vgap="15" VBox.vgrow="ALWAYS">
+                <padding>
+                    <Insets bottom="10" />
+                </padding>
+            </FlowPane>
+
+    <!-- Área de botões -->
+    <HBox alignment="CENTER_RIGHT" spacing="15.0" style="-fx-padding: 10 0 0 0;">
+        <children>
+            <Button mnemonicParsing="false" onAction="#exit" style="-fx-background-color: #555; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;" text="Cancel" />
+            <Button mnemonicParsing="false" onAction="#addData" style="-fx-background-color: #467FF2; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 25;" text="Save" />
+        </children>
+    </HBox>
 </VBox>

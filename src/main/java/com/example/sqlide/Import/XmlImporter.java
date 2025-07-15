@@ -13,7 +13,6 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -313,176 +312,158 @@ public class XmlImporter implements FileImporter {
     @Override
     public String importData(File file, String rowElementName, DatabaseInserterInterface inserter,
                              final int bufferSize, String targetTableName, boolean createNewTable,
-                             Map<String, String> columnMapping) throws IOException {
+                             Map<String, String> columnMapping)
+            throws IOException, IllegalArgumentException, SQLException {
         ensureFileOpened(file);
         this.errors.clear();
         this.progress.set(0.0);
 
-// Validações iniciais
         if (inserter == null) throw new IllegalArgumentException("Database inserter is null.");
-        if (targetTableName == null || targetTableName.trim().isEmpty())
-            throw new IllegalArgumentException("Target table name must be specified.");
+        if (targetTableName == null || targetTableName.trim().isEmpty()) throw new IllegalArgumentException("Target table name must be specified.");
 
         List<String> sourceXmlHeaders = getColumnHeaders(file, rowElementName);
-        if (sourceXmlHeaders.isEmpty()) {
-            errors.add("Warning: No column headers found for XML row element '" + rowElementName + "'");
+        if (sourceXmlHeaders.isEmpty() && getDetectedTableNames(file).contains(rowElementName)) {
+            errors.add("Warning: No column headers found for XML row element '" + rowElementName + "'. Import might result in an empty table or errors.");
+            // Allow continuing if user insists, but it's problematic.
         }
-
-// Construir mapeamento efetivo de colunas
-        Map<String, String> effectiveColumnMapping = new HashMap<>();
+        
         List<String> finalTargetDbColumnNames = new ArrayList<>();
+        Map<String, String> effectiveColumnMapping = new HashMap<>(); // sourceXmlHeader -> targetDbColumnName
 
-        if (columnMapping != null && !columnMapping.isEmpty()) {
-            for (Map.Entry<String, String> entry : columnMapping.entrySet()) {
-                if (!entry.getValue().equalsIgnoreCase("(Skip Import)") &&
-                        !entry.getValue().trim().isEmpty()) {
-                    effectiveColumnMapping.put(entry.getValue(), entry.getKey());
-                    finalTargetDbColumnNames.add(entry.getValue());
-                }
-            }
-        } else {
-            // Mapeamento automático quando não fornecido
+        if (columnMapping == null || columnMapping.isEmpty()) {
             for (String header : sourceXmlHeaders) {
                 effectiveColumnMapping.put(header, header);
                 finalTargetDbColumnNames.add(header);
             }
+        } else {
+            for (String srcHeader : sourceXmlHeaders) {
+                if (columnMapping.containsKey(srcHeader)) {
+                    String targetHeader = columnMapping.get(srcHeader);
+                    if (targetHeader != null && !targetHeader.trim().isEmpty() && !targetHeader.equalsIgnoreCase("(Skip Import)")) {
+                        effectiveColumnMapping.put(srcHeader, targetHeader);
+                        finalTargetDbColumnNames.add(targetHeader);
+                    }
+                }
+            }
         }
 
-        if (finalTargetDbColumnNames.isEmpty()) {
+        if (finalTargetDbColumnNames.isEmpty() && !sourceXmlHeaders.isEmpty()) {
+            // Only throw error if there were source headers but mapping resulted in none
+            throw new IllegalArgumentException("No columns selected for import after applying column mapping for XML row element '" + rowElementName + "'.");
+        }
+         if (finalTargetDbColumnNames.isEmpty() && sourceXmlHeaders.isEmpty()){
             this.progress.set(1.0);
-            return "No valid columns selected for import. Operation aborted.";
+            return "No source headers and no columns selected for import from XML row element '"+rowElementName+"'. Nothing to import.";
         }
 
-// Contagem total de registros para progresso
 
-// Processamento principal
-        long recordsProcessed = 0;
+        // DDL for createNewTable is deferred to controller/Step 6.
+
+        long recordsProcessedCount = 0;
+        long totalRecordsEstimate = 0; // StAX makes exact count hard without two passes.
         ArrayList<HashMap<String, String>> batchData = new ArrayList<>();
-        XMLInputFactory factory = XMLInputFactory.newInstance();
+        XMLInputFactory factory = createXmlInputFactory();
 
-        try (FileInputStream fis = new FileInputStream(file)) {
-            XMLEventReader eventReader = factory.createXMLEventReader(fis);
-            long totalRecords = countXmlRecords(file, rowElementName);
-            final double progressIncrement = 1.0 / totalRecords;
+        try (FileReader fileReader = new FileReader(file)) {
+            XMLEventReader eventReader = factory.createXMLEventReader(fileReader);
 
             while (eventReader.hasNext()) {
                 XMLEvent event = eventReader.nextEvent();
-
-                if (event.isStartElement() &&
-                        event.asStartElement().getName().getLocalPart().equals(rowElementName)) {
-
-                    Map<String, String> currentRecord = new HashMap<>();
+                if (event.isStartElement()) {
                     StartElement startElement = event.asStartElement();
+                    if (startElement.getName().getLocalPart().equals(rowElementName)) {
+                        totalRecordsEstimate++; // For approximate progress
+                        HashMap<String, String> currentXmlRecord = new HashMap<>();
 
-                    // Processar atributos
-                    Iterator<Attribute> attributes = startElement.getAttributes();
-                    while (attributes.hasNext()) {
-                        Attribute attr = attributes.next();
-                        String attrName = "@" + attr.getName().getLocalPart();
-                        currentRecord.put(attrName, attr.getValue());
-                    }
-
-                    // Processar elementos filhos
-                    while (eventReader.hasNext()) {
-                        event = eventReader.nextEvent();
-
-                        if (event.isStartElement()) {
-                            StartElement childElement = event.asStartElement();
-                            String childName = childElement.getName().getLocalPart();
-                            String childValue = getElementText(eventReader, childName);
-                            currentRecord.put(childName, childValue);
+                        Iterator<Attribute> attributes = startElement.getAttributes();
+                        while (attributes.hasNext()) {
+                            Attribute attribute = attributes.next();
+                            currentXmlRecord.put(ATTRIBUTE_PREFIX + attribute.getName().getLocalPart(), attribute.getValue());
                         }
 
-                        if (event.isEndElement() &&
-                                event.asEndElement().getName().getLocalPart().equals(rowElementName)) {
-                            break;
+                        while (eventReader.hasNext()) {
+                            XMLEvent innerEvent = eventReader.nextEvent();
+                            if (innerEvent.isStartElement()) {
+                                StartElement childElement = innerEvent.asStartElement();
+                                String childName = childElement.getName().getLocalPart();
+                                String childValue = "";
+                                XMLEvent dataEvent = eventReader.peek(); // Peek for characters
+                                if (dataEvent.isCharacters()) {
+                                    childValue = dataEvent.asCharacters().getData().trim();
+                                    eventReader.nextEvent(); // Consume characters
+                                }
+                                // Ensure the END_ELEMENT for this child is consumed
+                                XMLEvent endChildPeek = eventReader.peek();
+                                if(endChildPeek.isEndElement() && endChildPeek.asEndElement().getName().getLocalPart().equals(childName)){
+                                    eventReader.nextEvent(); // consume end child
+                                } else if (endChildPeek.getEventType() == XMLStreamConstants.COMMENT || endChildPeek.getEventType() == XMLStreamConstants.PROCESSING_INSTRUCTION){
+                                     eventReader.nextEvent(); // consume and peek again
+                                     endChildPeek = eventReader.peek();
+                                     if(endChildPeek.isEndElement() && endChildPeek.asEndElement().getName().getLocalPart().equals(childName)){
+                                         eventReader.nextEvent();
+                                     }
+                                }
+                                // else: complex content or unexpected structure, value might be empty.
+                                currentXmlRecord.put(childName, childValue);
+                            } else if (innerEvent.isEndElement() && innerEvent.asEndElement().getName().getLocalPart().equals(rowElementName)) {
+                                break; 
+                            }
                         }
-                    }
 
-                    // Mapear para colunas de destino
-                    HashMap<String, String> dbRecord = new HashMap<>();
-                    for (Map.Entry<String, String> mapping : effectiveColumnMapping.entrySet()) {
-                        String sourceKey = mapping.getKey();
-                        String targetKey = mapping.getValue();
-                        dbRecord.put(targetKey, currentRecord.getOrDefault(sourceKey, null));
-                    }
-
-                    batchData.add(dbRecord);
-                    recordsProcessed++;
-
-                    // Inserir em lotes
-                    if (batchData.size() >= bufferSize) {
-                        if (!inserter.insertData(targetTableName, batchData)) {
-                            errors.add("Batch insert failed: " + inserter.getException());
+                        // Map to DB row
+                        HashMap<String, String> rowDataForDb = new LinkedHashMap<>();
+                        for (String targetDbColName : finalTargetDbColumnNames) {
+                            String sourceXmlKey = null;
+                            for (Map.Entry<String, String> entry : effectiveColumnMapping.entrySet()) {
+                                if (entry.getValue().equals(targetDbColName)) {
+                                    sourceXmlKey = entry.getKey();
+                                    break;
+                                }
+                            }
+                            rowDataForDb.put(targetDbColName, sourceXmlKey != null ? currentXmlRecord.get(sourceXmlKey) : null);
                         }
-                        batchData.clear();
-                    }
+                        
+                        if (rowDataForDb.size() != finalTargetDbColumnNames.size() && !finalTargetDbColumnNames.isEmpty()){
+                            errors.add(String.format("Record %d: Mapped data size (%d) does not match target column count (%d). Skipping.", recordsProcessedCount + 1, rowDataForDb.size(), finalTargetDbColumnNames.size()));
+                            // continue, but count it for progress.
+                        } else if (!rowDataForDb.isEmpty() || finalTargetDbColumnNames.isEmpty()){ // Add if not empty, or if target is empty (importing nothing)
+                             batchData.add(rowDataForDb);
+                        }
 
-                    // Atualizar progresso
-                    progress.set(progress.get() + progressIncrement);
+
+                        recordsProcessedCount++;
+                        if (batchData.size() >= bufferSize) {
+                            if(!inserter.insertData(targetTableName, batchData)) {
+                                errors.add("Failed to insert batch of XML data. Error: " + inserter.getException());
+                            }
+                            batchData.clear();
+                        }
+                        // Simple progress update, less accurate without total count
+                        if (recordsProcessedCount % 100 == 0) this.progress.set(this.progress.get() + 0.01); 
+                    }
                 }
             }
-
-            // Inserir dados restantes
+            // Final batch
             if (!batchData.isEmpty()) {
-                if (!inserter.insertData(targetTableName, batchData)) {
-                    errors.add("Final batch insert failed: " + inserter.getException());
+                if(!inserter.insertData(targetTableName, batchData)) {
+                     errors.add("Failed to insert final batch of XML data. Error: " + inserter.getException());
                 }
+                batchData.clear();
             }
 
-        } catch (Exception e) {
-            errors.add("XML import error: " + e.getMessage());
-            throw new IOException("XML processing failed", e);
+        } catch (XMLStreamException e) {
+            errors.add("Critical error during XML data processing for row element '" + rowElementName + "': " + e.getMessage());
+            throw new IOException("Error processing XML data: " + e.getMessage(), e);
         }
 
-        progress.set(1.0);
-        return String.format("Successfully imported %d records from %s", recordsProcessed, file.getName());
-    }
-
-    private long countXmlRecords(File file, String rowElementName) throws Exception {
-        long count = 0;
-        XMLInputFactory factory = XMLInputFactory.newInstance();
-
-        try (FileInputStream fis = new FileInputStream(file)) {
-            XMLEventReader eventReader = factory.createXMLEventReader(fis);
-
-            while (eventReader.hasNext()) {
-                XMLEvent event = eventReader.nextEvent();
-                if (event.isStartElement() &&
-                        event.asStartElement().getName().getLocalPart().equals(rowElementName)) {
-                    count++;
-                }
-            }
+        this.progress.set(1.0);
+        if (errors.isEmpty()) {
+            return String.format("Successfully processed %d XML records for element '%s' into %s.", recordsProcessedCount, rowElementName, targetTableName);
+        } else {
+            return String.format("Processed %d XML records for element '%s' into %s with %d errors/warnings.", recordsProcessedCount, rowElementName, targetTableName, errors.size());
         }
-        return Math.max(count, 1); // Evitar divisão por zero
     }
 
-    private String getElementText(XMLEventReader eventReader, String elementName) throws XMLStreamException {
-        StringBuilder content = new StringBuilder();
-        int depth = 0;
-
-        while (eventReader.hasNext()) {
-            XMLEvent event = eventReader.nextEvent();
-
-            if (event.isStartElement() &&
-                    event.asStartElement().getName().getLocalPart().equals(elementName)) {
-                depth++;
-            }
-
-            if (event.isCharacters() && depth == 0) {
-                content.append(event.asCharacters().getData());
-            }
-
-            if (event.isEndElement()) {
-                if (event.asEndElement().getName().getLocalPart().equals(elementName)) {
-                    if (depth == 0) break;
-                    depth--;
-                }
-            }
-        }
-
-        return content.toString().trim();
-    }
 
     @Override
     public double getImportProgress() {

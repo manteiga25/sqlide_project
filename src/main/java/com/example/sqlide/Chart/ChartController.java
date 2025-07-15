@@ -3,6 +3,7 @@ package com.example.sqlide.Chart;
 import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.Report.ReportController;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -64,7 +65,7 @@ public class ChartController {
 
    private ArrayList<String> columns;
 
-   private DataBase db;
+   private DatabaseFetcherInterface db;
 
    private ContextMenu menu;
 
@@ -80,7 +81,7 @@ public class ChartController {
         numberField.setText(title);
     }
 
-   public void setAttributes(final String table, final ArrayList<String> columns, final DataBase db) {
+   public void setAttributes(final String table, final ArrayList<String> columns, final DatabaseFetcherInterface db) {
        this.table = table;
        this.columns = columns;
        this.db = db;
@@ -133,7 +134,7 @@ public class ChartController {
                 if (change.wasAdded()) {
                     for (Label lbl : change.getAddedSubList()) {
                         String novaCategoria = lbl.Name.get();
-                        if (!lbl.Query.get().contains("FROM")) lbl.Query.set(lbl.Query.get()+" FROM " + table + ";");
+                       // if (!lbl.Query.get().contains("FROM")) lbl.Query.set(lbl.Query.get()+" FROM " + table + ";");
                         addLabelCategory(novaCategoria);
                         searchStage.add(null);
                         controllers.add(null);
@@ -592,7 +593,7 @@ public class ChartController {
             final List<Label> reduced = labelMap.stream().filter(lab -> lab.Name.get().equals(label.Name.get())).toList();
 
             for (final Label subLabel : reduced) {
-                final ArrayList<Double> subData = db.Fetcher().fetchDataMap(subLabel.Query.get());
+                final ArrayList<Double> subData = db.fetchDataMap(subLabel.Query.get());
                 series.getData().add(new XYChart.Data<String, Double>(subLabel.Category.get(), subData.getFirst()));
             }
 
@@ -608,7 +609,7 @@ public class ChartController {
         final ObservableList<PieChart.Data> Data = FXCollections.observableArrayList();
 
         for (final Label label : labelMap) {
-            final ArrayList<Double> subData = db.Fetcher().fetchDataMap(label.Query.get());
+            final ArrayList<Double> subData = db.fetchDataMap(label.Query.get());
             Data.add(new PieChart.Data(label.Category.get(), subData.getFirst()));
         }
         Platform.runLater(()->setData(Data));

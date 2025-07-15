@@ -6,6 +6,7 @@ from sys import stderr
 
 conversation_history = []
 client = None
+response = []
 
 def getSQLType():
     """Get the type of SQL on the Schema, it's necessary to generate functions/triggers/events, etc..., to generate a correct code.
@@ -13,6 +14,7 @@ def getSQLType():
 
         Return (str): The name of SQLType.
         """
+    global response
     sender = {
             'status': 'request',
             'function': 'type',
@@ -22,7 +24,11 @@ def getSQLType():
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def currentTable():
     """Fetch the current Table on the user is.
@@ -30,7 +36,7 @@ def currentTable():
 
     Return (str): the table name of the user if value is "" is invalid.
     """
-
+    global response
     sender = {
         'status': 'request',
         'function': 'table',
@@ -40,7 +46,11 @@ def currentTable():
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def ShowData(query: str, table: str):
     """Show data for user from a SQL query, If table is not mentioned use currentTable() to fetch current Table.
@@ -49,7 +59,7 @@ def ShowData(query: str, table: str):
         table (str): The table to execute query.
     Return (bool): True success, False error
     """
-
+    global response
     sender = {
     'status': 'request',
     'function': 'Show_Data',
@@ -59,7 +69,11 @@ def ShowData(query: str, table: str):
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def RequestData(query: str, table: str):
     """Request data for user from a SQL query, If table is not mentioned use currentTable() to fetch current Table.
@@ -68,7 +82,7 @@ def RequestData(query: str, table: str):
         table (str): The table to execute query.
     Return (list(dict[str, str])): the list of data
     """
-
+    global response
     sender = {
     'status': 'request',
     'function': 'Request_Data',
@@ -78,7 +92,11 @@ def RequestData(query: str, table: str):
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def GetColumnsMetadata():
     """Request metadata of table to process metadata of columns.
@@ -86,7 +104,7 @@ def GetColumnsMetadata():
 
     Return (list[dict[str, str]]: the list of metadata
     """
-
+    global response
     sender = {
     'status': 'request',
     'function': 'GetTableMeta',
@@ -96,7 +114,11 @@ def GetColumnsMetadata():
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def sendEmail(body: str, query: list[str]):
     """Generate and send a html email body ex: <html dir="ltr"><head></head><body contenteditable="true"><span style="font-family: &quot;&quot;;">Olá&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=user:Name/&gt;</span><span style="font-family: &quot;&quot;;">, parabéns foi selecionado como candidato para o prémio por ter completado os seus&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=user:age/&gt; de idade, vá para a lojá maos proxima e use o seguinte código&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=product:id/&gt; para receber o prémio, obrigado.&nbsp;</span><span style="font-family: &quot;&quot;;">&lt;DataSrc=worker:Name/&gt;.</span></body></html>
@@ -106,7 +128,7 @@ def sendEmail(body: str, query: list[str]):
 
         Return None:
     """
-
+    global response
     sender = {
         'status': 'request',
         'function': 'sendEmail',
@@ -116,7 +138,11 @@ def sendEmail(body: str, query: list[str]):
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def createReport(title: str, query: str):
     """Generate a report, use GetColumnsMetadata and currentTable function to get information of tables to to generate query for report.
@@ -126,7 +152,7 @@ def createReport(title: str, query: str):
 
             Return (bool): true success, false error.
         """
-
+    global response
     sender = {
             'status': 'request',
             'function': 'createReport',
@@ -136,7 +162,11 @@ def createReport(title: str, query: str):
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def createTable(tableName: str, meta: list[dict[str, str]]):
     """Create a sql table, if not specified from user try to generate.
@@ -146,7 +176,7 @@ def createTable(tableName: str, meta: list[dict[str, str]]):
 
         Return (bool): true success, false error.
     """
-
+    global response
     sender = {
             'status': 'request',
             'function': 'CreateTable',
@@ -156,7 +186,11 @@ def createTable(tableName: str, meta: list[dict[str, str]]):
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def createData(table: str, data: list[dict[str, str]]):
     """Create a data for the table's.
@@ -166,7 +200,7 @@ def createData(table: str, data: list[dict[str, str]]):
 
         Return (str): empty Success, Error or SQLException Error.
     """
-
+    global response
     sender = {
                 'status': 'request',
                 'function': 'InsertData',
@@ -176,7 +210,11 @@ def createData(table: str, data: list[dict[str, str]]):
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def createTrigger(Trigger: dict[str, str]):
     """Create a SQL trigger's for the Schema.
@@ -185,7 +223,7 @@ def createTrigger(Trigger: dict[str, str]):
 
          Return (str): true success, false or SQLException error.
     """
-
+    global response
     sender = {
                 'status': 'request',
                 'function': 'CreateTrigger',
@@ -195,7 +233,11 @@ def createTrigger(Trigger: dict[str, str]):
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def createEvent(Event: dict[str, str]):
     """Create a SQL Event's for the Schema.
@@ -204,7 +246,7 @@ def createEvent(Event: dict[str, str]):
 
              Return (str): true success, false or SQLException error.
         """
-
+    global response
     sender = {
                 'status': 'request',
                 'function': 'CreateEvent',
@@ -214,10 +256,14 @@ def createEvent(Event: dict[str, str]):
 
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def createGraphic(table: str, name: str, nameX: str, nameY: str, label: list[dict[str, str]]):
-    """Create a Graphic.
+    """Create a Graphic (use GetColumnsMetadata for column names).
                  Args:
                     table (str): The name of table to fetch.
                     name (str): The name of graphic.
@@ -227,6 +273,7 @@ def createGraphic(table: str, name: str, nameX: str, nameY: str, label: list[dic
 
                  Return (str): true success, false or SQLException error.
             """
+    global response
     sender = {
                     'status': 'request',
                     'function': 'CreateGraphic',
@@ -235,11 +282,16 @@ def createGraphic(table: str, name: str, nameX: str, nameY: str, label: list[dic
                     }
     print(json.dumps(sender))
 
-    return input()
+    ret = input()
+
+    response.append(ret)
+
+    return ret
 
 def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
     global conversation_history
     global client
+    global response
 
     model = "gemini-2.5-pro" if deep else "gemini-2.5-flash"
 
@@ -267,19 +319,34 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
         )
     conversation_history.append(user_content)
 
+   # while True:
+
     response = client.models.generate_content(
-        model=model,
-        contents=conversation_history,
-        config=config
-    )
+            model=model,
+            contents=conversation_history,
+            config=config
+        )
+
+
+
+    #    if not command or not response.candidates[0].content.parts:
+     #       break
+
+      #  for part in response.candidates[0].content.parts:
+       #   if part.thought_signature:
+        #      conversation_history.append(response.candidates[0].content)
+         #     conversation_history.append(Content(
+          #                                                        role="model",
+           #                                                       parts=[Part(text=part.thought_signature)]
+            #                                                  ))
 
     model_response = Content(
-                role="model",
-                parts=[Part(text=response.text)]
-            )
+                        role="model",
+                        parts=[Part(text=response.candidates[0].content.parts[0].text)]
+                    )
     conversation_history.append(model_response)
 
-    return response.text
+    return response.candidates[0].content.parts[0].text
 
 def main():
     global client
@@ -289,11 +356,11 @@ def main():
         jsonReciver = json.loads(prompt)
         try:
             text = talkToGemini(jsonReciver["content"], jsonReciver["deep"], jsonReciver["search"], jsonReciver["command"])
-               # print(json.dumps(res))
+                   # print(json.dumps(res))
             resposta = {
-                'status': 'success',
-                'message': text
-            }
+                    'status': 'success',
+                    'message': text
+                }
             print(json.dumps(resposta))
         except Exception as e:
             resposta = {

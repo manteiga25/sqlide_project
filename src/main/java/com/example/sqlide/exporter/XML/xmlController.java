@@ -4,6 +4,8 @@ import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
 import com.example.sqlide.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.Container.loading.loadingInterface;
+import com.example.sqlide.Notification.NotificationInterface;
+import com.example.sqlide.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.CSV.SqlToCSV;
 import com.example.sqlide.popupWindow.Notification;
@@ -14,6 +16,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -40,7 +43,7 @@ import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
 import static com.example.sqlide.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class xmlController implements loadingInterface {
+public class xmlController implements loadingInterface, NotificationInterface {
 
     @FXML
     private JFXCheckBox MetaBox;
@@ -75,6 +78,8 @@ public class xmlController implements loadingInterface {
 
     private final Semaphore fetcherSem = new Semaphore(1);
     private final Semaphore writeSem = new Semaphore(1);
+
+    private TaskInterface taskInterface;
 
     private Thread writer, fetcher;
 
@@ -128,8 +133,9 @@ public class xmlController implements loadingInterface {
         }
     }
 
-    public void initXmlController(final DataBase db, final Stage stage) throws InterruptedException {
+    public void initXmlController(final DataBase db, final TaskInterface taskInterface, final Stage stage) throws InterruptedException {
         this.db = db;
+        this.taskInterface = taskInterface;
         this.stage = stage;
         writeSem.acquire();
         final HashMap<String, ArrayList<ColumnMetadata>> TablesAndColumns = new HashMap<>();
@@ -178,47 +184,61 @@ public class xmlController implements loadingInterface {
         xml = new SqlToXml();
 
         String finalPath = path;
-        setLoadingStage();
-        main = new Thread(()->{
-            boolean state = false;
-            try {
+     //   setLoadingStage();
+        final Task<Void> exporterTask = new Task<>() {
 
-                Platform.runLater(this::setLoadingStage);
-
-                final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
-
-                if (Mult.isSelected()) {
-                    prepareWorkMultiple(db.getDatabaseName(), db, tables, finalPath);
-                } else {
-                    prepareWorkSingle(db.getDatabaseName(), db, tables, finalPath);
-                }
-                state = true;
-                ShowSucess("Exporting xml", "Success to export database to XML.");
-            } catch (Exception e) {
-                //   throw new  RuntimeException();
-                if (!Thread.currentThread().isInterrupted()) {
-                    try {
-                        xml.abort();
-                    } catch (Exception _) {
-                    }
-                    ShowError("XML", "Error to create XML.\n " + e.getMessage());
-                    throw new RuntimeException(e);
-                }
+            @Override
+            protected void failed() {
+                super.failed();
+                createErrorNotification(db.getDatabaseName() + "-xml-1", "XML Error", "Error to export XML.\n"+getException().getMessage());
+                ShowError("XML", "Error to create XML.\n" + getException().getMessage());
             }
-            finally {
-                final boolean finalState = state;
-                Platform.runLater(()->{
-                    loadingStage.close();
-                    try {
-                        createNot(finalState);
-                    } catch (IOException e) {
+
+            @Override
+            protected void succeeded() {
+                super.succeeded();
+                ShowSucess("Exporting XML", "Success to export database to XML.");
+                createSuccessNotification(db.getDatabaseName() + "-xml-1", "XML Success", "Success to export XML.", finalPath);
+            }
+
+            @Override
+            protected void running() {
+                super.running();
+                updateTitle("Exporting XML");
+                updateProgress(0, 100);
+                progress.addListener((_,_, val)->updateProgress(val.longValue(), 100));
+            }
+
+            @Override
+            protected Void call() throws Exception {
+                try {
+
+                    final ArrayList<String> tables = new ArrayList<>(TablesAndColumnsNames.keySet());
+
+                    if (Mult.isSelected()) {
+                        prepareWorkMultiple(db.getDatabaseName(), db, tables, finalPath);
+                    } else {
+                        prepareWorkSingle(db.getDatabaseName(), db, tables, finalPath);
+                    }
+                } catch (Exception e) {
+                    if (!Thread.currentThread().isInterrupted()) {
+                            xml.abort();
                         throw new RuntimeException(e);
                     }
-                    stage.close();
-                });
+                }
+                return null;
             }
-        });
-        main.start();
+
+            @Override
+            protected void cancelled() {
+                super.cancelled();
+                Notification.showInformationNotification("Cancel export", "XML export canceled");
+                cancelTask();
+            }
+
+        };
+        taskInterface.addTask(exporterTask);
+        Thread.ofVirtual().start(exporterTask);
     }
 
     private void prepareWorkSingle(final String dbSelected, final DataBase cursor, final ArrayList<String> tables, final String path) throws Exception {
@@ -254,7 +274,7 @@ public class xmlController implements loadingInterface {
 
                 xml.flushIntermediate();
 
-                Platform.runLater(() -> progress.set(progress.get() + interact));
+                progress.set(progress.get() + interact);
 
                 System.out.println("acabou");
 

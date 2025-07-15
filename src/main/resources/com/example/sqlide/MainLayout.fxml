@@ -5,11 +5,12 @@
 <?import de.jensd.fx.glyphs.fontawesome.*?>
 <?import java.net.*?>
 <?import javafx.geometry.*?>
+<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<BorderPane fx:id="BorderContainer" style="-fx-background-color: #2B2D30;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.mainController">
+<BorderPane fx:id="BorderContainer" style="-fx-background-color: linear-gradient(to right, #2C2C2C 0%, #3A3A3A 100%);" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.mainController">
 
     <top>
         <HBox styleClass="HBox">
@@ -57,18 +58,6 @@
             <JFXButton fx:id="openScript" disable="true" maxHeight="1.7976931348623157E308" mnemonicParsing="false" onAction="#setOpenScript" text="Open Script" textFill="WHITE" />
             <JFXButton fx:id="createScript" disable="true" maxHeight="1.7976931348623157E308" mnemonicParsing="false" onAction="#createScript" text="Create Script" textFill="WHITE" />
             <Spacer />
-            <Button alignment="CENTER" maxHeight="1.7976931348623157E308">
-                <graphic>
-                    <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_MINIMIZE" size="16.0" />
-                </graphic></Button>
-            <Button maxHeight="1.7976931348623157E308">
-                <graphic>
-                    <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_RESTORE" size="16.0" />
-                </graphic></Button>
-            <Button maxHeight="1.7976931348623157E308" styleClass="button-close">
-                <graphic>
-                    <FontAwesomeIconView fill="#e8e1e1" glyphName="WINDOW_CLOSE_ALT" size="16.0" />
-                </graphic></Button>
             <stylesheets>
                 <URL value="@../../../css/HBoxStyle.css" />
                 <URL value="@../../../css/ContextMenuStyle.css" />
@@ -86,18 +75,18 @@
                     <Font name="Arial" size="12.0" />
                 </font></JFXButton>
             <BorderPane.margin>
-                <Insets left="5.0" top="5.0" />
+                <Insets />
             </BorderPane.margin>
             <padding>
-                <Insets right="5.0" />
+                <Insets left="5.0" right="5.0" top="5.0" />
             </padding>
         </VBox>
     </left>
     <center>
-        <SplitPane fx:id="HorizontalSplit" orientation="VERTICAL" style="-fx-background-color: black;" stylesheets="@../../../css/SplitHorizontal.css">
+        <SplitPane fx:id="HorizontalSplit" orientation="VERTICAL" style="-fx-background-color: #1A1A1A;" stylesheets="@../../../css/SplitHorizontal.css">
             <!--  <Label fx:id="LabelDB" prefHeight="52.0" prefWidth="246.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true" BorderPane.alignment="CENTER"> -->
             <SplitPane fx:id="CenterContainer" style="-fx-background-color: #2A2A2A;">
-                <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" onMouseClicked="#openDBWindow" prefWidth="1832.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true">
+                <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" maxWidth="1.7976931348623157E308" onMouseClicked="#openDBWindow" stylesheets="@../../../css/LabelHover.css" text="No database selected" underline="true">
                     <font>
                         <Font size="36.0" />
                     </font></Label>
@@ -106,19 +95,39 @@
 
     </center>
     <right>
-        <VBox alignment="TOP_CENTER" prefHeight="1195.0" prefWidth="0.0" spacing="10" style="-fx-background-color: #3A3A3A;" BorderPane.alignment="CENTER">
+        <VBox alignment="TOP_CENTER" spacing="10" style="-fx-background-color: #3A3A3A;" BorderPane.alignment="CENTER">
             <children>
-                <JFXButton fx:id="AssistantButton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#OpenAssistent" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" prefHeight="25.0" prefWidth="81.0" stylesheets="@../../../css/BarButtonStyle.css" textAlignment="CENTER" textFill="WHITE" VBox.vgrow="ALWAYS">
+                <JFXButton fx:id="AssistantButton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#OpenAssistent" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" stylesheets="@../../../css/BarButtonStyle.css" textAlignment="CENTER" textFill="WHITE">
                     <graphic>
                         <FontAwesomeIconView fx:id="glowingIcon" fill="#e8e1e1" glyphName="MAGIC" size="26.0" />
                     </graphic>
                     <VBox.margin>
                         <Insets top="10.0" />
                     </VBox.margin></JFXButton>
-                <JFXButton fx:id="NotificationButton" alignment="CENTER" mnemonicParsing="false" onAction="#OpenNotifications" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" stylesheets="@../../../css/BarButtonStyle.css" textFill="white" viewOrder="1.0" VBox.vgrow="ALWAYS">
+                <JFXButton fx:id="NotificationButton" alignment="CENTER" mnemonicParsing="false" onAction="#OpenNotifications" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" stylesheets="@../../../css/BarButtonStyle.css" textFill="white" viewOrder="1.0">
                     <graphic>
                         <FontAwesomeIconView fill="#e8e1e1" glyphName="BELL_ALT" size="26.0" />
                     </graphic>
                 </JFXButton>
             </children></VBox>
-    </right></BorderPane>
+    </right>
+   <bottom>
+      <HBox fx:id="ProgressBox" alignment="CENTER_RIGHT" spacing="5.0" style="-fx-background-color: linear-gradient(to right, #2C2C2C 0%, #3A3A3A 100%); visibility: none;" BorderPane.alignment="CENTER">
+         <children>
+            <Label fx:id="TaskMessage" onMouseClicked="#PopUpTask" textFill="#e1e1e1">
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor></Label>
+            <ProgressBar onMouseClicked="#PopUpTask" prefHeight="8.0" prefWidth="200.0" stylesheets="@../../../css/TaskProgress.css" HBox.hgrow="ALWAYS">
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor></ProgressBar>
+         </children>
+         <BorderPane.margin>
+            <Insets />
+         </BorderPane.margin>
+         <padding>
+            <Insets bottom="5.0" right="60.0" top="5.0" />
+         </padding>
+      </HBox>
+   </bottom></BorderPane>
