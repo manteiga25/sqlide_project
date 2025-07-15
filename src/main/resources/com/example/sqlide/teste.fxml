@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            prefWidth="900" prefHeight="550"
+            style="-fx-background-color: #1e1e1e;">
+
+    <!-- Título -->
+    <Text layoutX="320" layoutY="40" fill="#E1E1E1" style="-fx-font-size: 24;">
+        Rede Neural com Funções de Ativação
+    </Text>
+
+    <!-- Camadas -->
+    <HBox layoutX="50" layoutY="80" spacing="70" alignment="CENTER">
+
+        <!-- Entrada -->
+        <VBox spacing="20" alignment="CENTER">
+            <Text text="Entrada" fill="#BB86FC" style="-fx-font-weight: bold;"/>
+            <VBox spacing="15">
+                <StackPane>
+                    <Circle radius="25" fill="#BB86FC" stroke="white"/>
+                    <VBox alignment="CENTER" spacing="0">
+                        <Text text="I1" fill="white" style="-fx-font-size: 12;"/>
+                        <Text text="lin" fill="#A0A0FF" style="-fx-font-size: 9;"/>
+                    </VBox>
+                </StackPane>
+                <StackPane>
+                    <Circle radius="25" fill="#BB86FC" stroke="white"/>
+                    <VBox alignment="CENTER" spacing="0">
+                        <Text text="I2" fill="white" style="-fx-font-size: 12;"/>
+                        <Text text="lin" fill="#A0A0FF" style="-fx-font-size: 9;"/>
+                    </VBox>
+                </StackPane>
+            </VBox>
+        </VBox>
+
+        <!-- Oculta 1 -->
+        <VBox spacing="20" alignment="CENTER">
+            <Text text="Oculta 1" fill="#03DAC6" style="-fx-font-weight: bold;"/>
+            <VBox spacing="15">
+                <StackPane>
+                    <Circle radius="25" fill="#03DAC6" stroke="white"/>
+                    <VBox alignment="CENTER" spacing="0">
+                        <Text text="H11" fill="white" style="-fx-font-size: 12;"/>
+                        <Text text="relu" fill="#00FF00" style="-fx-font-size: 9;"/>
+                    </VBox>
+                </StackPane>
+                <StackPane>
+                    <Circle radius="25" fill="#03DAC6" stroke="white"/>
+                    <VBox alignment="CENTER" spacing="0">
+                        <Text text="H12" fill="white" style="-fx-font-size: 12;"/>
+                        <Text text="sig" fill="#FFD700" style="-fx-font-size: 9;"/>
+                    </VBox>
+                </StackPane>
+            </VBox>
+        </VBox>
+
+        <!-- Oculta 2 -->
+        <VBox spacing="20" alignment="CENTER">
+            <Text text="Oculta 2" fill="#03DAC6" style="-fx-font-weight: bold;"/>
+            <VBox spacing="15">
+                <StackPane>
+                    <Circle radius="25" fill="#03DAC6" stroke="white"/>
+                    <VBox alignment="CENTER" spacing="0">
+                        <Text text="H21" fill="white" style="-fx-font-size: 12;"/>
+                        <Text text="tanh" fill="#FF6347" style="-fx-font-size: 9;"/>
+                    </VBox>
+                </StackPane>
+            </VBox>
+        </VBox>
+
+        <!-- Saída -->
+        <VBox spacing="20" alignment="CENTER">
+            <Text text="Saída" fill="#CF6679" style="-fx-font-weight: bold;"/>
+            <VBox spacing="15">
+                <StackPane>
+                    <Circle radius="25" fill="#CF6679" stroke="white"/>
+                    <VBox alignment="CENTER" spacing="0">
+                        <Text text="O1" fill="white" style="-fx-font-size: 12;"/>
+                        <Text text="soft" fill="#FF99CC" style="-fx-font-size: 9;"/>
+                    </VBox>
+                </StackPane>
+            </VBox>
+        </VBox>
+    </HBox>
+
+    <!-- Legenda de Funções -->
+    <VBox layoutX="50" layoutY="400" spacing="10">
+        <Text text="Legenda de Funções de Ativação:" fill="#E1E1E1" style="-fx-font-weight: bold;"/>
+        <HBox spacing="20">
+            <VBox spacing="5">
+                <HBox spacing="10">
+                    <Text text="lin:" fill="#A0A0FF"/>
+                    <Text text="Linear" fill="#E1E1E1"/>
+                </HBox>
+                <HBox spacing="10">
+                    <Text text="relu:" fill="#00FF00"/>
+                    <Text text="ReLU" fill="#E1E1E1"/>
+                </HBox>
+            </VBox>
+            <VBox spacing="5">
+                <HBox spacing="10">
+                    <Text text="sig:" fill="#FFD700"/>
+                    <Text text="Sigmoid" fill="#E1E1E1"/>
+                </HBox>
+                <HBox spacing="10">
+                    <Text text="tanh:" fill="#FF6347"/>
+                    <Text text="Tanh" fill="#E1E1E1"/>
+                </HBox>
+            </VBox>
+            <VBox spacing="5">
+                <HBox spacing="10">
+                    <Text text="soft:" fill="#FF99CC"/>
+                    <Text text="Softmax" fill="#E1E1E1"/>
+                </HBox>
+            </VBox>
+        </HBox>
+    </VBox>
+
+    <!-- Representação Gráfica de Funções -->
+    <HBox layoutX="400" layoutY="400" spacing="40">
+        <!-- Sigmoid -->
+        <VBox>
+            <Path stroke="#FFD700" strokeWidth="2">
+                <elements>
+                    <MoveTo x="0" y="20"/>
+                    <CubicCurveTo controlX1="10" controlY1="0" controlX2="30" controlY2="0" x="40" y="20"/>
+                </elements>
+            </Path>
+            <Text text="Sigmoid" fill="#FFD700" style="-fx-font-size: 10;"/>
+        </VBox>
+
+        <!-- ReLU -->
+        <VBox>
+            <Path stroke="#00FF00" strokeWidth="2">
+                <elements>
+                    <MoveTo x="0" y="20"/>
+                    <LineTo x="20" y="20"/>
+                    <LineTo x="40" y="0"/>
+                </elements>
+            </Path>
+            <Text text="ReLU" fill="#00FF00" style="-fx-font-size: 10;"/>
+        </VBox>
+
+        <!-- Tanh -->
+        <VBox>
+            <Path stroke="#FF6347" strokeWidth="2">
+                <elements>
+                    <MoveTo x="0" y="0"/>
+                    <CubicCurveTo controlX1="10" controlY1="-10" controlX2="30" controlY2="10" x="40" y="0"/>
+                </elements>
+            </Path>
+            <Text text="Tanh" fill="#FF6347" style="-fx-font-size: 10;"/>
+        </VBox>
+    </HBox>
+</AnchorPane>

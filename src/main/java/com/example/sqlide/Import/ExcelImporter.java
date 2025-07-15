@@ -4,6 +4,7 @@ import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.util.IOUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,8 +17,12 @@ import java.util.Map;
 
 public class ExcelImporter implements FileImporter {
 
-    private List<String> errors = new ArrayList<>();
+    private final List<String> errors = new ArrayList<>();
     private DoubleProperty progress = new SimpleDoubleProperty();
+
+    public ExcelImporter() {
+        IOUtils.setByteArrayMaxOverride(1_000_000_000); // 1000 MB
+    }
 
     @Override
     public void openFile(File file) throws IOException, IllegalArgumentException {
@@ -45,7 +50,7 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public List<Map<String, String>> previewData(File file, String tableName) throws IOException {
-        openFile(file); // Validate
+     //   openFile(file); // Validate
         List<Map<String, String>> previewRows = new ArrayList<>();
 
         try (FileInputStream fis = new FileInputStream(file);
@@ -114,7 +119,7 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public List<String> getDetectedTableNames(File file) throws IOException {
-        openFile(file); // Validate
+      //  openFile(file); // Validate
         List<String> sheetNames = new ArrayList<>();
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -150,7 +155,7 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public List<String> getColumnHeaders(File file, String tableName) throws IOException, IllegalArgumentException {
-        openFile(file); // Validate
+      //  openFile(file); // Validate
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
             Sheet sheet = workbook.getSheet(tableName);
@@ -173,7 +178,7 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public String importData(File file, String sourceTableName, DatabaseInserterInterface inserter, final int buffer, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
-        openFile(file); // Validate
+      //  openFile(file); // Validate
         errors.clear();
         progress.set(0);
 
@@ -197,11 +202,14 @@ public class ExcelImporter implements FileImporter {
             for (Row row : sheet) {
                 // Skip header, assuming it's the first row if getColumnHeaders found some
                 if (row.getRowNum() == 0 && !getColumnHeaders(file, sourceTableName).isEmpty()) continue;
-                //  for (int cellIndex = 0; cellIndex < headers.size(); cellIndex++) {map.put(headers.get(cellIndex), getCellValue(row.getCell(cellIndex)));
-                final HashMap<String, String> map = new HashMap<>(columnMapping);
+                final HashMap<String, String> RawMap = new HashMap<>();
+                for (int cellIndex = 0; cellIndex < headers.size(); cellIndex++) {RawMap.put(headers.get(cellIndex), getCellValue(row.getCell(cellIndex)));}
+                final HashMap<String, String> map = new HashMap<>();
+                for (final String key : columnMapping.keySet()) {map.put(key, RawMap.get(columnMapping.get(key)));}
                 data.add(map);
                 totalRowsProcessed++;
                 if (counter == buffer) {
+                    System.out.println("data " + data);
                     if (!inserter.insertData(targetTableName, data)) throw new SQLException(inserter.getException());
                     data.clear();
                     counter = 0;
@@ -210,6 +218,7 @@ public class ExcelImporter implements FileImporter {
             }
 
             if (counter != 0) {
+                System.out.println("data " + data);
                 if (!inserter.insertData(targetTableName, data)) throw new SQLException(inserter.getException());
                 data.clear();
             }

@@ -1,5 +1,10 @@
 package com.example.sqlide.Assistant.speech;
 
-public class Speech {
 
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+
+public class Speech {
 }

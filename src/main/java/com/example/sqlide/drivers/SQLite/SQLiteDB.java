@@ -557,13 +557,11 @@ public class SQLiteDB extends DataBase {
                 while (rs.next()) {
                     HashMap<String, String> tmpData = new HashMap<>();
                     for (final String col : Columns) {
-                        System.out.println(col);
                         Object val = rs.getObject(col);
                         String valStr = "null";
                         if (val != null) {
                             valStr = val.toString();
                         }
-                        System.out.println(valStr);
                         tmpData.put(col, valStr);
                     }
                     data.add(new DataForDB(tmpData));
@@ -588,9 +586,6 @@ public class SQLiteDB extends DataBase {
                 Set<String> realColumns = new HashSet<>();
                 for (int i = 1; i <= metaData.getColumnCount(); i++) {
                     realColumns.add(metaData.getColumnName(i));
-                    System.out.println("label " + metaData.getColumnName(i));
-                    System.out.println("label2 " + metaData.getColumnLabel(i));
-                    System.out.println("label3 " + metaData.getColumnClassName(i));
                 }
 
                 // 2. Ajustar lista de colunas para incluir apenas colunas existentes
@@ -715,13 +710,11 @@ public class SQLiteDB extends DataBase {
                 do {
                     HashMap<String, String> tmpData = new HashMap<>();
                     for (final String col : Columns) {
-                        System.out.println(col);
                         Object val = rs.getObject(col);
                         String valStr = "null";
                         if (val != null) {
                             valStr = val.toString();
                         }
-                        System.out.println(valStr);
                         tmpData.put(col, valStr);
                     }
                     data.add(tmpData);
@@ -748,13 +741,11 @@ public class SQLiteDB extends DataBase {
                 do {
                     HashMap<String, String> tmpData = new HashMap<>();
                     for (final String col : Columns) {
-                        System.out.println(col);
                         Object val = rs.getObject(col);
                         String valStr = "null";
                         if (val != null) {
                             valStr = val.toString();
                         }
-                        System.out.println(valStr);
                         tmpData.put(col, valStr);
                     }
                     data.add(tmpData);
@@ -816,7 +807,6 @@ public class SQLiteDB extends DataBase {
                 do {
                     HashMap<String, String> tmpData = new HashMap<>();
                     for (final String col : Columns) {
-                        System.out.println(col);
                         Object val = rs.getObject(col);
                         String valStr = "null";
                         if (val != null) {
@@ -853,7 +843,6 @@ public class SQLiteDB extends DataBase {
                 do {
                     HashMap<String, String> tmpData = new HashMap<>();
                     for (final String col : Columns) {
-                        System.out.println(col);
                         Object val = rs.getObject(col);
                         String valStr = "null";
                         if (val != null) {
@@ -909,13 +898,11 @@ public class SQLiteDB extends DataBase {
                 while (rs.next()) {
                     ArrayList<String> rowData = new ArrayList<>();
                     for (final String col : Columns) {
-                        System.out.println(col);
                         Object val = rs.getObject(col);
                         String valStr = "null";
                         if (val != null) {
                             valStr = val.toString();
                         }
-                        System.out.println(valStr);
                         rowData.add(valStr);
                     }
                     data.add(rowData);
@@ -939,7 +926,6 @@ public class SQLiteDB extends DataBase {
                 while (rs.next()) {
                     ArrayList<Object> rowData = new ArrayList<>();
                     for (final String col : Columns) {
-                        System.out.println(col);
                         Object val = rs.getObject(col);
                         if (val != null) {
                             System.out.println("TIPOOOOO: " + val.getClass());
@@ -1288,7 +1274,8 @@ public class SQLiteDB extends DataBase {
 
     @Override
     public synchronized long totalPages(final String table) {
-        try (ResultSet ret = statement.executeQuery("SELECT COUNT(*) FROM " + table + ";")) {
+        try (Statement statement = connection.createStatement();
+             ResultSet ret = statement.executeQuery("SELECT COUNT(*) FROM " + table + ";")) {
             if (ret.next()) {
                 return (long) Math.ceil((double) ret.getLong(1) / buffer);
             }
@@ -1322,10 +1309,10 @@ public class SQLiteDB extends DataBase {
 
     @Override
     public synchronized long totalPages(final String table, final String column, final String condition) {
-        try {
+        try (Statement statement = connection.createStatement();
+                ResultSet ret = statement.executeQuery("SELECT COUNT(" + column + ") FROM " + table + " " + condition + ";")) {
             System.out.println("SELECT COUNT(" + column + ") FROM " + table + " " + condition + ";");
             //  ResultSet ret = statement.executeQuery("SELECT COUNT(" + cols.substring(0, cols.length()-2) + ") FROM " + table + " " + condition + ";");
-            ResultSet ret = statement.executeQuery("SELECT COUNT(" + column + ") FROM " + table + " " + condition + ";");
             if (ret.next()) {
                 System.out.println("total " + (long) Math.ceil((double) ret.getLong(1) / buffer));
                 return (long) Math.ceil((double) ret.getLong(1) / buffer);

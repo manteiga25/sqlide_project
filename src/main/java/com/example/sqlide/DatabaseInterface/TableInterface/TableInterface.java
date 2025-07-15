@@ -1282,7 +1282,7 @@ public class TableInterface {
     public void setTotalPages() {
         final Thread fetchPage = new Thread(()->{
             totalPages = Database.totalPages(TableName.get())-1;
-            if (totalPages == -1) {
+            if (totalPages == -2) {
                 System.out.println(Database.GetException());
                 totalPages = 0;
             }

@@ -155,12 +155,12 @@ public class ImportController {
 
     private void setupColumnMappingTableView() {
 
-        srcTable.setCellValueFactory(cellData -> cellData.getValue().sourceColumnNameProperty());
+        ColumnTable.setCellValueFactory(cellData -> cellData.getValue().sourceColumnNameProperty());
 
-        ColumnTable.setCellValueFactory(cellData -> cellData.getValue().selectedTargetProperty());
+        srcTable.setCellValueFactory(cellData -> cellData.getValue().selectedTargetProperty());
 
         // Usar ChoiceBox como renderizador
-        ColumnTable.setCellFactory(column -> new TableCell<>() {
+        srcTable.setCellFactory(column -> new TableCell<>() {
             private final ChoiceBox<String> choiceBox = new ChoiceBox<>();
 
             {
@@ -344,16 +344,16 @@ public class ImportController {
             }
 
             final ObservableList<ColumnMappingRow> rows = FXCollections.observableArrayList();
-            for (final String srcHeader : sourceHeaders) {
-                final ColumnMappingRow row = new ColumnMappingRow(srcHeader, dbTableColumns);
+            for (final String column : dbTableColumns) {
+                final ColumnMappingRow row = new ColumnMappingRow(column, sourceHeaders);
                 String autoSelectedTarget = SKIP_IMPORT_OPTION;
                 if (isEffCreatingNew) {
-                    autoSelectedTarget = CREATE_NEW_COLUMN_OPTION_PREFIX + srcHeader + CREATE_NEW_COLUMN_SUFFIX;
-                } else if (dbTableColumns != null) {
-                    String matchedDbCol = dbTableColumns.stream().filter(dbCol -> dbCol.equalsIgnoreCase(srcHeader)).findFirst().orElse(null);
+                    autoSelectedTarget = CREATE_NEW_COLUMN_OPTION_PREFIX + column + CREATE_NEW_COLUMN_SUFFIX;
+                } else {
+                    String matchedDbCol = sourceHeaders.stream().filter(dbCol -> dbCol.equalsIgnoreCase(column)).findFirst().orElse(null);
                     if (matchedDbCol != null) autoSelectedTarget = matchedDbCol;
                 }
-                List<String> tempOpts = getAvailableTargetOptions(srcHeader); // Get options for current context
+                List<String> tempOpts = getAvailableTargetOptions(column); // Get options for current context
                 if (tempOpts.contains(autoSelectedTarget)) row.setSelectedTarget(autoSelectedTarget);
                 else if (!tempOpts.isEmpty()) row.setSelectedTarget(tempOpts.getFirst());
                 else row.setSelectedTarget(SKIP_IMPORT_OPTION); 
@@ -378,9 +378,9 @@ public class ImportController {
                     statusTextArea.appendText("\nData preview for '" + selectedSourceTable + "' (first " + preview.size() + " rows):\n");
                     List<String> previewH = new ArrayList<>();
                     if(!preview.isEmpty() && columnMappingTableView != null && !columnMappingTableView.getItems().isEmpty()){
-                        previewH.addAll(columnMappingTableView.getItems().stream().map(ColumnMappingRow::getSourceColumnName).collect(Collectors.toList()));
-                    } else if (!preview.isEmpty() && !preview.get(0).isEmpty()) {
-                        previewH.addAll(preview.get(0).keySet()); 
+                        previewH.addAll(columnMappingTableView.getItems().stream().map(ColumnMappingRow::getSourceColumnName).toList());
+                    } else if (!preview.isEmpty() && !preview.getFirst().isEmpty()) {
+                        previewH.addAll(preview.getFirst().keySet());
                     }
 
                     if (!previewH.isEmpty()) {
