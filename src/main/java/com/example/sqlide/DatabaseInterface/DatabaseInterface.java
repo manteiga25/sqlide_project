@@ -169,7 +169,7 @@ public class DatabaseInterface {
             Stage dialogStage = new Stage();
             dialogStage.setTitle("View");
             dialogStage.initModality(Modality.APPLICATION_MODAL);
-            dialogController.initViewController(DatabaseSeted, dialogStage);
+            dialogController.initViewController(DatabaseSeted, taskInterface, dialogStage);
             dialogController.addView(new ViewController.View(name, "", code));
             dialogStage.setScene(new Scene(root));
             dialogStage.show();

@@ -788,8 +788,8 @@ public abstract class DataBase {
 
     public boolean createView(final ViewController.View view) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
-            System.out.println("CREATE VIEW " + view.Name + " AS " + view.code);
-            stmt.execute("CREATE VIEW " + view.Name + " AS " + view.code);
+            System.out.println("CREATE VIEW " + view.Name.get() + " AS " + view.code.get());
+            stmt.execute("CREATE VIEW " + view.Name.get() + " AS " + view.code.get());
             return true;
         } catch (SQLException e) {
             MsgException = e.getMessage();

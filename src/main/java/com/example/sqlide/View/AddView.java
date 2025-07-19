@@ -27,7 +27,7 @@ public class AddView {
     @FXML
     private void add() {
         final String name = ViewField.getText();
-        if (!name.isEmpty() && views.stream().noneMatch(view -> view.Name.equals(name))) {
+        if (!name.isEmpty() && views.stream().noneMatch(view -> view.Name.get().equals(name))) {
             views.add(new ViewController.View(name, "", ""));
             stage.close();
         } else ShowInformation("Null", "You need to insert a valid name.");

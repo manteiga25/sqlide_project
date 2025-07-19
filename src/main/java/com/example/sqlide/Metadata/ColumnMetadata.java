@@ -37,6 +37,10 @@ public class ColumnMetadata {
         this.decimalDigits = decimalDigits;
     }
 
+    public ColumnMetadata() {
+
+    }
+
     public static class Foreign {
         public boolean isForeign = false;
         public String onUpdate = "", onEliminate = "", tableRef, columnRef;

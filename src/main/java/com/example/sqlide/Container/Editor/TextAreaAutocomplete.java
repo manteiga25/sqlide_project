@@ -298,7 +298,6 @@ public class TextAreaAutocomplete extends CodeArea {
                 if (entriesPopup.getContent() != null) {
                     //Bounds screenLoc = findCaret();
                     //entriesPopup.show(TextAreaAutocomplete.this, screenLoc.getMaxX(), screenLoc.getMinY());
-                    System.out.println();
                     try {
                         Optional<Bounds> caretBounds = getCharacterBoundsOnScreen(getText(getCurrentParagraph()).length(), getCaretPosition());
 
@@ -308,7 +307,18 @@ public class TextAreaAutocomplete extends CodeArea {
                             // bounds.getMaxY() -> Posição Y (base da linha de texto do caractere)
                             entriesPopup.show(this, bounds.getMaxX(), bounds.getMaxY()+10);
                         });
-                    } catch (Exception ex) {
+                    } catch (Exception _) {
+                        try {
+                            Optional<Bounds> caretBounds = getCharacterBoundsOnScreen(getCaretPosition(), getText(getCurrentParagraph()).length());
+
+                            caretBounds.ifPresent(bounds -> {
+                                // Mostra o popup usando as coordenadas do caret
+                                // bounds.getMinX() -> Posição X (início horizontal do caractere)
+                                // bounds.getMaxY() -> Posição Y (base da linha de texto do caractere)
+                                entriesPopup.show(this, bounds.getMaxX(), bounds.getMaxY()+10);
+                            });
+                        } catch (Exception _) {
+                        }
 
                     }
 

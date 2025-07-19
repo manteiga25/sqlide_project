@@ -2,13 +2,18 @@ package com.example.sqlide.View;
 
 import com.example.sqlide.Container.Editor.TextAreaAutocomplete;
 import com.example.sqlide.Container.Editor.Words.SQLWords;
+import com.example.sqlide.Notification.NotificationInterface;
+import com.example.sqlide.Task.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.jfoenix.controls.JFXTextField;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -38,7 +43,7 @@ import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
 import static java.nio.file.Files.exists;
 
-public class ViewController {
+public class ViewController implements NotificationInterface {
 
     @FXML
     private CheckComboBox<View> ViewSelectedBox;
@@ -61,11 +66,14 @@ public class ViewController {
 
     private final TextAreaAutocomplete codeArea = new TextAreaAutocomplete();
 
-    public void initViewController(DataBase db, Stage subStage) throws SQLException {
+    private TaskInterface taskInterface;
+
+    public void initViewController(DataBase db, TaskInterface taskInterface, Stage subStage) throws SQLException {
         this.db = db;
+        this.taskInterface = taskInterface;
         this.stage = subStage;
         codeArea.setAutoCompleteWords(new ArrayList<>(List.of(SQLWords.getWords(db.getSQLType().ordinal()))));
-        ViewList.addAll(db.getViews());
+        ViewList.setAll(db.getViews());
         DefaultList = ViewList.stream().toList();
     }
 
@@ -83,7 +91,9 @@ public class ViewController {
             }
             if (value != null) {
                 currentCommentListener[0].set((_, _, text) -> value.comment.set(text));
-                currentCodeListener[0].set((_, _, text) -> value.code.set(text));
+                currentCodeListener[0].set((_, _, text) -> {
+                    value.code.set(text);
+                    System.out.println(value.code.get());});
                 CommentArea.textProperty().addListener(currentCommentListener[0].get());
                 codeArea.textProperty().addListener(currentCodeListener[0].get());
                 CommentArea.setText(value.comment.get());
@@ -121,70 +131,72 @@ public class ViewController {
             ShowError("Error file", "File do not exists.");
             return;
         }
-        File file = new File(pathField.getText());
-        try (BufferedReader buffer = new BufferedReader(new FileReader(file))) { // Try-with-resources
-            String line;
-            StringBuilder triggerCode = new StringBuilder();
-            String triggerName = null;
-            int endClausses = 0;
-            boolean inTrigger = false;
+        Thread.ofVirtual().start(()->{
+            File file = new File(pathField.getText());
+            try (BufferedReader buffer = new BufferedReader(new FileReader(file))) { // Try-with-resources
+                String line;
+                StringBuilder triggerCode = new StringBuilder();
+                String triggerName = null;
+                int endClausses = 0;
+                boolean inTrigger = false;
 
-            final ArrayList<View> ViewFound = new ArrayList<>();
+                final ArrayList<View> ViewFound = new ArrayList<>();
 
-            Pattern viewNamePattern = Pattern.compile("CREATE\\s+VIEW\\s+([\\w\\.]+)"); // Regex para nome do trigger
+                Pattern viewNamePattern = Pattern.compile("CREATE\\s+VIEW\\s+([\\w\\.]+)"); // Regex para nome do trigger
 
-            while ((line = buffer.readLine()) != null) {
-                String trimmedLine = line.trim();
+                while ((line = buffer.readLine()) != null) {
+                    String trimmedLine = line.trim();
 
-                if (trimmedLine.startsWith("--")) continue; // Ignora comentários
+                    if (trimmedLine.startsWith("--")) continue; // Ignora comentários
 
-                if (trimmedLine.toUpperCase().startsWith("CREATE VIEW")) {
-                    endClausses++;
-                    inTrigger = true;
-                    String l = trimmedLine;
-                    if (trimmedLine.toUpperCase().contains("IF NOT EXISTS")) {
-                        l = trimmedLine.substring(trimmedLine.indexOf("IF NOT EXISTS")+"IF NOT EXISTS".length()+1);
-                        System.out.println("found " + l);
-                        triggerName = l.replace(" ", "");
-                    }
-                    triggerCode.setLength(0); // Limpa o código anterior
-                    triggerCode.append(line).append("\n");
-
-                    Matcher matcher = viewNamePattern.matcher(l);
-                    if (matcher.find()) {
-                        triggerName = matcher.group(1);
-                    }
-                } else if (inTrigger) {
-                    triggerCode.append(line).append("\n");
-
-                    if (trimmedLine.toUpperCase().contains("WHEN")) {
+                    if (trimmedLine.toUpperCase().startsWith("CREATE VIEW")) {
                         endClausses++;
-                    }
+                        inTrigger = true;
+                        String l = trimmedLine;
+                        if (trimmedLine.toUpperCase().contains("IF NOT EXISTS")) {
+                            l = trimmedLine.substring(trimmedLine.indexOf("IF NOT EXISTS")+"IF NOT EXISTS".length()+1);
+                            System.out.println("found " + l);
+                            triggerName = l.replace(" ", "");
+                        }
+                        triggerCode.setLength(0); // Limpa o código anterior
+                        triggerCode.append(line).append("\n");
 
-                    if (trimmedLine.toUpperCase().contains("END")) { // Detecção mais robusta do fim do trigger
-                        endClausses--;
-                    }
-                    if (endClausses == 0) {
-                        inTrigger = false;
-                        if (triggerName != null) {
-                            ViewFound.add(new View(triggerName, "", triggerCode.toString()));
-                            triggerName = null;
+                        Matcher matcher = viewNamePattern.matcher(l);
+                        if (matcher.find()) {
+                            triggerName = matcher.group(1);
+                        }
+                    } else if (inTrigger) {
+                        triggerCode.append(line).append("\n");
+
+                        if (trimmedLine.toUpperCase().contains("WHEN")) {
+                            endClausses++;
+                        }
+
+                        if (trimmedLine.toUpperCase().contains("END")) { // Detecção mais robusta do fim do trigger
+                            endClausses--;
+                        }
+                        if (endClausses == 0) {
+                            inTrigger = false;
+                            if (triggerName != null) {
+                                ViewFound.add(new View(triggerName, "", triggerCode.toString()));
+                                triggerName = null;
+                            }
                         }
                     }
                 }
-            }
 
-            //  triggersSelected.getItems().clear();
+                //  triggersSelected.getItems().clear();
 
           /*  for (final String name : triggersFound.keySet()) {
                 triggersSelected.getItems().add(name);
             } */
 
-            ViewSelectedBox.getItems().addAll(ViewFound);
+                Platform.runLater(()->ViewSelectedBox.getItems().addAll(ViewFound));
 
-        } catch (IOException e) {
-            ShowError("Error", "Error to perform read.", e.getMessage());
-        }
+            } catch (IOException e) {
+                ShowError("Error", "Error to perform read.", e.getMessage());
+            }
+        });
 
     }
 
@@ -226,31 +238,66 @@ public class ViewController {
 
     @FXML
     private void confirm() {
-        boolean mode = false;
-        try {
-            mode = db.getCommitMode();
-            if (mode) db.changeCommitMode(false);
 
-            final List<View> removed = DefaultList.stream().filter(view -> !ViewList.contains(view)).toList();
-            final List<View> added = ViewList.stream().filter(view -> !DefaultList.contains(view)).toList();
-            System.out.println(removed);
-            System.out.println(added);
-            for (final View view : removed) if (!db.dropView(view.Name.get())) throw new SQLException(db.GetException());
-            for (final View view : added) if (!db.createView(view)) throw new SQLException(db.GetException());
-            db.commit();
+        final List<View> removed = DefaultList.stream().filter(view -> !ViewList.contains(view)).toList();
+        final List<View> added = ViewList.stream().filter(view -> !DefaultList.contains(view) && !view.Name.get().isEmpty()).toList();
 
-        } catch (SQLException e) {
-            try {
-                db.back();
-            } catch (SQLException _) {
+        Task<Void> addViewTask = new Task<Void>() {
+
+            private boolean mode = false;
+            private final SimpleDoubleProperty progress = new SimpleDoubleProperty(0);
+            private final double iteract = (double) (removed.size() + added.size()) / 100;
+
+            @Override
+            protected void running() {
+                super.running();
+                updateProgress(0, 100);
+                updateTitle("Add views");
+                updateMessage("Adding or deleting views.");
+                progress.addListener((_, _, number) -> {
+                    updateProgress(number.doubleValue(), 100);
+                });
             }
-            ShowError("SQL", "Error to add view", e.getMessage());
-        } finally {
-            try {
-                if (mode) db.changeCommitMode(true);
-            } catch (SQLException _) {
+
+            @Override
+            protected Void call() throws Exception {
+                mode = db.getCommitMode();
+                if (mode) db.changeCommitMode(false);
+                for (final View view : removed) if (!db.dropView(view.Name.get())) throw new SQLException(db.GetException()); else progress.set(progress.get()+iteract);
+                for (final View view : added) if (!db.createView(view)) throw new SQLException(db.GetException()); else progress.set(progress.get()+iteract);
+                db.commit();
+                return null;
             }
-        }
+
+            @Override
+            protected void failed() {
+                super.failed();
+                try {
+                    db.back();
+                } catch (SQLException _) {
+                }
+                createErrorNotification(db.getDatabaseName() + "-view-1", "View Error", "Error to manage View.\n"+getException().getMessage());
+                ShowError("SQL", "Error to add view", getException().getMessage());
+            }
+
+            @Override
+            protected void succeeded() {
+                super.succeeded();
+                createSuccessNotification(db.getDatabaseName() + "-view-1", "View Success", "Success to manage View.", "");
+            }
+
+            @Override
+            protected void done() {
+                super.done();
+                try {
+                    if (mode) db.changeCommitMode(true);
+                } catch (SQLException _) {
+                }
+            }
+
+        };
+        taskInterface.addTask(addViewTask);
+        Thread.ofVirtual().start(addViewTask);
     }
 
     @FXML

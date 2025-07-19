@@ -5,6 +5,8 @@ import com.example.sqlide.Container.Editor.TextAreaAutocomplete;
 import com.example.sqlide.Container.Editor.Words.SQLWords;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.Container.loading.loadingInterface;
+import com.example.sqlide.Notification.NotificationInterface;
+import com.example.sqlide.Task.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.JSON.JSONController;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
@@ -12,6 +14,7 @@ import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -27,6 +30,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.controlsfx.control.CheckComboBox;
+import org.docx4j.wml.Tr;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -42,7 +46,7 @@ import java.util.regex.Pattern;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static java.nio.file.Files.exists;
 
-public class TriggerController implements loadingInterface {
+public class TriggerController implements loadingInterface, NotificationInterface {
 
     @FXML
     private VBox container;
@@ -57,14 +61,17 @@ public class TriggerController implements loadingInterface {
 
     private final ObservableMap<String, String> triggersFound = FXCollections.observableHashMap();
 
+    private TaskInterface taskInterface;
+
     private DataBase db;
 
     private Stage stage;
 
     private final TextAreaAutocomplete codeArea = new TextAreaAutocomplete();
 
-    public void initTriggerController(DataBase db, Stage subStage) {
+    public void initTriggerController(DataBase db, final TaskInterface taskInterface, Stage subStage) {
         this.db = db;
+        this.taskInterface = taskInterface;
         this.stage = subStage;
         codeArea.setAutoCompleteWords(new ArrayList<>(List.of(SQLWords.getWords(db.getSQLType().ordinal()))));
     }
@@ -101,32 +108,70 @@ public class TriggerController implements loadingInterface {
     private void execute() {
         final List<String> triggers = triggersSelected.getCheckModel().getCheckedItems();
         if (triggers != null && !triggers.isEmpty()) {
-            final DoubleProperty progress = new SimpleDoubleProperty(0.0);
-            final loadingController progressWin = createProgress(progress);
-            new Thread(() -> {
-          //      File file = new File(ScriptPath.getText());
-                try {
-              //      if (triggers != null && !triggers.isEmpty()) {
-                    int total = triggers.size(), count = 1;
-                        for (final String trigger : triggers) {
+            Task<Void> TriggerTask = new Task<Void>() {
 
-                            final double newProgress = (double) count / total;
+                private final DoubleProperty progress = new SimpleDoubleProperty(0.0);
+                private final int total = triggers.size();
+                private int count = 1;
+                private boolean mode = false;
 
-                            progress.set(progress.get() + newProgress);
-
-                            db.executeCode(triggersFound.get(trigger));
-                            count++;
-                        }
-                /*    } else {
-                        FileReader reader = new FileReader(file);
-                        BufferedReader buffer = new BufferedReader(reader);
-                        db.executeLittleScript(buffer);
-                    } */
-                } catch (SQLException e) {
-                    Platform.runLater(() -> ShowError("Error SQL", "Error to add Trigger to database.\n" + e.getMessage()));
+                @Override
+                protected void running() {
+                    super.running();
+                    updateProgress(0, 100);
+                    updateTitle("Add Triggers");
+                    updateMessage("Adding Triggers.");
+                    progress.addListener((_, _, number) -> {
+                        updateProgress(number.doubleValue(), 100);
+                    });
                 }
-                Platform.runLater(progressWin::close);
-            }).start();
+
+                @Override
+                protected Void call() throws Exception {
+                    mode = db.getCommitMode();
+                    if (mode) db.changeCommitMode(false);
+                    for (final String trigger : triggers) {
+
+                        final double newProgress = (double) count / total;
+
+                        progress.set(progress.get() + newProgress);
+
+                        db.executeCode(triggersFound.get(trigger));
+                        count++;
+                    }
+                    db.commit();
+                    return null;
+                }
+
+                @Override
+                protected void failed() {
+                    super.failed();
+                    try {
+                        db.back();
+                    } catch (SQLException _) {
+                    }
+                    createErrorNotification(db.getDatabaseName() + "-trigger-1", "Trigger Error", "Error to add Trigger. " + getException().getMessage());
+                    ShowError("Error SQL", "Error to add Trigger to database.", getException().getMessage());
+                }
+
+                @Override
+                protected void succeeded() {
+                    super.succeeded();
+                    createSuccessNotification(db.getDatabaseName() + "-trigger-1", "Trigger Success", "Success to add Trigger.", "");
+                }
+
+                @Override
+                protected void done() {
+                    super.done();
+                    try {
+                        if (mode) db.changeCommitMode(true);
+                    } catch (SQLException _) {
+                    }
+                }
+
+            };
+            taskInterface.addTask(TriggerTask);
+            Thread.ofVirtual().start(TriggerTask);
         }
     }
 
@@ -165,68 +210,69 @@ public class TriggerController implements loadingInterface {
             ShowError("Error file", "File do not exists.");
             return;
         }
-        File file = new File(ScriptPath.getText());
-        try (BufferedReader buffer = new BufferedReader(new FileReader(file))) { // Try-with-resources
-            String line;
-            StringBuilder triggerCode = new StringBuilder();
-            String triggerName = null;
-            int endClausses = 0;
-            boolean inTrigger = false;
+        Thread.ofVirtual().start(()->{
+            File file = new File(ScriptPath.getText());
+            try (BufferedReader buffer = new BufferedReader(new FileReader(file))) { // Try-with-resources
+                String line;
+                StringBuilder triggerCode = new StringBuilder();
+                String triggerName = null;
+                int endClausses = 0;
+                boolean inTrigger = false;
 
-            Pattern triggerNamePattern = Pattern.compile("CREATE\\s+TRIGGER\\s+([\\w\\.]+)"); // Regex para nome do trigger
+                Pattern triggerNamePattern = Pattern.compile("CREATE\\s+TRIGGER\\s+([\\w\\.]+)"); // Regex para nome do trigger
 
-            while ((line = buffer.readLine()) != null) {
-                String trimmedLine = line.trim();
+                while ((line = buffer.readLine()) != null) {
+                    String trimmedLine = line.trim();
 
-                if (trimmedLine.startsWith("--")) continue; // Ignora comentários
+                    if (trimmedLine.startsWith("--")) continue; // Ignora comentários
 
-                if (trimmedLine.toUpperCase().startsWith("CREATE TRIGGER")) {
-                    endClausses++;
-                    inTrigger = true;
-                    String l = trimmedLine;
-                    if (trimmedLine.toUpperCase().contains("IF NOT EXISTS")) {
-                        l = trimmedLine.substring(trimmedLine.indexOf("IF NOT EXISTS")+"IF NOT EXISTS".length()+1);
-                        System.out.println("found " + l);
-                        triggerName = l.replace(" ", "");
-                    }
-                    triggerCode.setLength(0); // Limpa o código anterior
-                    triggerCode.append(line).append("\n");
-
-                    Matcher matcher = triggerNamePattern.matcher(l);
-                    if (matcher.find()) {
-                        triggerName = matcher.group(1);
-                    }
-                } else if (inTrigger) {
-                    triggerCode.append(line).append("\n");
-
-                    if (trimmedLine.toUpperCase().contains("WHEN")) {
+                    if (trimmedLine.toUpperCase().startsWith("CREATE TRIGGER")) {
                         endClausses++;
-                    }
+                        inTrigger = true;
+                        String l = trimmedLine;
+                        if (trimmedLine.toUpperCase().contains("IF NOT EXISTS")) {
+                            l = trimmedLine.substring(trimmedLine.indexOf("IF NOT EXISTS")+"IF NOT EXISTS".length()+1);
+                            System.out.println("found " + l);
+                            triggerName = l.replace(" ", "");
+                        }
+                        triggerCode.setLength(0); // Limpa o código anterior
+                        triggerCode.append(line).append("\n");
 
-                    if (trimmedLine.toUpperCase().contains("END")) { // Detecção mais robusta do fim do trigger
-                        endClausses--;
-                    }
-                    if (endClausses == 0) {
-                        inTrigger = false;
-                        if (triggerName != null) {
-                            triggersFound.put(triggerName, triggerCode.toString());
-                            triggerName = null;
+                        Matcher matcher = triggerNamePattern.matcher(l);
+                        if (matcher.find()) {
+                            triggerName = matcher.group(1);
+                        }
+                    } else if (inTrigger) {
+                        triggerCode.append(line).append("\n");
+
+                        if (trimmedLine.toUpperCase().contains("WHEN")) {
+                            endClausses++;
+                        }
+
+                        if (trimmedLine.toUpperCase().contains("END")) { // Detecção mais robusta do fim do trigger
+                            endClausses--;
+                        }
+                        if (endClausses == 0) {
+                            inTrigger = false;
+                            if (triggerName != null) {
+                                triggersFound.put(triggerName, triggerCode.toString());
+                                triggerName = null;
+                            }
                         }
                     }
                 }
-            }
 
-          //  triggersSelected.getItems().clear();
+                //  triggersSelected.getItems().clear();
 
           /*  for (final String name : triggersFound.keySet()) {
                 triggersSelected.getItems().add(name);
             } */
 
-            triggersSelected.getItems().addAll(triggersFound.keySet());
-
-        } catch (IOException e) {
-            ShowError("Error", "Error to perform read.", e.getMessage());
-        }
+                Platform.runLater(()->triggersSelected.getItems().addAll(triggersFound.keySet()));
+            } catch (IOException e) {
+                ShowError("Error", "Error to perform read.", e.getMessage());
+            }
+        });
 
     }
 

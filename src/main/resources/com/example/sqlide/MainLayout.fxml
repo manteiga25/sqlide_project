@@ -118,7 +118,7 @@
             <children>
                 <JFXButton fx:id="AssistantButton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#OpenAssistent" onMouseEntered="#MenuButtonOver" onMouseExited="#MenuButtonDisover" stylesheets="@../../../css/BarButtonStyle.css" textAlignment="CENTER" textFill="WHITE">
                     <graphic>
-                        <FontAwesomeIconView fx:id="glowingIcon" fill="#e8e1e1" glyphName="MAGIC" size="26.0" />
+                        <FontAwesomeIconView fill="#e8e1e1" glyphName="MAGIC" size="26.0" />
                     </graphic>
                     <VBox.margin>
                         <Insets top="10.0" />

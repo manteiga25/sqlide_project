@@ -82,7 +82,7 @@ public class mainController implements requestInterface, NotificationInterface {
     @FXML
     private SplitPane CenterContainer;
 
-    private TabPane ContainerForDB, ContainerForEditor;
+    private TabPane ContainerForDB;
 
     private Popup MenuPopup;
 
@@ -756,7 +756,7 @@ public class mainController implements requestInterface, NotificationInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initTriggerController(DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()), subStage);
+            secondaryController.initTriggerController(DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()), task, subStage);
             secondaryController.addTrigger(values);
 
             // Opcional: definir a modalidade da subjanela
@@ -785,7 +785,7 @@ public class mainController implements requestInterface, NotificationInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initTriggerController(DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()), subStage);
+            secondaryController.initTriggerController(DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()), task, subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -826,7 +826,7 @@ public class mainController implements requestInterface, NotificationInterface {
                 // Mostrar a subjanela
                 subStage.show();
             } catch (Exception e) {
-                ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+                ShowError("Error to load", "Error tom load stage.", e.getMessage());
             }
         } else ShowInformation("No routines", "The database has no routines to edit.");
 
