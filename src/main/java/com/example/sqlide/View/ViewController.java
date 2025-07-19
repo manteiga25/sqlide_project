@@ -264,6 +264,10 @@ public class ViewController {
         }
     }
 
+    public void addView(View view) {
+        ViewList.add(view);
+    }
+
     public static class View {
         public final SimpleStringProperty Name, comment, code;
 

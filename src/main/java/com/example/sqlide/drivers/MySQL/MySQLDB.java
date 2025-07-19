@@ -1,7 +1,8 @@
 package com.example.sqlide.drivers.MySQL;
 
-import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.Logger.Logger;
+import com.example.sqlide.Metadata.TableMetadata;
 import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
@@ -452,6 +453,11 @@ public class MySQLDB extends DataBase {
         }
 
         @Override
+        public boolean updateData(String Table, String column, String value, String[] index, String type, ArrayList<String> PrimeKey, ArrayList<String> tmp) {
+            return false;
+        }
+
+        @Override
         public String getException() {
             return "";
         }
@@ -858,6 +864,11 @@ public class MySQLDB extends DataBase {
     }
 
     @Override
+    public boolean createTable(TableMetadata metadata, boolean temporary, boolean rowid) {
+        return false;
+    }
+
+    @Override
     public void changeCommitMode(boolean mode) {
 
     }
@@ -934,6 +945,11 @@ public class MySQLDB extends DataBase {
     @Override
     public void removeIndex(String indexName) throws SQLException {
 
+    }
+
+    @Override
+    public String getTableCheck(String table) throws SQLException {
+        return "";
     }
 
 }

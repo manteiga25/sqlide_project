@@ -1,7 +1,8 @@
 package com.example.sqlide.drivers.PostegreSQL;
 
-import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.DataForDB;
+import com.example.sqlide.Metadata.TableMetadata;
 import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
@@ -367,6 +368,11 @@ public class PostreSQLDB extends DataBase {
             return true;
         }
 
+        @Override
+        public boolean updateData(String Table, String column, String value, String[] index, String type, ArrayList<String> PrimeKey, ArrayList<String> tmp) {
+            return false;
+        }
+
 /*    private void converter(PreparedStatement pstmt, Object value, String type) throws SQLException {
         switch (type.toUpperCase()) {
             case "SMALLINT", "INT2":
@@ -553,8 +559,9 @@ public class PostreSQLDB extends DataBase {
     }
 
     private final DatabaseFetcherInterface databaseFetcherInterface = new DatabaseFetcherInterface() {
+
         @Override
-        public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, String primeKey) {
+        public ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, ArrayList<String> primeKey) {
             Columns.add("CTID");
             ArrayList<DataForDB> data = new ArrayList<>();
             final String command = "SELECT CTID, * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
@@ -1079,6 +1086,11 @@ public class PostreSQLDB extends DataBase {
     }
 
     @Override
+    public boolean createTable(TableMetadata metadata, boolean temporary, boolean rowid) {
+        return false;
+    }
+
+    @Override
     public void changeCommitMode(boolean mode) {
 
     }
@@ -1155,6 +1167,11 @@ public class PostreSQLDB extends DataBase {
     @Override
     public void removeIndex(String indexName) throws SQLException {
 
+    }
+
+    @Override
+    public String getTableCheck(String table) throws SQLException {
+        return "";
     }
 
 }

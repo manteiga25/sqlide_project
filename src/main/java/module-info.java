@@ -95,5 +95,9 @@ module com.example.sqlide {
     exports com.example.sqlide.Chart;
     exports com.example.sqlide.Import;
     exports com.example.sqlide.View;
+    exports com.example.sqlide.Metadata;
+    opens com.example.sqlide.Metadata to javafx.fxml;
+    exports com.example.sqlide.Task;
+    opens com.example.sqlide.Task to javafx.fxml;
 
 }

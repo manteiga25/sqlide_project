@@ -7,7 +7,7 @@ import java.util.HashMap;
 
 public interface DatabaseFetcherInterface {
 
-    ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, String primeKey);
+    ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, long offset, ArrayList<String> primeKey);
 
     public abstract ArrayList<DataForDB> fetchData(String Table, ArrayList<String> Columns, String primeKey);
 

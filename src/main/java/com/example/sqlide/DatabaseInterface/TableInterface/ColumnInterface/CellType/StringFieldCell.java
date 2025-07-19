@@ -1,22 +1,24 @@
 package com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellType;
 
-import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater.CellFormater;
-import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.TextFieldTableCell;
-import org.controlsfx.control.tableview2.TableColumn2;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public abstract class StringFieldCell {
 
-    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final String rowID, final ColumnMetadata Metadata, final StringProperty tablePrimeKey, final StringProperty TableName, final CellFormater format) {
+    public static void createColumn(final TableColumn<DataForDB, String> ColumnCellType, final DatabaseUpdaterInterface Updater, final String rowID, final ColumnMetadata Metadata, final ArrayList<SimpleStringProperty> tablePrimeKey, final StringProperty TableName, final CellFormater format) {
         ColumnCellType.setCellFactory(TextFieldTableCell.forTableColumn());
        /* ColumnCellType.setCellFactory(new Callback<TableColumn<DataForDB, String>, TableCell<DataForDB, String>>() {
             @Override
@@ -110,11 +112,14 @@ public abstract class StringFieldCell {
                 //  System.out.println("prime " + ColumnPrimaryKey.get(TableName).getFirst());
                 //   Object valueFormated = formatValue(newValue);
                 //  System.out.println("é inteiro " + (valueFormated instanceof Long));
-                System.out.println("key " + tablePrimeKey.get());
+                // System.out.println("key " + tablePrimeKey.get());
                 final String[] indexStr = new String[1];
                 indexStr[0] = item.GetData(rowID);
                 //   final long index = indexStr != null ? Long.parseLong(indexStr) : 0;
-                if (!Updater.updateData(TableName.get(), Metadata.Name, newValue, indexStr, Metadata.Type, tablePrimeKey.get(), item.GetData(tablePrimeKey.get()))) {
+                final ArrayList<String> keys = tablePrimeKey.stream()
+                        .map(SimpleStringProperty::get)
+                        .collect(Collectors.toCollection(ArrayList::new));
+                if (!Updater.updateData(TableName.get(), Metadata.Name, newValue, indexStr, Metadata.Type, keys, item.GetData(keys))) {
                     ShowError("Error SQL", "Error to update data", Updater.getException());
                     return;
                 }

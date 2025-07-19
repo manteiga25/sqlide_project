@@ -1,7 +1,6 @@
-package com.example.sqlide;
+package com.example.sqlide.Metadata;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class ColumnMetadata {

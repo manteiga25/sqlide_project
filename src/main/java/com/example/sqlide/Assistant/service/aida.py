@@ -168,11 +168,12 @@ def createReport(title: str, query: str):
 
     return ret
 
-def createTable(tableName: str, meta: list[dict[str, str]]):
+def createTable(tableName: str, meta: list[dict[str, str]], check : str):
     """Create a sql table, if not specified from user try to generate.
         Args:
             tableName (str): The name of table.
             meta (list[dict[str, str]]): the little metadata (columns) of table (Name: 'column_name', Type: 'type of column', Key: 'Primary key = 'PRIMARY KEY', foreign key = 'FOREIGN KEY', No key = 'NO KEY', NotNull: 'true' 'false' ).
+            check (str): Optional check code for the table (ignore if not mentioned by the user).
 
         Return (bool): true success, false error.
     """
@@ -180,8 +181,8 @@ def createTable(tableName: str, meta: list[dict[str, str]]):
     sender = {
             'status': 'request',
             'function': 'CreateTable',
-            'parameters': [tableName, meta],
-            'message': ''
+            'parameters': [tableName, meta, check],
+            'message': 'Creating Table'
             }
 
     print(json.dumps(sender))
@@ -205,8 +206,33 @@ def createData(table: str, data: list[dict[str, str]]):
                 'status': 'request',
                 'function': 'InsertData',
                 'parameters': [table, data],
-                'message': ''
+                'message': 'Creating Data'
                 }
+
+    print(json.dumps(sender))
+
+    ret = input()
+
+    response.append(ret)
+
+    return ret
+
+def createView(table: str, name: str, code: str):
+    """Create a view for the table.
+            Args:
+                table: The table to create view, if not mentioned by the user use currentTable() to fetch current Table.
+                name: The name of view.
+                code: The SQL code for the view (use getSQLType to generate a right code).
+
+            Return (bool): true Success, false error.
+        """
+    global response
+    sender = {
+               'status': 'request',
+               'function': 'CreateView',
+               'parameters': [table, name, code],
+               'message': 'Creating View'
+               }
 
     print(json.dumps(sender))
 
@@ -299,7 +325,7 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
         google_search = GoogleSearch()
     )
 
-    func_tools = [getSQLType, ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable, currentTable, createData, createReport, createTrigger, createEvent, createGraphic]
+    func_tools = [getSQLType, ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable, currentTable, createData, createView, createReport, createTrigger, createEvent, createGraphic]
 
     tools = None
 

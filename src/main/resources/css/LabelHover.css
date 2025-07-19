@@ -1,5 +1,5 @@
 .label {
-    -fx-text-fill: black; /* Cor normal do texto */
+    -fx-text-fill: #F5F7F2; /* Cor normal do texto */
 }
 
 .label:hover {

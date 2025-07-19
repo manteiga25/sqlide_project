@@ -5,6 +5,8 @@ import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.Chart.ChartController;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.ColumnInterface;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
+import com.example.sqlide.Metadata.ColumnMetadata;
+import com.example.sqlide.Metadata.TableMetadata;
 import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.DeleteColumn;
@@ -34,6 +36,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.xlsx4j.sml.Col;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -46,8 +49,6 @@ public class TableInterface {
 
     private final DataBase Database;
 
-    public StringProperty TableName;
-
     private final TabPane DBTabContainer;
 
     private TableView<DataForDB> tableContainer;
@@ -58,13 +59,13 @@ public class TableInterface {
 
     private ArrayList<String> advancedSearchColumns = null;
 
-    private ArrayList<String> PrimaryKeyList = new ArrayList<>();
-
     private final ObservableList<DataForDB> dataList = FXCollections.observableArrayList();
 
     private final AtomicBoolean isFetching = new AtomicBoolean(false);
 
     private final ArrayList<String> ColumnsNames = new ArrayList<>();
+
+    private final TableMetadata TableMetadata;
     
     private ArrayList<String> ColumnsFetched = new ArrayList<>();
 
@@ -75,8 +76,6 @@ public class TableInterface {
     private final ArrayList<ColumnInterface> columnsInterfaceList = new ArrayList<>();
 
     private final SimpleLongProperty PageNum = new SimpleLongProperty(0);
-
-    private final SimpleStringProperty TablePrimeKey = new SimpleStringProperty("");
 
     private Label pageLabel;
 
@@ -92,6 +91,10 @@ public class TableInterface {
 
     private Thread fetcherThread = null;
 
+    public TableMetadata getTableMetadata() {
+        return TableMetadata;
+    }
+
     public ArrayList<String> getPrimaryKeys() {
         ArrayList<String> primaryKeys = new ArrayList<>();
         LinkedHashMap<String, ColumnMetadata> MetaDataList = getColumnsMetadata();
@@ -104,7 +107,7 @@ public class TableInterface {
     }
 
     public HashMap<String, ArrayList<String>> getAllPrimaryKeys() {
-        return context.getColumnPrimaryKey(TableName.get());
+        return context.getColumnPrimaryKey(TableMetadata.getName());
     }
 
     public LinkedHashMap<String, ColumnMetadata> getColumnsMetadata() {
@@ -144,15 +147,16 @@ public class TableInterface {
     }
 
     public StringProperty getTableName() {
-        return TableName;
+        return TableMetadata.getNameProperty();
     }
 
-    public TableInterface(final DataBase DB, final String TableName, final TabPane DBTabContainer, final DatabaseInterface context) {
+    public TableInterface(final DataBase DB, final String TableName, final TabPane DBTabContainer, final DatabaseInterface context) throws SQLException {
         this.Database = DB;
-        this.TableName = new SimpleStringProperty(TableName);
+        TableMetadata = new TableMetadata(TableName);
         this.DBTabContainer = DBTabContainer;
         this.context = context;
-        this.TableName.addListener((observable, oldValue, newValue) -> {
+        TableMetadata.setCheck(DB.getTableCheck(TableName));
+        this.TableMetadata.getNameProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.equals(oldValue)) {
                 DBTabContainer.getTabs().stream().filter(tab -> tab.getId().equals(oldValue)).findFirst().ifPresent(tab -> {tab.setText(newValue); tab.setId(newValue);});
                 tableContainer.setId(newValue);
@@ -173,6 +177,7 @@ public class TableInterface {
            // }
         });
         //Platform.runLater(this::createDatabaseTab);
+        
         Platform.runLater(()-> {
             try {
                 createDatabaseTab();
@@ -189,8 +194,9 @@ public class TableInterface {
     }
 
     private void createDatabaseTab() throws SQLException {
-        Tab newTab = new Tab(TableName.get());
-        newTab.setId(TableName.get());
+        Tab newTab = new Tab();
+        newTab.textProperty().bind(TableMetadata.getNameProperty());
+        newTab.idProperty().bind(TableMetadata.getNameProperty());
         newTab.setClosable(false);
         createMenu(newTab);
         DBTabContainer.getTabs().add(newTab);
@@ -210,9 +216,8 @@ public class TableInterface {
         buttonsScroll.setContent(ButtonsLine);
 
         tableContainer = new TableView<>();
-        tableContainer.setId(TableName.get());
+        tableContainer.idProperty().bind(TableMetadata.getNameProperty());
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
-        //  tableContainer.setPrefHeight(1280);
         tableContainer.setEditable(true);
         tableContainer.getSelectionModel().setCellSelectionEnabled(true);
         final KeyCombination cntrlC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
@@ -326,10 +331,9 @@ public class TableInterface {
     }
 
     private ComboBox<ViewController.View> createViewBox() throws SQLException {
-        final ArrayList<ViewController.View> views = Database.getViews(TableName.get());
         ComboBox<ViewController.View> viewBox = new ComboBox<>();
         viewBox.setPromptText("select view...");
-        viewBox.getItems().addAll(views);
+        viewBox.getItems().addAll(TableMetadata.getViews());
         viewBox.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ComboboxModern.css")).toExternalForm());
         viewBox.setStyle("-fx-background-radius: 5px; -fx-border-radius: 5px;");
         viewBox.getSelectionModel().selectedItemProperty().addListener((_,_,value)->{
@@ -379,8 +383,6 @@ public class TableInterface {
 
     private Hyperlink createPreviou(final Font courierNewFontBold36) {
         Hyperlink previou = new Hyperlink("Previou");
-     //   previou.setPrefWidth(100);
-       // previou.setPrefHeight(100);
         previou.setFont(courierNewFontBold36);
         previou.setFocusTraversable(false);
         previou.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/Hyper.css")).toExternalForm());
@@ -427,7 +429,7 @@ public class TableInterface {
         codeField.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/TextFieldStyle.css")).toExternalForm());
        // codeField.setStyle("-fx-background-radius: 15px");
         codeField.setStyle("-fx-text-fill: white;");
-        codeField.setText("SELECT * FROM " + TableName.get() + ";" );
+        codeField.setText("SELECT * FROM " + TableMetadata.getName() + ";" );
         codeField.setPromptText("select code...");
         codeField.setPrefWidth(300);
         codeField.setOnAction(_->AdvancedSearchButton.fire());
@@ -453,7 +455,7 @@ public class TableInterface {
                 String rawCode = codeField.getText();
                 if (rawCode != null && !rawCode.isEmpty()) {
                     if (rawCode.toLowerCase().contains("select")) {
-                        if (rawCode.contains(" " + TableName.get()) || rawCode.contains(" " + TableName.get() + ";")) {
+                        if (rawCode.contains(" " + TableMetadata.getName()) || rawCode.contains(" " + TableMetadata.getName() + ";")) {
                             if (!rawCode.toLowerCase().contains("limit") || !rawCode.toLowerCase().contains("offset")) {
                                 if (!isFetching.get()) {
                                     isFetching.set(true);
@@ -521,7 +523,7 @@ public class TableInterface {
                                 ShowInformation("Invalid query", "The words limit and offset are not accepted for advanced search.");
                             }
                         } else {
-                            ShowInformation("Invalid syntaxe", "Only Table " + TableName.get() + " is permited.");
+                            ShowInformation("Invalid syntaxe", "Only Table " + TableMetadata.getName() + " is permited.");
                         }
                     } else {
                         ShowInformation("Invalid syntaxe", "Only select is permited.");
@@ -563,7 +565,7 @@ public class TableInterface {
             subStage.setTitle("Create Column");
             subStage.setScene(new Scene(root));
             secondaryController.setCode(command);
-            secondaryController.setTable(TableName.get());
+            secondaryController.setTable(TableMetadata.getName());
             secondaryController.setColumns(context.getColumnsNames());
             secondaryController.setStage(subStage);
             if (command.equals("DELETE")) {
@@ -598,7 +600,7 @@ public class TableInterface {
             // Mostrar a subjanela
             subStage.show();
         } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            ShowError("Read asset", "Error to load asset file.", e.getMessage());
         }
     }
 
@@ -620,7 +622,8 @@ public class TableInterface {
         if (selectedRows == null || selectedRows.isEmpty()) {
             return;
         }
-        final String columnKey = !TablePrimeKey.get().isEmpty() ? TablePrimeKey.get() : Database.getRowId();
+        final String prime = TableMetadata.getPrimaryKey();
+        final String columnKey = !prime.isEmpty() ? prime : Database.getRowId();
         ArrayList<String> rowids = new ArrayList<>();
         for (final DataForDB row : selectedRows) {
             System.out.println("rrrr " + row.GetData(columnKey));
@@ -628,7 +631,7 @@ public class TableInterface {
         }
 
         try {
-            if (!Database.Inserter().removeData(TableName.get(), rowids)) {
+            if (!Database.Inserter().removeData(TableMetadata.getName(), rowids)) {
                 ShowError("Error SQL", "Error to delete items.\n" + Database.GetException());
                 return;
             }
@@ -652,15 +655,15 @@ public class TableInterface {
 
     public void deleteDBTab() {
 
-        if (!ShowConfirmation("Confirmation", "Are you sure to delete Table " + TableName + "?")) {
+        if (!ShowConfirmation("Confirmation", "Are you sure to delete Table " + TableMetadata.getName() + "?")) {
             return;
         }
 
-        if (!Database.deleteTable(TableName.get())) {
-            ShowError("ERROR SQL", "Error to delete table " + TableName + "\n" + Database.GetException());
+        if (!Database.deleteTable(TableMetadata.getName())) {
+            ShowError("ERROR SQL", "Error to delete table " + TableMetadata.getName() + "\n" + Database.GetException());
             return;
         }
-        context.deleteTableCallBack(TableName.get());
+        context.deleteTableCallBack(TableMetadata.getName());
     }
 
     private void openRenameWin() {
@@ -676,7 +679,7 @@ public class TableInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Create Column");
             subStage.setScene(new Scene(root));
-            secondaryController.createController(Database, TableName);
+            secondaryController.createController(Database, TableMetadata.getNameProperty());
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -697,7 +700,7 @@ public class TableInterface {
             Parent root = loader.load();
 
             ChartController secondaryController = loader.getController();
-            secondaryController.setAttributes(TableName.get(), getColumnsMetadataName(), Database.Fetcher());
+            secondaryController.setAttributes(TableMetadata.getName(), getColumnsMetadataName(), Database.Fetcher());
             secondaryController.setTitle(title);
             secondaryController.setNumber(y);
             secondaryController.setAxis(x);
@@ -715,7 +718,7 @@ public class TableInterface {
             subStage.show();
 
         } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            ShowError("Read asset", "Error to load asset file", e.getMessage());
         }
     }
 
@@ -732,7 +735,7 @@ public class TableInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Create Column");
             subStage.setScene(new Scene(root));
-            secondaryController.NewColumnWin(Database.getDatabaseName(), TableName.get(), this, subStage, context.getColumnPrimaryKey(TableName.get()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes(), Database.getSQLType());
+            secondaryController.NewColumnWin(Database.getDatabaseName(), TableMetadata.getName(), this, subStage, context.getColumnPrimaryKey(TableMetadata.getName()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes(), Database.getSQLType());
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -740,7 +743,7 @@ public class TableInterface {
             // Mostrar a subjanela
             subStage.show();
         } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            ShowError("Read asset", "Error to load asset file.", e.getMessage());
         }
     }
 
@@ -759,7 +762,7 @@ public class TableInterface {
             subStage.setTitle("Insert Row");
             subStage.setScene(new Scene(root));
             //  secondaryController.NewRowWin(dbName, TableName, this, subStage, dataList.get(TableName).getFirst().type);
-            secondaryController.NewRowWin(Database.getDatabaseName(), TableName.get(), this, subStage, getColumnsMetadata(), Database.types);
+            secondaryController.NewRowWin(Database.getDatabaseName(), TableMetadata.getName(), this, subStage, getColumnsMetadata(), Database.types);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -767,7 +770,7 @@ public class TableInterface {
             // Mostrar a subjanela
             subStage.show();
         } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            ShowError("Read asset", "Error to load asset file.", e.getMessage());
         }
     }
 
@@ -784,7 +787,7 @@ public class TableInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Remove Column");
             subStage.setScene(new Scene(root));
-            secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
+            secondaryController.DeleteColumnInnit(TableMetadata.getName(), ColumnsNames, subStage, this);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -822,10 +825,8 @@ public class TableInterface {
 
     private void deleteColumnContainer(final String Column, final int id) {
         tableContainer.getColumns().remove(id);
-        ColumnMetadata tmpMeta = getColumnsMetadata().get(Column);
-        if (tmpMeta.IsPrimaryKey) {
-            TablePrimeKey.set("");
-        }
+        ColumnMetadata tmpMeta = TableMetadata.getColumnMetadata(Column);
+        TableMetadata.removeColumn(tmpMeta);
 
         for (DataForDB data : dataList) {
             data.RemoveColumn(Column);
@@ -839,33 +840,52 @@ public class TableInterface {
 
         final Stage loading = LoadingStage("Creating column", "This operation can be slower.");
 
-        Thread.ofVirtual().start(()->{
-            if (!Database.createColumn(TableName.get(), ColName, meta, fill)) {
-                Platform.runLater(loading::close);
-                ShowError("Error SQL", "Error to create column " + ColName + " on Table " + TableName + " on Database " + "dbName", Database.GetException());
-                return;
+        final Task<Void> deleteTask = new Task<Void>() {
+
+            @Override
+            protected void running() {
+                super.running();
+                updateTitle("Creating column " + ColName);
+                updateProgress(-1,-1);
+                updateMessage("This operation can be slower.");
             }
-            if (meta.index != null) {
-                try {
-                    Database.createIndex(TableName.get(), ColName, meta.index, meta.indexType);
-                } catch (SQLException e) {
-                    ShowError("Error SQL", "Error to create index for column " + ColName + " on Table " + TableName + " on Database " + Database.getDatabaseName(), Database.GetException());
-                }
+
+            @Override
+            protected Void call() throws Exception {
+                if (!Database.createColumn(TableMetadata.getName(), ColName, meta, fill)) throw new SQLException(Database.GetException());
+                if (meta.IsPrimaryKey) for (DataForDB data : dataList) data.RemoveColumn(Database.getRowId());
+                TableMetadata.addColumn(meta);
+                if (meta.index != null) Database.createIndex(TableMetadata.getName(), ColName, meta.index, meta.indexType);
+                return null;
             }
-            Platform.runLater(()->{
-                loading.close();
+
+            @Override
+            protected void failed() {
+                super.failed();
+                ShowError("Error SQL", "Error to create column " + ColName + " on Table " + TableMetadata.getName() + " on Database " + "dbName", Database.GetException());
+            }
+
+            @Override
+            protected void succeeded() {
+                super.succeeded();
                 createDBcolContainer(meta);
-            });
-        });
+            }
+
+            @Override
+            protected void done() {
+                super.done();
+                Platform.runLater(loading::close);
+            }
+
+        };
+        context.getTaskInterface().addTask(deleteTask);
+        Thread.ofVirtual().start(deleteTask);
 
     }
 
     public void createDBcolContainer(final ColumnMetadata meta) {
-        if (meta.IsPrimaryKey) {
-            TablePrimeKey.set(meta.Name);
-        }
-        ColumnInterface column = new ColumnInterface(Database, meta, TablePrimeKey, this, tableContainer);
-        tableContainer.getColumns().add(column.createDBColContainer(TableName));
+        ColumnInterface column = new ColumnInterface(Database, meta, TableMetadata.getPrimaryKeyProperty(), this, tableContainer);
+        tableContainer.getColumns().add(column.createDBColContainer(TableMetadata.getNameProperty()));
         columnsInterfaceList.add(column);
         for (DataForDB d : dataList) {
             d.AddColumn(meta.Name, meta.defaultValue);
@@ -929,12 +949,18 @@ public class TableInterface {
                 protected void done() {
                     super.done();
                     isFetching.set(false);
+                    for (String m : ColumnsNames) {
+                        System.out.println(m);
+                    }
+
                     Platform.runLater(()->{
                         pageLabel.setText(PageNum.get() + ":" + totalPages);
                         loading.get().close();
                     });
                 }
             };
+
+            context.getTaskInterface().addTask(fetch);
 
             fetcherThread = new Thread(fetch);
             fetcherThread.setDaemon(true);
@@ -957,7 +983,7 @@ public class TableInterface {
     }
 
     public void alterColumnMetadata(ColumnMetadata oldMetadata, ColumnMetadata newMetadata) {
-        final String tableName = TableName.get();
+        final String tableName = TableMetadata.getName();
         String errorMessage = "";
         String originalOldName = oldMetadata.Name; // Keep for UI lookup even if name changes mid-process
         try {
@@ -992,7 +1018,7 @@ public class TableInterface {
                     buildType = newMetadata.Type + "(" + newMetadata.integerDigits + ", " + newMetadata.decimalDigits + ") ";
                 }
                 buildType += " " + (newMetadata.NOT_NULL ? "NOT NULL" : "NULL");
-                if (!Database.AlterTypeColumn(TableName.get(), newMetadata.Name, buildType)) throw new SQLException(Database.GetException());
+                if (!Database.AlterTypeColumn(TableMetadata.getName(), newMetadata.Name, buildType)) throw new SQLException(Database.GetException());
             }
 
             // 2. Rename Column
@@ -1017,7 +1043,7 @@ public class TableInterface {
                 //    if(!Database.dropDefaultValue(tableName, currentColumnNameInDB)) { /* error */ }
                 // }
                 System.out.println("Simulating: Set DEFAULT to '" + newMetadata.defaultValue + "' for " + currentColumnNameInDB);
-                if (!Database.AlterDefaultValue(TableName.get(), newMetadata.Name, newMetadata.defaultValue)) throw new SQLException(Database.GetException());
+                if (!Database.AlterDefaultValue(TableMetadata.getName(), newMetadata.Name, newMetadata.defaultValue)) throw new SQLException(Database.GetException());
             }
 
             // 5. Primary Key (very simplified - actual PK changes are complex)
@@ -1097,7 +1123,7 @@ public class TableInterface {
 
                     // Add a new TableColumn created with the updated metadata
                     // This ensures that any visual changes in the header (name, icons) are reflected.
-                    TableColumn<DataForDB, String> newFXColumn = ci.createDBColContainer(TableName);
+                    TableColumn<DataForDB, String> newFXColumn = ci.createDBColContainer(TableMetadata.getNameProperty());
                     tableContainer.getColumns().add(newFXColumn); // Consider order if it matters
 
                     // If name changed, update internal lists and data maps
@@ -1107,15 +1133,15 @@ public class TableInterface {
                         for (DataForDB d : dataList) {
                             d.RenameColumn(originalOldName, newMetadata.Name);
                         }
-                        if (TablePrimeKey.get().equals(originalOldName)) {
-                            TablePrimeKey.set(newMetadata.Name);
+                        if (TableMetadata.getPrimaryKey().equals(originalOldName)) {
+                            TableMetadata.setPrimaryKey(oldMetadata.Name, newMetadata.Name);
                         }
                     } else {
                         // If only PK status changed for example, the TablePrimeKey might need update
-                        if (newMetadata.IsPrimaryKey && !TablePrimeKey.get().equals(newMetadata.Name)) {
-                            TablePrimeKey.set(newMetadata.Name);
-                        } else if (!newMetadata.IsPrimaryKey && TablePrimeKey.get().equals(newMetadata.Name)) {
-                            TablePrimeKey.set(""); // Or re-evaluate if another PK exists
+                        if (newMetadata.IsPrimaryKey && !TableMetadata.getPrimaryKey().equals(newMetadata.Name)) {
+                            TableMetadata.setPrimaryKey(oldMetadata.Name, newMetadata.Name);
+                        } else if (!newMetadata.IsPrimaryKey && TableMetadata.getPrimaryKey().equals(newMetadata.Name)) {
+                            TableMetadata.setPrimaryKey(oldMetadata.Name, ""); // Or re-evaluate if another PK exists
                         }
                     }
                 }
@@ -1128,35 +1154,6 @@ public class TableInterface {
             } catch (SQLException _) {
             }
             ShowError("Error SQL", "Error to change column metadata.", e.getMessage());
-        }
-    }
-
-    private void prepareCodeFetch(final String code) {
-
-        if (!isFetching.get()) {
-
-            isFetching.set(true);
-
-            new Thread(() -> {
-
-                int fetched;
-
-                ArrayList<DataForDB> data = fetchData(code);
-
-                if (data == null) {
-                    ShowError("Error", "Error to fetch data.\n" + Database.GetException());
-                } else {
-                    putData(data);
-                }
-
-                isFetching.set(false);
-
-                System.out.println("Executando em uma thread separada! ");
-                System.out.println("Page "+ PageNum.get());
-                System.out.println(Database.buffer);
-            }).start();
-        } else {
-            System.out.println("ocupado");
         }
     }
 
@@ -1184,13 +1181,11 @@ public class TableInterface {
     }
 
     public void readColumns() {
-        final ArrayList<ColumnMetadata> ColumnsMetadata = Database.getColumnsMetadata(TableName.get());
+        final ArrayList<ColumnMetadata> ColumnsMetadata = Database.getColumnsMetadata(TableMetadata.getName());
+        TableMetadata.addColumns(ColumnsMetadata);
         for (final ColumnMetadata ColumnMetadata : ColumnsMetadata) {
-            if (ColumnMetadata.IsPrimaryKey) {
-                TablePrimeKey.set(ColumnMetadata.Name);
-            }
-            ColumnInterface column = new ColumnInterface(Database, ColumnMetadata, TablePrimeKey, this, tableContainer);
-            Platform.runLater(()->tableContainer.getColumns().add(column.createDBColContainer(TableName)));
+            final ColumnInterface column = new ColumnInterface(Database, ColumnMetadata, TableMetadata.getPrimaryKeyProperty(), this, tableContainer);
+            Platform.runLater(()->tableContainer.getColumns().add(column.createDBColContainer(TableMetadata.getNameProperty())));
             columnsInterfaceList.add(column);
             ColumnsNames.add(ColumnMetadata.Name);
             if (!dataList.isEmpty()) {
@@ -1199,13 +1194,9 @@ public class TableInterface {
                 }
             }
         }
-        if (TablePrimeKey.get().isEmpty()) {
+        if (TableMetadata.hasPrimaryKey()) {
             createRowId();
         }
-
-        //  pageLabel.setText("0:" + totalPages);
-       // fetchData();
-    //    prepareFetch();
     }
 
     public void fetchIfIsPrimeClick() {
@@ -1218,12 +1209,12 @@ public class TableInterface {
     }
 
     private ArrayList<DataForDB> fetchData() {
-        return Database.Fetcher().fetchData(TableName.get(), ColumnsNames, PageNum.get()*Database.buffer, TablePrimeKey.get());
+        return Database.Fetcher().fetchData(TableMetadata.getName(), ColumnsNames, PageNum.get()*Database.buffer, TableMetadata.getPrimaryKeys());
     }
 
     private ArrayList<DataForDB> fetchData(final String code) {
 
-        ArrayList<DataForDB> dataFetched = Database.Fetcher().fetchData(code + " OFFSET " + PageNum.get()*Database.buffer, ColumnsFetched, TablePrimeKey.get());
+        ArrayList<DataForDB> dataFetched = Database.Fetcher().fetchData(code + " OFFSET " + PageNum.get()*Database.buffer, ColumnsFetched, TableMetadata.getPrimaryKey());
 
         for (String co : ColumnsFetched) {
             System.out.println("sdfd " + co);
@@ -1238,21 +1229,9 @@ public class TableInterface {
         dataList.addAll(data);
     }
 
-    private int fetchData(final ArrayList<String> columns) {
-
-        ArrayList<DataForDB> dataFetched = Database.Fetcher().fetchData(TableName.get(), columns, PageNum.get()*Database.buffer, TablePrimeKey.get());
-
-        if (dataFetched == null || dataFetched.isEmpty()) {
-            return -1;
-        }
-        dataList.remove(0, dataList.size());
-        dataList.addAll(dataFetched);
-        return dataFetched.size();
-    }
-
     public boolean insertData(HashMap<String, String> values) {
         System.out.println(values);
-        if (!Database.Inserter().insertData(TableName.get(), values)) {
+        if (!Database.Inserter().insertData(TableMetadata.getName(), values)) {
             ShowError("SQL Error", "Error to insert data\n" + Database.GetException());
             return false;
         }
@@ -1287,7 +1266,7 @@ public class TableInterface {
             columnsToFetch.append(column).append(", ");
         }
 
-        codeField.setText("SELECT " + columnsToFetch.substring(0, columnsToFetch.length()-2) + " FROM " + TableName.get() + ";");
+        codeField.setText("SELECT " + columnsToFetch.substring(0, columnsToFetch.length()-2) + " FROM " + TableMetadata.getName() + ";");
         AdvancedSearchButton.fire();
         return true;
     //    return fetchData() != -1;
@@ -1298,7 +1277,7 @@ public class TableInterface {
             advancedSearch = false;
             advancedSearchColumns = null;
             codeSQL = "";
-            codeField.setText("SELECT * FROM " + TableName.get() + ";");
+            codeField.setText("SELECT * FROM " + TableMetadata.getName() + ";");
             fetcherThread.interrupt();
             Thread resetThread = new Thread(() -> {
                 isFetching.set(false);
@@ -1317,8 +1296,8 @@ public class TableInterface {
     }
 
     public void setTotalPages() {
-        final Thread fetchPage = new Thread(()->{
-            totalPages = Database.totalPages(TableName.get())-1;
+        Thread.ofVirtual().start(()->{
+            totalPages = Database.totalPages(TableMetadata.getName())-1;
             if (totalPages == -2) {
                 System.out.println(Database.GetException());
                 totalPages = Long.MAX_VALUE;
@@ -1326,12 +1305,10 @@ public class TableInterface {
             System.out.println("encontrado " + totalPages);
             Platform.runLater(()->PageNum.set(0));
         });
-        fetchPage.setDaemon(true);
-        fetchPage.start();
     }
 
     public void setTotalPages(final ArrayList<String> columns, final String condition) {
-        final Thread fetchPage = new Thread(()->{
+        Thread.ofVirtual().start(()->{
 
             long max = -1;
 
@@ -1342,7 +1319,7 @@ public class TableInterface {
                 conditionComplete = condition.replace(condition.substring(indexOffset-1), "");
             }
             for (final String column : columns) {
-                totalPages = Database.totalPages(TableName.get(), column, conditionComplete)-1;
+                totalPages = Database.totalPages(TableMetadata.getName(), column, conditionComplete)-1;
                 if (totalPages == -2) {
                     System.out.println(Database.GetException());
                 } else if (totalPages > max) {
@@ -1351,10 +1328,7 @@ public class TableInterface {
             }
             totalPages = max == -1 ? Long.MAX_VALUE : totalPages;
             Platform.runLater(()->PageNum.set(0));
-        }
-        );
-        fetchPage.setDaemon(true);
-        fetchPage.start();
+        });
     }
 
     public void closeColumns() {

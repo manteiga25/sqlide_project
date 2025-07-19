@@ -1,7 +1,8 @@
 package com.example.sqlide.drivers.SQLite;
 
-import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.Logger.Logger;
+import com.example.sqlide.Metadata.TableMetadata;
 import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
@@ -767,24 +768,32 @@ public class SQLiteDB extends DataBase {
 
         @Override
         public boolean updateData(String Table, String column, String value, String[] index, String type, String PrimeKey, String tmp) {
+            return false;
+        }
+
+        @Override
+        public boolean updateData(String Table, String column, String value, String[] index, String type, ArrayList<String> PrimeKey, ArrayList<String> tmp) {
             String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
-            boolean prime = false;
             if (PrimeKey == null || PrimeKey.isEmpty()) {
                 command += "ROWID = " + index[0] + ";";
             }
             else {
                 //  command += PrimeKey + " = '" + tmp + "'";
-                command += PrimeKey + " = ?";
-                prime = true;
-
+                for (final String primary : PrimeKey) {
+                    command += primary + " = ? AND ";
+                }
+                command = command.substring(0, command.length()-5) + ";";
             }
             System.out.println(command);
             try {
                 PreparedStatement pstmt = connection.prepareStatement(command);
                 //  pstmt.execute(command.toString());
                 pstmt.setObject(1, value);
-                if (prime) {
-                    pstmt.setObject(2, tmp);
+                if (PrimeKey != null) {
+                    final int size = PrimeKey.size();
+                    for (int indexKey = 0; indexKey < size; indexKey++) {
+                            pstmt.setObject(indexKey+2, tmp.get(indexKey));
+                    }
                 }
                 int affectedRows = pstmt.executeUpdate();
                 System.out.println("rows " + affectedRows);
@@ -1188,13 +1197,18 @@ public class SQLiteDB extends DataBase {
     }
 
     @Override
-    public boolean createTable(String table, boolean temporary, boolean rowid, final ArrayList<ColumnMetadata> columnMetadata) {
+    public boolean createTable(String table, boolean temporary, boolean rowid, ArrayList<ColumnMetadata> columnMetadata) {
+        return false;
+    }
+
+    @Override
+    public boolean createTable(final TableMetadata metadata, boolean temporary, boolean rowid) {
         final String Temporary = temporary ? "TEMPORARY " : "";
         final String Rowid = rowid ? "" : " WITHOUT ROWID ";
       //  final String prime = rowid ? "" : "PRIMARY KEY";
-        StringBuilder command = new StringBuilder("CREATE " + Temporary + "TABLE " + table + " (");
+        StringBuilder command = new StringBuilder("CREATE " + Temporary + "TABLE " + metadata.getName() + " (");
 
-        for (final ColumnMetadata column : columnMetadata) {
+        for (final ColumnMetadata column : metadata.getColumnMetadata()) {
             final String NotNull = column.NOT_NULL ? " NOT NULL " : "";
             final String Default = !Objects.equals(column.defaultValue, "") && !Objects.equals(column.defaultValue, "null") ? " DEFAULT " + column.defaultValue : "";
             final String IsUnique = column.isUnique ? " UNIQUE " : "";
@@ -1228,7 +1242,9 @@ public class SQLiteDB extends DataBase {
 
         final int strSize = command.length();
 
-        command.delete(strSize-2, strSize).append(")").append(Rowid).append(";");
+        final String check = metadata.getCheck() == null || metadata.getCheck().isEmpty() ? "" : ", CHECK (" + metadata.getCheck() + ")";
+
+        command.delete(strSize-2, strSize).append(check).append(")").append(Rowid).append(";");
         try {
             System.out.println(command);
             initializeTime();
@@ -1352,6 +1368,28 @@ public class SQLiteDB extends DataBase {
     @Override
     public void removeIndex(final String indexName) throws SQLException {
         statement.execute("DROP INDEX " + indexName);
+    }
+
+    @Override
+    public String getTableCheck(final String table) throws SQLException {
+        String check_code, check = null;
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name = ?")) {
+            ps.setString(1, table);
+            try (ResultSet rs = ps.executeQuery()) {
+                check_code = rs.next() ? rs.getString("sql") : null;
+            }
+            System.out.println(check_code);
+        }
+
+        if (check_code != null) {
+            Pattern pattern = Pattern.compile("CHECK\\s*\\(([^)]+)\\)", Pattern.CASE_INSENSITIVE);
+            Matcher m = pattern.matcher(check_code);
+            while (m.find()) {
+                check = m.group(1);
+            }
+        }
+        return check;
     }
 
 }

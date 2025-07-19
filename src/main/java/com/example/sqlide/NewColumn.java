@@ -1,14 +1,11 @@
 package com.example.sqlide;
 
-import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
-import com.example.sqlide.Configuration.DatabaseConf;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
 import com.jfoenix.controls.JFXButton;
-import com.jfoenix.controls.JFXCheckBox;
-import com.jfoenix.controls.JFXTextArea;
 import com.jfoenix.controls.JFXTextField;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -19,7 +16,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 

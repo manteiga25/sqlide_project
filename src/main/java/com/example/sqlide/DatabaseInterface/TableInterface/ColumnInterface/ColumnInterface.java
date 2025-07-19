@@ -1,6 +1,6 @@
 package com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface;
 
-import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater.CellFormater;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.CellFormater.CellFormaterController;
@@ -9,6 +9,7 @@ import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.NewColumn;
 import com.example.sqlide.RenameColumnController;
 import com.example.sqlide.drivers.model.DataBase;
+import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.fxml.FXMLLoader;
@@ -16,8 +17,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -26,13 +25,13 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
+import java.util.ArrayList;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class ColumnInterface {
 
-    private final SimpleStringProperty tablePrimeKey;
+    private final ArrayList<SimpleStringProperty> tablePrimeKey;
 
     private StringProperty table;
 
@@ -46,7 +45,7 @@ public class ColumnInterface {
 
     private final CellFormater format = new CellFormater();
 
-    public ColumnInterface(final DataBase Database, final ColumnMetadata meta, SimpleStringProperty tableHasPrimeKey, final TableInterface context, final TableView<DataForDB> tableView) {
+    public ColumnInterface(final DataBase Database, final ColumnMetadata meta, ArrayList<SimpleStringProperty> tableHasPrimeKey, final TableInterface context, final TableView<DataForDB> tableView) {
         this.Database = Database;
         this.Metadata = meta;
         this.tablePrimeKey = tableHasPrimeKey;
@@ -154,7 +153,7 @@ public class ColumnInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Remove Column");
             subStage.setScene(new Scene(root));
-            secondaryController.NewColumnWin(Database.getDatabaseName(), context.TableName.get(), context, subStage, context.getAllPrimaryKeys(), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes(), Database.getSQLType());
+            secondaryController.NewColumnWin(Database.getDatabaseName(), context.getTableName().get(), context, subStage, context.getAllPrimaryKeys(), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes(), Database.getSQLType());
             secondaryController.insertMetadata(Metadata);
 
             // Opcional: definir a modalidade da subjanela

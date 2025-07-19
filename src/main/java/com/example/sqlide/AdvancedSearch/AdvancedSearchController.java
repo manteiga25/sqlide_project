@@ -1,14 +1,8 @@
 package com.example.sqlide.AdvancedSearch;
 
-import com.example.sqlide.ColumnMetadata;
-import com.example.sqlide.Report.ReportController;
-import com.example.sqlide.drivers.model.DataBase;
-import com.example.sqlide.exporter.XML.xmlController;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
-import com.jfoenix.controls.RecursiveTreeItem;
-import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -25,13 +19,10 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.apache.xmlbeans.impl.xb.xsdschema.AllNNI;
 
-import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class AdvancedSearchController {
 

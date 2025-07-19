@@ -1,5 +1,6 @@
 package com.example.sqlide.drivers.model.Interfaces;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public interface DatabaseUpdaterInterface {
@@ -15,6 +16,8 @@ public interface DatabaseUpdaterInterface {
     public abstract boolean updateData(String Table, String column, Object value, String[] index, String PrimeKey, String tmp);
 
     public abstract boolean updateData(String Table, String column, String value, String[] index, String type, String PrimeKey, String tmp);
+
+    boolean updateData(String Table, String column, String value, String[] index, String type, ArrayList<String> PrimeKey, ArrayList<String> tmp);
 
     public abstract boolean updateData(String Table, String column, Object value, String index, String PrimeKey, String tmp);
 

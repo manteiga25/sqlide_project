@@ -1,9 +1,7 @@
 package com.example.sqlide;
 
-import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.ColumnInterface;
-import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.drivers.model.DataBase;
-import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 

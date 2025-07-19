@@ -1,6 +1,8 @@
 package com.example.sqlide;
 
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
+import com.example.sqlide.Metadata.ColumnMetadata;
+import com.example.sqlide.Metadata.TableMetadata;
 import com.example.sqlide.drivers.model.DataBase;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -13,14 +15,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.apache.poi.ss.formula.functions.Column;
-import org.apache.poi.ss.formula.functions.T;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.stream.Stream;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
@@ -44,7 +42,7 @@ public class NewTable {
     private Label DataBaseLabel, Error;
 
     @FXML
-    private TextField TableNameInput;
+    private TextField TableNameInput, CheckField;
 
     @FXML
     private CheckBox TempBox, RowIDBox;
@@ -76,17 +74,18 @@ public class NewTable {
     @FXML
     public void TableName() throws SQLException {
         final String TableName = TableNameInput.getText();
+        final String TableCheck = CheckField.getText();
         if (TableName.isEmpty()) {
             Error.setStyle("-fx-border-color: red; -fx-border-width: 2px; border-radius: 25px;");
             Error.setText("'" + TableName + "'" + " is invalid name");
             return;
         }
 
-      //  context.executeCode();
+        final TableMetadata meta = new TableMetadata(TableName);
+        meta.addColumns(columnsMetadata);
+        meta.setCheck(TableCheck);
 
-
-
-        if (ref.createDBTable(TableName, TempBox.isSelected(), RowIDBox.isSelected(), columnsMetadata)) {
+        if (ref.createDBTable(meta, TempBox.isSelected(), RowIDBox.isSelected())) {
             closeWindow();
          //   ref.createDBColContainer(TableName, new ColumnMetadata(false, false, null, false, null, 0, "INTEGER", "id", false, 0, 0));
         }
@@ -195,6 +194,10 @@ public class NewTable {
             }
         }
 
+    }
+
+    public void setCheck(String check) {
+        CheckField.setText(check);
     }
 
 

@@ -1,48 +1,39 @@
 package com.example.sqlide.exporter.CSV;
 
 import com.example.sqlide.AdvancedSearch.TableAdvancedSearchController;
-import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.Container.loading.loadingController;
 import com.example.sqlide.Container.loading.loadingInterface;
 import com.example.sqlide.Notification.NotificationInterface;
-import com.example.sqlide.TaskInterface;
+import com.example.sqlide.Task.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.popupWindow.Notification;
-import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
-import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.image.ImageView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.controlsfx.control.action.Action;
 
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
-import static com.example.sqlide.ColumnMetadata.MetadataToArrayList;
-import static com.example.sqlide.ColumnMetadata.MetadataToMap;
+import static com.example.sqlide.Metadata.ColumnMetadata.MetadataToArrayList;
+import static com.example.sqlide.Metadata.ColumnMetadata.MetadataToMap;
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
 public class CSVController implements NotificationInterface, loadingInterface {

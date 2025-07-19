@@ -152,6 +152,8 @@ public class AssistantController {
                 Platform.runLater(()->action.set(json.getString("message")));
                 JSONArray parameters = json.getJSONArray("parameters");
 
+                System.out.println("função " + function);
+
                 switch (function) {
                     case "type":
                         System.out.println(AssistantFunctionsInterface.getSQLType().name());
@@ -188,7 +190,13 @@ public class AssistantController {
                             Table.add(map);
                         }
 
-                        sender.put(Boolean.toString(AssistantFunctionsInterface.createTable(parameters.getString(0), Table)));
+                        sender.put(Boolean.toString(AssistantFunctionsInterface.createTable(parameters.getString(0), Table, parameters.getString(2))));
+                        break;
+
+                    case "CreateView":
+                        System.out.println("criando view");
+                        System.out.println(parameters.getString(0) + " " + parameters.getString(1) + " " + parameters.getString(2));
+                        sender.put(String.valueOf(AssistantFunctionsInterface.createView(parameters.getString(0), parameters.getString(1), parameters.getString(2))));
                         break;
 
                     case "table":

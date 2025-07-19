@@ -1,6 +1,7 @@
 package com.example.sqlide;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 
 public class DataForDB {
@@ -17,6 +18,14 @@ public class DataForDB {
 
     public String GetData(final String column) {
         return data.get(column);
+    }
+
+    public ArrayList<String> GetData(final Collection<String> column) {
+        final ArrayList<String> data = new ArrayList<>(column.size());
+        for (final String col : column) {
+            data.add(this.data.get(col));
+        }
+        return data;
     }
 
     public void AddColumn(final String Name, final String data) {

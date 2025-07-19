@@ -65,7 +65,7 @@
         </HBox>
     </top>
     <left>
-        <VBox spacing="5.0" style="-fx-background-color: #2A2A2A;" BorderPane.alignment="CENTER">
+        <VBox spacing="5.0" style="-fx-background-color: #2A2A2A;">
             <JFXButton mnemonicParsing="false" onAction="#SwitchToDB" prefWidth="75.0" style="-fx-background-color: #3574F0;" text="Database" textFill="#f2f2f2">
                 <font>
                     <Font name="Arial" size="12.0" />
@@ -83,13 +83,32 @@
         </VBox>
     </left>
     <center>
-        <SplitPane fx:id="HorizontalSplit" orientation="VERTICAL" style="-fx-background-color: #1A1A1A;" stylesheets="@../../../css/SplitHorizontal.css">
+        <SplitPane fx:id="HorizontalSplit" orientation="VERTICAL" style="-fx-background-color: #1A1A1A;" stylesheets="@../../../css/SplitHorizontal.css" BorderPane.alignment="CENTER">
             <!--  <Label fx:id="LabelDB" prefHeight="52.0" prefWidth="246.0" stylesheets="@../../../css/LabelHover.css" text="No database selected" textAlignment="CENTER" underline="true" BorderPane.alignment="CENTER"> -->
             <SplitPane fx:id="CenterContainer" style="-fx-background-color: #2A2A2A;">
-                <Label fx:id="LabelDB" alignment="CENTER" contentDisplay="CENTER" maxWidth="1.7976931348623157E308" onMouseClicked="#openDBWindow" stylesheets="@../../../css/LabelHover.css" text="No database selected" underline="true">
-                    <font>
-                        <Font size="36.0" />
-                    </font></Label>
+            <VBox fx:id="ContainerEmpty" alignment="CENTER" spacing="15.0">
+               <children>
+                      <Label alignment="CENTER" contentDisplay="RIGHT" maxWidth="1.7976931348623157E308" onMouseClicked="#openDBWindow" stylesheets="@../../../css/LabelHover.css" text="No database selected">
+                          <font>
+                              <Font name="Arial" size="48.0" />
+                          </font>
+                  </Label>
+                  <HBox alignment="CENTER" maxHeight="1.7976931348623157E308" spacing="10.0" stylesheets="@../../../css/Hyper.css">
+                     <children>
+                        <Hyperlink onAction="#createDBInterface" text="Create Database">
+                           <font>
+                              <Font name="Arial" size="28.0" />
+                           </font>
+                        </Hyperlink>
+                        <Hyperlink onAction="#openDBWindow" text="Open Database">
+                           <font>
+                              <Font name="Arial" size="28.0" />
+                           </font>
+                        </Hyperlink>
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
             </SplitPane>
         </SplitPane>
 

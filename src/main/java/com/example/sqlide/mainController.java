@@ -11,6 +11,7 @@ import com.example.sqlide.Import.ImportController;
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.Notification.NotificationInterface;
 import com.example.sqlide.ScriptLayout.SearchScriptController;
+import com.example.sqlide.Task.TaskManager;
 import com.example.sqlide.TriggerLayout.EditTriggerController;
 import com.example.sqlide.TriggerLayout.TriggerController;
 import com.example.sqlide.drivers.SQLite.SQLiteDB;
@@ -22,6 +23,8 @@ import com.example.sqlide.exporter.Excel.excelController;
 import com.example.sqlide.exporter.JSON.JSONController;
 import com.example.sqlide.exporter.XML.xmlController;
 import com.jfoenix.controls.JFXButton;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -44,10 +47,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.*;
-import org.controlsfx.control.TaskProgressView;
-import org.xlsx4j.sml.Col;
 
-import java.io.*;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -57,6 +57,8 @@ import static com.example.sqlide.popupWindow.handleWindow.*;
 
 public class mainController implements requestInterface, NotificationInterface {
 
+    @FXML
+    private VBox ContainerEmpty;
     @FXML
     private Label TaskMessage;
     @FXML
@@ -80,9 +82,6 @@ public class mainController implements requestInterface, NotificationInterface {
     @FXML
     private SplitPane CenterContainer;
 
-    @FXML
-    private Label LabelDB;
-
     private TabPane ContainerForDB, ContainerForEditor;
 
     private Popup MenuPopup;
@@ -96,7 +95,7 @@ public class mainController implements requestInterface, NotificationInterface {
     private final ObservableList<String> DatabasesName = FXCollections.observableArrayList();
     private final ObservableList<DataBase> DatabasesOpened = FXCollections.observableArrayList();
 
-    private TaskManager task;
+    private final TaskManager task = new TaskManager();
 
     @FXML
     private Menu queryMenu;
@@ -113,11 +112,8 @@ public class mainController implements requestInterface, NotificationInterface {
 
     private final SimpleStringProperty currentDB = new SimpleStringProperty();
 
-    private final Popup popup = new Popup();
-
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
-        initTaskView();
     }
 
     @Override
@@ -143,10 +139,20 @@ public class mainController implements requestInterface, NotificationInterface {
     }
 
     @Override
-    public boolean createTable(String table, ArrayList<HashMap<String, String>> meta) {
+    public boolean createTable(String table, ArrayList<HashMap<String, String>> meta, String check) {
         final DatabaseInterface db = DBopened.get(currentDB.get());
         if (db != null) {
-            Platform.runLater(()->db.createDBTabInterface(table, meta));
+            Platform.runLater(()->db.createDBTabInterface(table, meta, check));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean createView(final String table, final String view, String code) {
+        final DatabaseInterface db = DBopened.get(currentDB.get());
+        if (db != null) {
+            Platform.runLater(()->db.openViewStage(view, code));
             return true;
         }
         return false;
@@ -269,58 +275,17 @@ public class mainController implements requestInterface, NotificationInterface {
 
     @FXML
     private void initialize() {
-
         setHDividerSpace();
-
         loadNotification();
+        initTaskView();
     }
 
     private void initTaskView() {
-
-        task = new TaskManager();
-        task.getTaskView().getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/TaskStyle.css")).toExternalForm());
-
-        popup.setAutoHide(true);
-        popup.setHideOnEscape(true);
-
-        VBox box = new VBox(5);
-        box.setStyle("-fx-background-color: #3C3C3C; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 10, 0.1, 0, 2); -fx-background-radius: 8px;");
-        box.setAlignment(Pos.CENTER_RIGHT);
-
-        ObjectProperty<Point2D> mouseLoc = new SimpleObjectProperty<>();
-
-        box.setOnMousePressed(ev ->
-                mouseLoc.set(new Point2D(ev.getScreenX(), ev.getScreenY()))
-        );
-
-        box.setOnMouseDragged(ev -> {
-            Point2D prev = mouseLoc.get();
-            if (prev != null) {
-                double deltaX = ev.getScreenX() - prev.getX();
-                double deltaY = ev.getScreenY() - prev.getY();
-                popup.setX(popup.getX() + deltaX);
-                popup.setY(popup.getY() + deltaY);
-                mouseLoc.set(new Point2D(ev.getScreenX(), ev.getScreenY()));
-            }
-        });
-
-        box.setOnMouseReleased(ev -> mouseLoc.set(null));
-
-        Button hide = new Button("-");
-        hide.setTextFill(Color.valueOf("#e1e1e1"));
-        hide.setTooltip(new Tooltip("hide"));
-        hide.setStyle("-fx-background-color: #3C3C3C;");
-        hide.setOnAction(_->popup.hide());
-
-        box.getChildren().addAll(hide, task.getTaskView());
-
-        popup.getContent().add(box);
-
         task.getTaskList().addListener((ListChangeListener<? super Task<?>>) change->{
             while (change.next()) {
                 if (change.wasRemoved()) {
                     if (task.getTaskList().isEmpty()) {
-                        popup.hide();
+                        task.getPopup().hide();
                         ProgressBox.setVisible(false);
                     }
                 } else {
@@ -329,23 +294,16 @@ public class mainController implements requestInterface, NotificationInterface {
                 }
             }
         });
-
-// Configure a janela para ancorar no canto inferior direito
-
-
-// Exibe logo após a Stage principal estar visível
-
-
     }
 
     @FXML
     private void PopUpTask() {
+        final Popup popup = task.getPopup();
         if (popup.isShowing()) {
             popup.hide();
         } else {
             popup.setAnchorLocation(PopupWindow.AnchorLocation.WINDOW_BOTTOM_RIGHT);
 
-// Posicione-a no canto
             double screenX = primaryStage.getX() + primaryStage.getWidth();
             double screenY = primaryStage.getY() + primaryStage.getHeight();
             popup.setAnchorX(screenX - 50);
@@ -358,8 +316,6 @@ public class mainController implements requestInterface, NotificationInterface {
     private void MenuButtonOver(MouseEvent event) {
 
         Button buttonSelected = (JFXButton) event.getSource();
-
-        System.out.println("jhsiudgsuwidg");
 
         final double buttonOrder = buttonSelected.getViewOrder();
 
@@ -500,7 +456,7 @@ public class mainController implements requestInterface, NotificationInterface {
                 db.setMessager(sender);
                 createContainerDB();
                 db.buffer = buffer;
-                openDB = new DatabaseInterface(db, DBName);
+                openDB = new DatabaseInterface(db, DBName, task);
                 ContainerForDB.getTabs().add(openDB.getContainer());
                 ContainerForDB.getSelectionModel().select(openDB.getContainer());
             }
@@ -634,7 +590,7 @@ public class mainController implements requestInterface, NotificationInterface {
         ContainerForDB = null;
         //   BorderContainer.setCenter(LabelDB);
         CenterContainer.getItems().removeFirst();
-        CenterContainer.getItems().addFirst(LabelDB);
+        CenterContainer.getItems().addFirst(ContainerEmpty);
         backupMenu.setDisable(true);
         ImporterMenu.setDisable(true);
         queryMenu.setDisable(true);
@@ -1102,7 +1058,7 @@ public class mainController implements requestInterface, NotificationInterface {
                 //     BorderContainer.setCenter(ContainerForDB);
                 CenterContainer.getItems().addFirst(ContainerForDB);
             } else {
-                CenterContainer.getItems().addFirst(LabelDB);
+                CenterContainer.getItems().addFirst(ContainerEmpty);
                 //  BorderContainer.setCenter(LabelDB);
             }
             setDividerSpace();

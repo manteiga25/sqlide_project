@@ -9,7 +9,7 @@
 
 <VBox alignment="TOP_CENTER" spacing="10.0" style="-fx-background-color: #3C3C3C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.CreateDatabaseController">
     <children>
-        <Label alignment="CENTER" contentDisplay="CENTER" layoutY="14.0" text="Open Database&#10;Select Database" textAlignment="CENTER" textFill="#e1d8d8" VBox.vgrow="ALWAYS">
+        <Label alignment="CENTER" contentDisplay="CENTER" layoutY="14.0" text="Create Database&#10;Select Database" textAlignment="CENTER" textFill="#e1d8d8" VBox.vgrow="ALWAYS">
             <font>
                 <Font name="Microsoft Tai Le Bold" size="24.0" />
             </font></Label>

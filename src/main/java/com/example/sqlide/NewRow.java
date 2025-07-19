@@ -2,6 +2,7 @@ package com.example.sqlide;
 
 import com.example.sqlide.Container.DateTimePicker;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.jfoenix.controls.JFXTextField;
 import javafx.fxml.FXML;
@@ -10,7 +11,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;

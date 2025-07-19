@@ -1,4 +1,4 @@
-package com.example.sqlide;
+package com.example.sqlide.Task;
 
 import javafx.concurrent.Task;
 

@@ -1,8 +1,9 @@
 package com.example.sqlide.drivers.model;
 
-import com.example.sqlide.ColumnMetadata;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.Logger.Logger;
+import com.example.sqlide.Metadata.TableMetadata;
 import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
@@ -36,7 +37,7 @@ public abstract class DataBase {
 
     private final DatabaseFetcherInterface databaseFetcherInterface = new DatabaseFetcherInterface() {
         @Override
-        public synchronized ArrayList<DataForDB> fetchData(final String Table, ArrayList<String> Columns, final long offset, final String primeKey) {
+        public synchronized ArrayList<DataForDB> fetchData(final String Table, ArrayList<String> Columns, final long offset, final ArrayList<String> primeKey) {
             Columns = new ArrayList<>(Columns);
             ArrayList<DataForDB> data = new ArrayList<>();
             String rowid = "";
@@ -44,8 +45,10 @@ public abstract class DataBase {
                 rowid = getRowId()+",";
                 Columns.add(getRowId());
             } else {
-                if (!Columns.contains(primeKey)) {
-                    Columns.add(primeKey);
+                for (final String key : primeKey) {
+                    if (!Columns.contains(key)) {
+                        Columns.add(key);
+                    }
                 }
             }
             final String command = "SELECT " + rowid + " * FROM " + Table + " LIMIT " + buffer + " OFFSET " + offset;
@@ -828,6 +831,8 @@ public abstract class DataBase {
 
     public abstract boolean createTable(String table, boolean temporary, boolean rowid, ArrayList<ColumnMetadata> columnMetadata);
 
+    public abstract boolean createTable(TableMetadata metadata, boolean temporary, boolean rowid);
+
     public abstract void changeCommitMode(final boolean mode) throws SQLException;
 
     public void executeScript(final String path) throws IOException, SQLException {
@@ -925,4 +930,6 @@ public abstract class DataBase {
     public Connection getConnection() {
         return connection;
     }
+
+    public abstract String getTableCheck(final String table) throws SQLException;
 }
