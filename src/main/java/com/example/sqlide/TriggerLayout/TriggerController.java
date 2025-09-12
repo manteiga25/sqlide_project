@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.example.sqlide.popupWindow.handleWindow.LoadingStage;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 import static java.nio.file.Files.exists;
 
@@ -108,7 +109,7 @@ public class TriggerController implements loadingInterface, NotificationInterfac
     private void execute() {
         final List<String> triggers = triggersSelected.getCheckModel().getCheckedItems();
         if (triggers != null && !triggers.isEmpty()) {
-            Task<Void> TriggerTask = new Task<Void>() {
+            final Task<Void> TriggerTask = new Task<Void>() {
 
                 private final DoubleProperty progress = new SimpleDoubleProperty(0.0);
                 private final int total = triggers.size();
@@ -210,6 +211,7 @@ public class TriggerController implements loadingInterface, NotificationInterfac
             ShowError("Error file", "File do not exists.");
             return;
         }
+        final Stage loading = LoadingStage("Fetching triggers", "Search the triggers on file.\nThis operation can be slower.");
         Thread.ofVirtual().start(()->{
             File file = new File(ScriptPath.getText());
             try (BufferedReader buffer = new BufferedReader(new FileReader(file))) { // Try-with-resources
@@ -271,6 +273,8 @@ public class TriggerController implements loadingInterface, NotificationInterfac
                 Platform.runLater(()->triggersSelected.getItems().addAll(triggersFound.keySet()));
             } catch (IOException e) {
                 ShowError("Error", "Error to perform read.", e.getMessage());
+            } finally {
+                Platform.runLater(loading::close);
             }
         });
 

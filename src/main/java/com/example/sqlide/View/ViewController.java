@@ -39,8 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.example.sqlide.popupWindow.handleWindow.ShowError;
-import static com.example.sqlide.popupWindow.handleWindow.ShowInformation;
+import static com.example.sqlide.popupWindow.handleWindow.*;
 import static java.nio.file.Files.exists;
 
 public class ViewController implements NotificationInterface {
@@ -131,6 +130,7 @@ public class ViewController implements NotificationInterface {
             ShowError("Error file", "File do not exists.");
             return;
         }
+        final Stage loading = LoadingStage("Fetching views", "Search the views on file.\nThis operation can be slower.");
         Thread.ofVirtual().start(()->{
             File file = new File(pathField.getText());
             try (BufferedReader buffer = new BufferedReader(new FileReader(file))) { // Try-with-resources
@@ -185,16 +185,12 @@ public class ViewController implements NotificationInterface {
                     }
                 }
 
-                //  triggersSelected.getItems().clear();
-
-          /*  for (final String name : triggersFound.keySet()) {
-                triggersSelected.getItems().add(name);
-            } */
-
                 Platform.runLater(()->ViewSelectedBox.getItems().addAll(ViewFound));
 
             } catch (IOException e) {
                 ShowError("Error", "Error to perform read.", e.getMessage());
+            } finally {
+                Platform.runLater(loading::close);
             }
         });
 
