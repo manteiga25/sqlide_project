@@ -265,6 +265,52 @@ def createTrigger(Trigger: dict[str, str]):
 
     return ret
 
+def createFunction(Function: dict[str, str]):
+    """Create a SQL Function's for the Schema.
+         Args:
+            Function: dictionary, key are the name of trigger and value is the code of function.
+
+         Return (str): true success, false or SQLException error.
+    """
+    global response
+    sender = {
+                'status': 'request',
+                'function': 'CreateFunction',
+                'parameters': [Function],
+                'message': ''
+                }
+
+    print(json.dumps(sender))
+
+    ret = input()
+
+    response.append(ret)
+
+    return ret
+
+def createProcedure(Procedure: dict[str, str]):
+    """Create a SQL Procedure's for the Schema.
+         Args:
+            Procedure: dictionary, key are the name of trigger and value is the code of procedure.
+
+         Return (str): true success, false or SQLException error.
+    """
+    global response
+    sender = {
+                'status': 'request',
+                'function': 'CreateProcedure',
+                'parameters': [Procedure],
+                'message': ''
+                }
+
+    print(json.dumps(sender))
+
+    ret = input()
+
+    response.append(ret)
+
+    return ret
+
 def createEvent(Event: dict[str, str]):
     """Create a SQL Event's for the Schema.
              Args:
@@ -325,7 +371,7 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
         google_search = GoogleSearch()
     )
 
-    func_tools = [getSQLType, ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable, currentTable, createData, createView, createReport, createTrigger, createEvent, createGraphic]
+    func_tools = [getSQLType, ShowData, RequestData, GetColumnsMetadata, sendEmail, createTable, currentTable, createData, createView, createReport, createTrigger, createFunction, createProcedure, createEvent, createGraphic]
 
     tools = None
 
@@ -347,7 +393,7 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
 
    # while True:
 
-    response = client.models.generate_content(
+    response_ret = client.models.generate_content(
             model=model,
             contents=conversation_history,
             config=config
@@ -366,32 +412,60 @@ def talkToGemini(prompt: str, deep: bool, search: bool, command: bool):
            #                                                       parts=[Part(text=part.thought_signature)]
             #                                                  ))
 
+    model_text = response_ret.candidates[0].content.parts[0].text if response_ret.candidates[0].content.parts else response_ret.text
     model_response = Content(
-                        role="model",
-                        parts=[Part(text=response.candidates[0].content.parts[0].text)]
-                    )
+                            role="model",
+                            parts=[Part(text=model_text)]
+                        )
     conversation_history.append(model_response)
 
-    return response.candidates[0].content.parts[0].text
+    return model_text
+
+def inflate(context):
+    global conversation_history
+
+    for object in context:
+        if object.get("User") is not None:
+
+            response = Content(
+                            role="user",
+                            parts=[Part(text=object["User"])]
+                        )
+        else:
+            response = Content(
+                                        role="model",
+                                        parts=[Part(text=object["Assistant"])]
+                                    )
+        conversation_history.append(response)
+
 
 def main():
     global client
     client = genai.Client(api_key="AIzaSyA2OOhuUGZiJe3NQTjQLMXqNur3yLcOf0g")
     while True:
-        prompt = input()
-        jsonReciver = json.loads(prompt)
         try:
-            text = talkToGemini(jsonReciver["content"], jsonReciver["deep"], jsonReciver["search"], jsonReciver["command"])
-                   # print(json.dumps(res))
+            prompt = input()
+            jsonReciver = json.loads(prompt)
+            if jsonReciver["type"]:
+                text = talkToGemini(jsonReciver["content"], jsonReciver["deep"], jsonReciver["search"], jsonReciver["command"])
+                       # print(json.dumps(res))
+                resposta = {
+                        'status': 'success',
+                        'message': text
+                    }
+                print(json.dumps(resposta))
+            else:
+                inflate(jsonReciver["content"])
+        except EOFError as e:
             resposta = {
                     'status': 'success',
-                    'message': text
-                }
-            print(json.dumps(resposta))
+                    'message': f"Critical error.{e}"
+            }
+            print(json.dumps(resposta), file=stderr)
         except Exception as e:
             resposta = {
                  'status': 'success',
-                 'message': f"Error to generate response.\n{e}"
+                 'message': f"Error to generate response.\n{str(e)}"
             }
             print(json.dumps(resposta), file=stderr)
 

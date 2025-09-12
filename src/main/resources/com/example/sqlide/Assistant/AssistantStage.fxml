@@ -11,7 +11,7 @@
 <VBox spacing="5.0" style="-fx-background-color: #2C2C2C; -fx-font-family: JetBrains Mono Medium;" stylesheets="@../../../../css/ContextMenuStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Assistant.AssistantController">
 
     <children>
-      <Hyperlink fx:id="deleteButton" onAction="#DeleteConversation" style="-fx-font-size: 18px;" stylesheets="@../../../../css/Hyper.css" text="Delete All">
+      <Hyperlink fx:id="BackButton" onAction="#back" style="-fx-font-size: 18px;" stylesheets="@../../../../css/Hyper.css" text="&lt;- Back">
          <font>
             <Font size="14.0" />
          </font>
@@ -24,10 +24,13 @@
          <content>
                   <VBox fx:id="MessagesBox" spacing="10.0" style="-fx-background-color: #262626;">
                       <padding>
-                          <Insets left="15.0" right="15.0" />
+                          <Insets left="15.0" right="15.0" top="5.0" />
                       </padding>
             </VBox>
          </content>
+         <VBox.margin>
+            <Insets />
+         </VBox.margin>
         </ScrollPane>
         <HBox alignment="CENTER" spacing="5.0" style="-fx-base: BLACK; -fx-background-color: #2C2C2C;">
             <children>
@@ -68,21 +71,39 @@
                             </tooltip>
                         </Button>
                         <Region HBox.hgrow="ALWAYS" />
-                     <!--   <Button fx:id="MicroButton" mnemonicParsing="false" onAction="#ExecuteMicrophone">
-                            <graphic>
-                                <FontAwesomeIconView fill="#e8e1e1" glyphName="MICROPHONE" size="16.0" />
-                            </graphic>
-                            <tooltip>
-                                <Tooltip text="Talk to Assistant" />
-                            </tooltip></Button> -->
-                            <JFXButton mnemonicParsing="false" onAction="#SendMessage" style="-fx-background-color: #3574F0; -fx-background-radius: 30px;" textAlignment="CENTER" textFill="WHITE">
-                                <graphic>
+                        <HBox>
+                           <children>
+                           <!--   <Button fx:id="MicroButton" mnemonicParsing="false" onAction="#ExecuteMicrophone">
+                                  <graphic>
+                                      <FontAwesomeIconView fill="#e8e1e1" glyphName="MICROPHONE" size="16.0" />
+                                  </graphic>
+                                  <tooltip>
+                                      <Tooltip text="Talk to Assistant" />
+                                  </tooltip></Button> -->
+                                  <JFXButton fx:id="MicrophoneButton" mnemonicParsing="false" onAction="#record" style="-fx-background-color: #3574F0; -fx-border-radius: 30px;" textAlignment="CENTER" textFill="WHITE">
+                                      <graphic>
+                                          <FontAwesomeIconView glyphName="MICROPHONE" size="16.0" />
+                                      </graphic>
+                                      <tooltip>
+                                          <Tooltip text="Speck" />
+                                      </tooltip>
+                                 <HBox.margin>
+                                    <Insets right="10.0" />
+                                 </HBox.margin>
+                                  </JFXButton>
+                              <JFXButton fx:id="SendButton" mnemonicParsing="false" onAction="#SendMessage" style="-fx-background-color: #3574F0; -fx-border-radius: 30px;" textAlignment="CENTER" textFill="WHITE">
+                                 <graphic>
                                     <FontAwesomeIconView glyphName="ARROW_CIRCLE_RIGHT" size="18.0" text="" />
-                                </graphic>
+                                 </graphic>
+                                  <tooltip>
+                                      <Tooltip text="Send request" />
+                                  </tooltip>
+                              </JFXButton>
+                           </children>
                            <HBox.margin>
                               <Insets right="10.0" />
                            </HBox.margin>
-                            </JFXButton>
+                        </HBox>
                      </children>
                      <VBox.margin>
                         <Insets bottom="5.0" left="15.0" />

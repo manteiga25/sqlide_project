@@ -1,15 +1,16 @@
 package com.example.sqlide.Assistant;
 
 import com.example.sqlide.Assistant.speech.MicrophoneService;
+import com.example.sqlide.AssistantSpeatchInterface;
 import com.example.sqlide.Container.Assistant.AssistantBoxCode;
 import com.example.sqlide.requestInterface;
+import com.jfoenix.controls.JFXButton;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -23,15 +24,17 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class AssistantController {
+public class AssistantController implements AssistantSpeatchInterface {
 
     @FXML
-    private Hyperlink deleteButton;
+    private JFXButton SendButton, MicrophoneButton;
+    @FXML
+    private Hyperlink BackButton;
     @FXML
     private Button FuncButton, SearchButton, DeepButton;
 
@@ -40,6 +43,8 @@ public class AssistantController {
 
     @FXML
     private TextArea MessageBox;
+
+    private JSONArray context;
 
     private requestInterface AssistantFunctionsInterface;
 
@@ -50,8 +55,36 @@ public class AssistantController {
     private final BooleanProperty search = new SimpleBooleanProperty(false), function = new SimpleBooleanProperty(false), deep = new SimpleBooleanProperty(false);
 
     final BlockingQueue<String> sender = new LinkedBlockingQueue<>(), reciver = new LinkedBlockingQueue<>();
+    private File file;
+
+    Process process;
+
+    private AssistantMain assistantMainController;
 
     public AssistantController() throws IOException {
+    }
+
+    private void WriteUserToJson(final String content) throws IOException {
+        JSONObject novoItem = new JSONObject();
+        novoItem.put("User", content);
+
+        context.put(novoItem);
+
+        FileWriter fileWriter = new FileWriter(file);
+        fileWriter.write(context.toString(4));
+        fileWriter.close();
+    }
+
+    private void WriteAssistantToJson(final String content, final boolean status) throws IOException {
+        JSONObject novoItem = new JSONObject();
+        novoItem.put("Assistant", content);
+        novoItem.put("status", status);
+
+        context.put(novoItem);
+
+        FileWriter fileWriter = new FileWriter(file);
+        fileWriter.write(context.toString(4));
+        fileWriter.close();
     }
 
     public void setAssistantFunctionsInterface(final requestInterface assistantFunctionsInterface) {
@@ -64,12 +97,13 @@ public class AssistantController {
         function.addListener(_->setFuncButton());
         search.addListener(_->setSearchButton());
         deep.addListener(_->setDeepButton());
+        MicrophoneButton.setUserData(new SimpleBooleanProperty(false));
     }
 
     private void initializeProcess() throws IOException {
         ProcessBuilder pb = new ProcessBuilder("python", "src/main/java/com/example/sqlide/Assistant/service/aida.py");
       //  pb.directory(new File(System.getProperty("user.dir")));
-        Process process = pb.start();
+        process = pb.start();
 
         initializeErr(process);
         initializeInput(process);
@@ -104,6 +138,7 @@ public class AssistantController {
                 while (!(linha = sender.take()).isEmpty()) {
                     JSONObject jsonSender = new JSONObject();
                     jsonSender.put("content", linha);
+                    jsonSender.put("type", true);
                     jsonSender.put("search", search.get());
                     jsonSender.put("deep", deep.get());
                     jsonSender.put("command", function.get());
@@ -141,6 +176,23 @@ public class AssistantController {
         });
         readerT.setDaemon(true);
         readerT.start();
+    }
+
+    private void sendContext() {
+        Thread.ofVirtual().start(()-> {
+            try {
+                BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(process.getOutputStream()));
+                JSONObject jsonSender = new JSONObject();
+                jsonSender.put("content", context);
+                jsonSender.put("type", false);
+                writer.write(jsonSender.toString());
+                writer.newLine();
+                writer.flush();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     private void computeMessage(final JSONObject json) throws InterruptedException {
@@ -204,11 +256,11 @@ public class AssistantController {
                         break;
 
                     case "InsertData":
-                        final ArrayList<HashMap<String, String>> Rows = new ArrayList<>();
+                        final ArrayList<LinkedHashMap<String, String>> Rows = new ArrayList<>();
                         final JSONArray Data = parameters.getJSONArray(1);
                         for (int i = 0; i < Data.length(); i++) {
                             final JSONObject obj = Data.getJSONObject(i);
-                            final HashMap<String, String> map = new HashMap<>();
+                            final LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
                             for (String key : obj.keySet()) {
                                 map.put(key, obj.getString(key));
@@ -258,6 +310,32 @@ public class AssistantController {
                         sender.put(String.valueOf(AssistantFunctionsInterface.createTriggers(trigger)));
                         break;
 
+                    case "CreateFunction":
+                        final HashMap<String, String> functions = new HashMap<>();
+                        final JSONObject functionObject = parameters.getJSONObject(0);
+
+                        for (String key : functionObject.keySet()) {
+                            System.out.println(key);
+                            functions.put(key, functionObject.getString(key));
+                        }
+
+                        //   trigger.put(map);
+                        sender.put(String.valueOf(AssistantFunctionsInterface.createFunction(functions)));
+                        break;
+
+                    case "CreateProcedure":
+                        final HashMap<String, String> procedures = new HashMap<>();
+                        final JSONObject procedure = parameters.getJSONObject(0);
+
+                        for (String key : procedure.keySet()) {
+                            System.out.println(key);
+                            procedures.put(key, procedure.getString(key));
+                        }
+
+                        //   trigger.put(map);
+                        sender.put(String.valueOf(AssistantFunctionsInterface.createProcedure(procedures)));
+                        break;
+
                     case "CreateEvent":
                         final HashMap<String, String> event = new HashMap<>();
                         final JSONObject child = parameters.getJSONObject(0);
@@ -287,10 +365,14 @@ public class AssistantController {
         }
     }
 
-    @FXML
-    public void SendMessage(ActionEvent event) {
+    public void SendMessage(final String code) {
+        MessageBox.setText(code);
+        SendMessage();
+    }
 
-        final Button senderButton = (Button) event.getSource();
+    @FXML
+    synchronized private void SendMessage() {
+
         final String message = MessageBox.getText();
 
         if (message != null && !message.isEmpty()) {
@@ -301,15 +383,16 @@ public class AssistantController {
                 private final Label actionLabel = new Label();
                 private final AssistantBoxCode box = new AssistantBoxCode();
                 private JSONObject Assistant_message;
+                private boolean status = false;
 
                 @Override
                 protected void running() {
                     super.running();
-                    long num = message.chars().filter(ch -> ch == '\n').count() + 2;
-                    MessagesBox.getChildren().add(createUserMessageBox(message, num));
+                //    long num = message.chars().filter(ch -> ch == '\n').count() + 2;
+                    MessagesBox.getChildren().add(createUserMessageBox(message));
                     MessageBox.setText("");
-                    senderButton.setDisable(true);
-                    deleteButton.setDisable(true);
+                    SendButton.setDisable(true);
+                    BackButton.setDisable(true);
                     actionLabel.setTextFill(Color.WHITE);
                     actionLabel.textProperty().bind(action);
                     MessagesBox.getChildren().addAll(progress, actionLabel);
@@ -340,6 +423,7 @@ public class AssistantController {
                 protected void succeeded() {
                     super.succeeded();
                     styleAiMessage("Assistant:\n" + Assistant_message.getString("message"), box);
+                    status = true;
                 }
 
                 @Override
@@ -348,9 +432,15 @@ public class AssistantController {
                     Platform.runLater(()->{
                         MessagesBox.getChildren().add(box);
                         MessagesBox.getChildren().removeAll(progress, actionLabel);
-                        deleteButton.setDisable(false);
-                        senderButton.setDisable(false);
+                        BackButton.setDisable(false);
+                        SendButton.setDisable(false);
                     });
+                    try {
+                        WriteUserToJson(message);
+                        WriteAssistantToJson("Assistant:\n" + Assistant_message.getString("message"), status);
+                    } catch (IOException _) {
+                    }
+
                 }
 
             };
@@ -418,7 +508,7 @@ public class AssistantController {
         //   return message;
     }
 
-    private TextArea createUserMessageBox(final String message, final long lines) {
+    private TextArea createUserMessageBox(final String message) {
         final TextArea messageBox = new TextArea("User:\n" + message);
         messageBox.setEditable(false);
         messageBox.setWrapText(true);
@@ -518,6 +608,63 @@ public class AssistantController {
     @FXML
     private void DeleteConversation() {
         MessagesBox.getChildren().clear();
+    }
+
+    @FXML
+    private void record() throws Exception {
+        final SimpleBooleanProperty recording = (SimpleBooleanProperty) MicrophoneButton.getUserData();
+        boolean state = false;
+
+        if (!recording.get()) {
+            Thread.ofVirtual().start(()-> {
+                try {
+                    microphoneService.refresh();
+                    microphoneService.start();
+                } catch (Exception _) {
+                }
+            });
+            state = true;
+        } else {
+            Thread.ofVirtual().start(()->{
+                final String path = microphoneService.finish();
+                final String pred = this.predict(path);
+                Platform.runLater(()->MessageBox.setText(pred));
+            });
+        }
+        recording.set(state);
+        MicrophoneButton.setUserData(recording);
+    }
+
+    public void inflate(final JSONArray content) {
+        context = content;
+        sendContext();
+        for (int objectIndex = 0; objectIndex < content.length(); objectIndex++) {
+            if (content.getJSONObject(objectIndex).keys().next().equals("User")) {
+                MessagesBox.getChildren().add(createUserMessageBox(content.getJSONObject(objectIndex).getString("User")));
+            } else {
+                final AssistantBoxCode box = new AssistantBoxCode();
+                final String message = content.getJSONObject(objectIndex).getString("Assistant");
+                if (content.getJSONObject(objectIndex).getBoolean("status")) {
+                    styleAiMessage(message, box);
+                } else {
+                    box.addErrorMessage(message);
+                }
+                MessagesBox.getChildren().add(box);
+            }
+        }
+    }
+
+    public void setFile(File file) {
+        this.file = file;
+    }
+
+    public void setBackPort(AssistantMain assistantMainController) {
+        this.assistantMainController = assistantMainController;
+    }
+
+    @FXML
+    private void back() {
+        assistantMainController.backPort();
     }
 
    /* @FXML

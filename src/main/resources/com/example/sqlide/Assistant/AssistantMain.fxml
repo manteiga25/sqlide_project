@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox fx:id="MainContainer" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Assistant.AssistantMainController">
+<VBox fx:id="Container" alignment="TOP_CENTER" spacing="10.0" style="-fx-background-color: transparent;">
+   <children>
+      <Label text="AI Assistant" textFill="#ebebeb">
+         <font>
+            <Font name="JetBrains Mono Medium" size="36.0" />
+         </font>
+         <VBox.margin>
+            <Insets left="20.0" right="20.0" top="20.0" />
+         </VBox.margin>
+      </Label>
+      <ToolBar style="-fx-background-color: transparent; -fx-border-color: transparent;">
+       <items>
+           <Button mnemonicParsing="false" onAction="#create" style="                             -fx-background-color: #3C6E71;                             -fx-background-radius: 8px;                             -fx-text-fill: #FFFFFF;                             -fx-font-family: 'JetBrains Mono';                             -fx-font-size: 14px;                             -fx-padding: 6 14;                         " text="＋ Create">
+                  <cursor>
+                     <Cursor fx:constant="HAND" />
+                  </cursor></Button>
+       </items>
+   </ToolBar>
+   </children>
+</VBox>
+</VBox>

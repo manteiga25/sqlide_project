@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import de.jensd.fx.glyphs.fontawesome.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import org.controlsfx.control.*?>
+
+<VBox spacing="20.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Function.FunctionController">
+    <children>
+        <HBox alignment="CENTER_LEFT" spacing="5.0">
+            <children>
+                <Label text="Path:" textFill="#e2e2e2">
+                    <font>
+                        <Font name="JetBrains Mono Medium" size="12.0" />
+                    </font></Label>
+                <JFXTextField fx:id="pathField" style="-fx-text-fill: white;" stylesheets="@../../../../css/ContextMenuStyle.css" HBox.hgrow="ALWAYS" />
+                <JFXButton mnemonicParsing="false" onAction="#searchFile">
+                    <graphic>
+                        <FontAwesomeIconView fill="#d8dba5" glyphName="FOLDER" size="22.0" />
+                    </graphic>
+                </JFXButton>
+            </children>
+        </HBox>
+        <HBox alignment="CENTER_LEFT" spacing="5.0">
+            <children>
+                <Label text="Functions:" textFill="#e2e2e2">
+                    <font>
+                        <Font name="JetBrains Mono Medium" size="12.0" />
+                    </font>
+                </Label>
+                <CheckComboBox fx:id="FunctionSelectedBox" style="-fx-text-fill: white;" stylesheets="@../../../../css/ComboboxModern.css" HBox.hgrow="ALWAYS" />
+                <JFXButton mnemonicParsing="false" onAction="#searchFunction" style="-fx-background-color: #3574F0;" text="Search" textFill="#f2f2f2">
+                    <font>
+                        <Font name="JetBrains Mono Medium" size="12.0" />
+                    </font></JFXButton>
+            </children>
+        </HBox>
+        <VBox fx:id="FunctionContainer" spacing="5.0" VBox.vgrow="ALWAYS">
+            <children>
+                <HBox alignment="CENTER_LEFT" spacing="5.0">
+                    <children>
+                        <Label text="Function/Edit:" textFill="#f2f2f2">
+                            <font>
+                                <Font name="JetBrains Mono Medium" size="14.0" />
+                            </font></Label>
+                        <ChoiceBox fx:id="FunctionBox" stylesheets="@../../../../css/ChoiceBoxModern.css" HBox.hgrow="ALWAYS" />
+                        <Button mnemonicParsing="false" onAction="#add" style="-fx-background-color: #3574F0;" text="Add" textFill="#f2f2f2">
+                            <font>
+                                <Font name="JetBrains Mono Medium" size="12.0" />
+                            </font></Button>
+                        <Button layoutX="198.0" layoutY="10.0" mnemonicParsing="false" onAction="#remove" style="-fx-background-color: #3574F0;" text="Remove" textFill="#f2f2f2">
+                            <font>
+                                <Font name="JetBrains Mono Medium" size="12.0" />
+                            </font></Button>
+                    </children>
+                </HBox>
+            <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="15.0" spacing="5.0">
+               <children>
+                  <Label text="Created by" textFill="#f2f2f2">
+                     <font>
+                        <Font name="JetBrains Mono Medium" size="12.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="userLabel" layoutX="10.0" layoutY="10.0" textFill="#f2f2f2">
+                     <font>
+                        <Font name="JetBrains Mono Medium" size="12.0" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
+            </children>
+            <padding>
+                <Insets top="5.0" />
+            </padding></VBox>
+        <HBox nodeOrientation="RIGHT_TO_LEFT" spacing="5.0">
+            <children>
+                <Button mnemonicParsing="false" onAction="#confirm" style="-fx-background-color: #3574F0;" text="Ok" textFill="#f2f2f2" />
+                <Button mnemonicParsing="false" style="-fx-background-color: #3574F0;" text="Cancel" textFill="#f2f2f2" />
+            </children>
+        </HBox>
+    </children>
+    <padding>
+        <Insets bottom="5.0" left="5.0" right="5.0" />
+    </padding>
+</VBox>

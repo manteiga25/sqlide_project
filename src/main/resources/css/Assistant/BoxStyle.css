@@ -1,0 +1,44 @@
+/* Caixa base de cada conversa */
+.HBox {
+    -fx-background-color: #333333;
+    -fx-background-radius: 6;
+    -fx-padding: 12 18;
+    -fx-spacing: 10;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-border-radius: 6;
+    -fx-transition: all 0.2s ease;
+}
+
+/* Hover: apenas realce sutil */
+.HBox:hover {
+    -fx-background-color: #404040;
+}
+
+/* Botão delete (estilo minimalista) */
+.button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #f0f0f0;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-width: 0.5px;
+    -fx-padding: 2 6;
+    -fx-cursor: hand;
+    -fx-border-color: #ff4c4c;
+}
+
+/* Hover no delete: vermelho sutil */
+.button:hover {
+    -fx-background-color: #ff4c4c;
+    -fx-text-fill: white;
+}
+
+.label {
+    -fx-text-fill: #f0f0f0;
+        -fx-font-weight: bold;
+    -fx-font-size: 20px;
+    -fx-font-family: "JetBrains Mono Medium";
+}
