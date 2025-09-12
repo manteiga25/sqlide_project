@@ -54,10 +54,11 @@ public class MicrophoneService {
     /**
      * Closes the target data line to finish capturing and recording
      */
-    public void finish() {
+    public String finish() {
         line.stop();
         line.close();
         System.out.println("Finished");
+        return wavFile.getAbsolutePath();
     }
 
     public void refresh() throws IOException {
