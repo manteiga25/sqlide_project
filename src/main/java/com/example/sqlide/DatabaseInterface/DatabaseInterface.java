@@ -9,6 +9,7 @@ import com.example.sqlide.Task.TaskInterface;
 import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.misc.memoryInterface;
 import com.example.sqlide.neural.NeuralController;
 import com.jfoenix.controls.JFXButton;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
@@ -21,6 +22,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.effect.BoxBlur;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -34,7 +36,15 @@ import java.util.*;
 
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class DatabaseInterface {
+public class DatabaseInterface implements memoryInterface {
+
+    private static enum StagesNamesEnum {
+        EmailWindow,
+        ReportWindow,
+        ViewWindow,
+        TrainWindow,
+        CreateTable
+    }
 
     private DataBase DatabaseSeted = null;
 
@@ -43,6 +53,10 @@ public class DatabaseInterface {
     private final ArrayList<TableInterface> TableInterfaceList = new ArrayList<>();
 
     final Tab DBPane;
+
+    private final WeakHashMap<StagesNamesEnum, Stage> stagesOpened = new WeakHashMap<>();
+
+    private final Stack<StagesNamesEnum> stageName = new Stack<>();
 
     private TabPane DBTabContainer;
 
@@ -79,6 +93,7 @@ public class DatabaseInterface {
         this.DBPane.setId(dbName);
         this.taskInterface = taskInterface;
         createTable();
+        this.initializeMemory();
     }
 
     public void readTables() throws SQLException {
@@ -90,10 +105,8 @@ public class DatabaseInterface {
             final TableInterface table = new TableInterface(DatabaseSeted, t, DBTabContainer, this);
             table.getTableMetadata().addViews(TableView);
         //    Platform.runLater(table::createDatabaseTab);
-            table.readColumns();
+        //    table.readColumns();
             TableInterfaceList.add(table);
-
-
         }
 
         if (!TableInterfaceList.isEmpty()) {
@@ -103,105 +116,183 @@ public class DatabaseInterface {
     }
 
     public void openEmailStage(final String content) {
-        try {
+        final boolean exists = stageName.search(StagesNamesEnum.EmailWindow) != -1;
 
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Email/emailStage.fxml"));
-            Parent root = loader.load();
+        Stage subStage;
 
-            EmailController secondaryController = loader.getController();
-
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Send email");
-            subStage.setScene(new Scene(root));
-            secondaryController.setText(content);
-            secondaryController.setDb(DatabaseSeted);
-            secondaryController.setTablesAndColumns(getColumnsNames());
-            //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
-
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
-
-            // Mostrar a subjanela
+        if (exists) {
+            stageName.remove(StagesNamesEnum.EmailWindow);
+            subStage = stagesOpened.get(StagesNamesEnum.EmailWindow);
             subStage.show();
-        } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            stageName.push(StagesNamesEnum.EmailWindow);
+        }  else {
+            try {
+
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Email/emailStage.fxml"));
+                Parent root = loader.load();
+
+                EmailController secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                subStage = new Stage();
+                subStage.setTitle("Send email");
+                subStage.setScene(new Scene(root));
+                secondaryController.setText(content);
+                secondaryController.setDb(DatabaseSeted);
+                secondaryController.setTablesAndColumns(getColumnsNames());
+                //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                // Mostrar a subjanela
+                subStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    subStage.hide();
+                });
+
+                // Mostrar a subjanela
+                subStage.show();
+
+                stageName.push(StagesNamesEnum.EmailWindow);
+                stagesOpened.put(StagesNamesEnum.EmailWindow, subStage);
+            } catch (Exception e) {
+                ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            }
         }
     }
 
     public void openReportStage(final String title, final String query) {
+        final boolean exists = stageName.search(StagesNamesEnum.ReportWindow) != -1;
 
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Report.fxml"));
-            Parent root = loader.load();
+        Stage dialogStage;
 
-            ReportController dialogController = loader.getController();
+        if (exists) {
+            stageName.remove(StagesNamesEnum.ReportWindow);
+            dialogStage = stagesOpened.get(StagesNamesEnum.ReportWindow);
+            dialogStage.show();
+            stageName.push(StagesNamesEnum.ReportWindow);
+        }  else {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Report.fxml"));
+                Parent root = loader.load();
 
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Configure Report");
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
+                ReportController dialogController = loader.getController();
+
+                dialogStage = new Stage();
+                dialogStage.setTitle("Configure Report");
+                dialogStage.initModality(Modality.APPLICATION_MODAL);
           /*  if (generateReportButton != null && generateReportButton.getScene() != null) {
                 dialogStage.initOwner(generateReportButton.getScene().getWindow());
             } */
 
-            dialogController.initializeDialog(DatabaseSeted, dialogStage);
-            dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
-            dialogController.setTitle(title);
+                dialogController.initializeDialog(DatabaseSeted, dialogStage);
+                dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
+                dialogController.setTitle(title);
 
-            dialogStage.setScene(new Scene(root));
-            dialogStage.show();
+                dialogStage.setScene(new Scene(root));
+                dialogStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    dialogStage.hide();
+                });
 
-            if (query != null) dialogController.setQuery(query);
+                // Mostrar a subjanela
+                dialogStage.show();
 
-        } catch (IOException e) {
-            ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
+                stageName.push(StagesNamesEnum.ReportWindow);
+                stagesOpened.put(StagesNamesEnum.ReportWindow, dialogStage);
+
+                if (query != null) dialogController.setQuery(query);
+
+            } catch (IOException e) {
+                ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
+            }
         }
     }
 
     public void openViewStage(final String name, final String code) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/View/ViewInterface.fxml"));
-            Parent root = loader.load();
+        final boolean exists = stageName.search(StagesNamesEnum.ViewWindow) != -1;
 
-            ViewController dialogController = loader.getController();
+        Stage dialogStage;
 
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("View");
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
-            dialogController.initViewController(DatabaseSeted, taskInterface, dialogStage);
-            dialogController.addView(new ViewController.View(name, "", code));
-            dialogStage.setScene(new Scene(root));
+        if (exists) {
+            stageName.remove(StagesNamesEnum.ViewWindow);
+            dialogStage = stagesOpened.get(StagesNamesEnum.ViewWindow);
             dialogStage.show();
+            stageName.push(StagesNamesEnum.ViewWindow);
+        }  else {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/View/ViewInterface.fxml"));
+                Parent root = loader.load();
 
-        } catch (IOException | SQLException e) {
-            ShowError("Load Error", "Could not load view stage.", e.getMessage());
+                ViewController dialogController = loader.getController();
+
+                dialogStage = new Stage();
+                dialogStage.setTitle("View");
+                dialogStage.initModality(Modality.APPLICATION_MODAL);
+                dialogController.initViewController(DatabaseSeted, taskInterface, dialogStage);
+                dialogController.addView(new ViewController.View(name, "", code));
+                dialogStage.setScene(new Scene(root));
+                dialogStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    dialogStage.hide();
+                });
+
+                // Mostrar a subjanela
+                dialogStage.show();
+
+                stageName.push(StagesNamesEnum.ViewWindow);
+                stagesOpened.put(StagesNamesEnum.ViewWindow, dialogStage);
+
+            } catch (IOException | SQLException e) {
+                ShowError("Load Error", "Could not load view stage.", e.getMessage());
+            }
         }
     }
 
     private void openTrainStage() {
+        final boolean exists = stageName.search(StagesNamesEnum.TrainWindow) != -1;
 
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NeuralEngine/NeuralEngineStage.fxml"));
-            Parent root = loader.load();
+        Stage dialogStage;
 
-            NeuralController dialogController = loader.getController();
+        if (exists) {
+            stageName.remove(StagesNamesEnum.TrainWindow);
+            dialogStage = stagesOpened.get(StagesNamesEnum.TrainWindow);
+            dialogStage.show();
+            stageName.push(StagesNamesEnum.TrainWindow);
+        }  else {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NeuralEngine/NeuralEngineStage.fxml"));
+                Parent root = loader.load();
 
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Configure Report");
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
+                NeuralController dialogController = loader.getController();
+
+                dialogStage = new Stage();
+                dialogStage.setTitle("Configure Report");
+                dialogStage.initModality(Modality.APPLICATION_MODAL);
           /*  if (generateReportButton != null && generateReportButton.getScene() != null) {
                 dialogStage.initOwner(generateReportButton.getScene().getWindow());
             } */
 
-         //   dialogController.initializeDialog(DatabaseSeted, dialogStage);
-           // dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
+                //   dialogController.initializeDialog(DatabaseSeted, dialogStage);
+                // dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
 
-            dialogStage.setScene(new Scene(root));
-            dialogStage.show();
+                dialogStage.setScene(new Scene(root));
+                dialogStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    dialogStage.hide();
+                });
 
-        } catch (IOException e) {
-            ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
+                // Mostrar a subjanela
+                dialogStage.show();
+
+                stageName.push(StagesNamesEnum.TrainWindow);
+                stagesOpened.put(StagesNamesEnum.TrainWindow, dialogStage);
+
+            } catch (IOException e) {
+                ShowError("Load Error", "Could not load report configuration dialog.", e.getMessage());
+            }
         }
     }
 
@@ -312,31 +403,50 @@ public class DatabaseInterface {
     }
 
     public void createDBTabInterface(final String Table, final ArrayList<HashMap<String, String>> column, final String check) {
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/newTable.fxml"));
-            //    VBox miniWindow = loader.load();
-            Parent root = loader.load();
+        final boolean exists = stageName.search(StagesNamesEnum.CreateTable) != -1;
 
-            NewTable secondaryController = loader.getController();
+        Stage dialogStage;
 
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Create Table");
-            subStage.setResizable(false);
-            subStage.setScene(new Scene(root));
-            secondaryController.NewTableWin(dbName, this, DatabaseSeted,subStage);
-            secondaryController.setTable(Table);
-            secondaryController.setColumns(column);
-            secondaryController.setCheck(check);
+        if (exists) {
+            stageName.remove(StagesNamesEnum.CreateTable);
+            dialogStage = stagesOpened.get(StagesNamesEnum.CreateTable);
+            dialogStage.show();
+            stageName.push(StagesNamesEnum.CreateTable);
+        }  else {
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/newTable.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
 
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
+                NewTable secondaryController = loader.getController();
 
-            // Mostrar a subjanela
-            subStage.show();
-        } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+                // Criar um novo Stage para a subjanela
+                Stage subStage = new Stage();
+                subStage.setTitle("Create Table");
+                subStage.setResizable(false);
+                subStage.setScene(new Scene(root));
+                secondaryController.NewTableWin(dbName, this, DatabaseSeted, subStage);
+                secondaryController.setTable(Table);
+                secondaryController.setColumns(column);
+                secondaryController.setCheck(check);
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                subStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    subStage.hide();
+                });
+
+                // Mostrar a subjanela
+                subStage.show();
+
+                stageName.push(StagesNamesEnum.CreateTable);
+                stagesOpened.put(StagesNamesEnum.CreateTable, subStage);
+            } catch (Exception e) {
+                ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
+            }
         }
     }
 
@@ -455,6 +565,22 @@ public class DatabaseInterface {
         for (int i = 0; i < TableInterfaceList.size(); i++) {
             TableInterface tableToClose = TableInterfaceList.remove(i);
             tableToClose.closeColumns();
+        }
+    }
+
+    @Override
+    public void onLowMemory() {
+        final StagesNamesEnum stageId = stageName.pop();
+        if (stageId != null) {
+            final Stage stage = stagesOpened.get(stageId);
+            if (!stage.isShowing()) {
+                stage.close();
+                stagesOpened.remove(stageId);
+            }
+            else {
+                stageName.push(stageId);
+                stagesOpened.put(stageId, stage);
+            }
         }
     }
 }

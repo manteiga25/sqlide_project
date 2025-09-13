@@ -3,13 +3,14 @@ package com.example.sqlide.drivers.model.Interfaces;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public interface DatabaseInserterInterface {
 
     public abstract boolean insertData(String Table, HashMap<String, String> data);
 
-    public abstract boolean insertData(String Table, ArrayList<HashMap<String, String>> data);
+    public abstract boolean insertData(String Table, ArrayList<LinkedHashMap<String, String>> data);
 
     public abstract boolean removeData(String Table, HashMap<String, String> data, ArrayList<Long> rowid);
 

@@ -1,9 +1,11 @@
 package com.example.sqlide.drivers.model;
 
+import com.example.sqlide.Function.FunctionController;
 import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.Metadata.TableMetadata;
+import com.example.sqlide.Procedure.ProcedureController;
 import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
@@ -31,9 +33,19 @@ public abstract class DataBase {
     protected String idType;
     protected BlockingQueue<Logger> sender = new LinkedBlockingQueue<>();
     protected SQLTypes SQLType;
+    protected DatabaseInfo databaseInfo;
 
-    protected String[] indexModes;
-    protected ArrayList<String> foreignModes;
+    protected String MsgException;
+
+    public String GetException() {
+        final String ret = MsgException;
+        MsgException = "";
+        return ret;
+    }
+
+    public DatabaseInfo getDatabaseInfo() {
+        return databaseInfo;
+    }
 
     private final DatabaseFetcherInterface databaseFetcherInterface = new DatabaseFetcherInterface() {
         @Override
@@ -392,7 +404,9 @@ public abstract class DataBase {
                     Columns.add(metaData.getColumnName(i));
                 }
 
-                data.add(rs.getDouble(Columns.getFirst()));
+                do {
+                    data.add(rs.getDouble(Columns.getFirst()));
+                } while (rs.next());
                 putMessage(new Logger(getUsername(), Command, rs.getWarnings() != null ? rs.getWarnings().getMessage() : "", computeTime()));
                 return data;
             } catch (SQLException e) {
@@ -490,8 +504,6 @@ public abstract class DataBase {
     private DatabaseUpdaterInterface databaseUpdaterInterface = null;
     private DatabaseInserterInterface databaseInserterInterface = null;
 
-    protected String MsgException;
-
     private LocalTime init, end;
 
     private BufferedReader cursorScript;
@@ -524,26 +536,12 @@ public abstract class DataBase {
         this.databaseInserterInterface = databaseInserterInterface;
     }
 
-    public String[] getIndexModes() {
-        return indexModes;
-    }
-
-    public abstract String GetException();
-
-    public abstract String[] getList();
-
-    public abstract String[] getListChars();
-
     public String getRowId() {
         return idType;
     }
 
     public SQLTypes getSQLType() {
         return SQLType;
-    }
-
-    public ArrayList<String> getForeignModes() {
-        return foreignModes;
     }
 
     public String getCharset() throws SQLException {
@@ -649,7 +647,7 @@ public abstract class DataBase {
 
     public abstract boolean modifyColumnType(String Table, String column, String Type);
 
-    public abstract boolean deleteColumn(String column, String table);
+    public abstract boolean deleteColumn(ArrayList<ColumnMetadata> columns, String columnName, String table);
 
  //   public abstract void insertData(String tableName, Map<String, Object> data) throws SQLException;
 
@@ -781,7 +779,7 @@ public abstract class DataBase {
 
     public abstract boolean CreateSchema(String url, String name, String userName, String password, Map<String, String> modes);
 
-    public abstract boolean connect(String url, String name, String userName, String password);
+    public abstract boolean connect(String url, String name, String userName, String password, boolean ssl);
 
     public abstract String getUrl();
 
@@ -809,7 +807,7 @@ public abstract class DataBase {
 
     public boolean AlterDefaultValue(final String table, final String column, final String value) {
         try (Statement stmt = connection.createStatement()) {
-            stmt.execute("ALTER TABLE " + table + "ALTER COLUMN " + column + " SET DEFAULT " + value + ";");
+            stmt.execute("ALTER TABLE " + table + " ALTER COLUMN " + column + " SET DEFAULT " + value + ";");
             return true;
         } catch (SQLException e) {
             MsgException = e.getMessage();
@@ -819,13 +817,48 @@ public abstract class DataBase {
 
     public boolean AlterTypeColumn(final String table, final String column,final String type) {
         try (Statement stmt = connection.createStatement()) {
-            stmt.execute("ALTER TABLE " + table + "ALTER COLUMN " + column + " SET " + type + ";");
+            stmt.execute("ALTER TABLE " + table + " ALTER COLUMN " + column + " SET " + type + ";");
             return true;
         } catch (SQLException e) {
             MsgException = e.getMessage();
             return false;
         }
     }
+
+    public boolean createFunction(final FunctionController.Function function) {
+        try (Statement smtd = connection.createStatement()) {
+            smtd.execute("CREATE FUNCTION " + function.Name.get() + "()\n" + function.code.get());
+        } catch (SQLException e) {
+            e.printStackTrace();
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
+    }
+
+    public boolean dropFunction(final String function) {
+        try (Statement smtd = connection.createStatement()) {
+            smtd.execute("DROP FUNCTION " + function + ";");
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
+    }
+
+    public boolean dropProcedure(final String function) {
+        try (Statement smtd = connection.createStatement()) {
+            smtd.execute("DROP PROCEDURE " + function + ";");
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
+    }
+
+    public abstract ArrayList<FunctionController.Function> getFunctions();
+
+    public abstract ArrayList<ProcedureController.Procedure> getProcedure();
 
     public abstract boolean createTable(String table, boolean temporary, boolean rowid);
 

@@ -1,9 +1,12 @@
 package com.example.sqlide.drivers.MySQL;
 
+import com.example.sqlide.Function.FunctionController;
 import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.Metadata.TableMetadata;
+import com.example.sqlide.Procedure.ProcedureController;
 import com.example.sqlide.View.ViewController;
+import com.example.sqlide.drivers.SQLite.SQLiteInfo;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
@@ -19,33 +22,13 @@ import java.util.*;
 
 public class MySQLDB extends DataBase {
 
-    public TypesModelList typesOfDB;
-
-    private String MsgException;
-
     public MySQLDB() {
-        typesOfDB = new MySQLTypesList();
-        foreignModes = new ArrayList<>(List.of("CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"));
         SQLType = SQLTypes.MYSQL;
+        super.databaseInfo = new MySQLInfo();
+        super.idType = "ROWID";
+
         Updater(updaterInterface);
         Inserter(inserterInterface);
-    }
-
-    @Override
-    public String GetException() {
-        final String tmp = MsgException;
-        MsgException = "";
-        return tmp;
-    }
-
-    @Override
-    public String[] getList() {
-        return typesOfDB.listOfTypes;
-    }
-
-    @Override
-    public String[] getListChars() {
-        return typesOfDB.chars;
     }
 
     @Override
@@ -140,7 +123,7 @@ public class MySQLDB extends DataBase {
             PrimaryKey = " PRIMARY KEY";
         }
         StringBuilder items = new StringBuilder();
-        if (!meta.items.isEmpty()) {
+        if (meta.items != null && !meta.items.isEmpty()) {
             items.append("(");
             for (final String item : meta.items) {
                 items.append("'").append(item).append("'").append(", ");
@@ -193,9 +176,9 @@ public class MySQLDB extends DataBase {
     }
 
     @Override
-    public boolean deleteColumn(String column, String table) {
+    public boolean deleteColumn(ArrayList<ColumnMetadata> columns, String columnName, String table) {
         try {
-            statement.execute("ALTER TABLE " + table + " DROP COLUMN " + column + ";");
+            statement.execute("ALTER TABLE " + table + " DROP COLUMN " + columnName + ";");
         } catch (SQLException e) {
             MsgException = e.getMessage();
             return false;
@@ -230,7 +213,7 @@ public class MySQLDB extends DataBase {
         }
 
         @Override
-        public boolean insertData(String Table, ArrayList<HashMap<String, String>> data) {
+        public boolean insertData(String Table, ArrayList<LinkedHashMap<String, String>> data) {
             StringBuilder command = new StringBuilder("INSERT INTO " + Table + " (");
             for (final String column : data.getFirst().keySet()) {
                 command.append(column).append(", ");
@@ -454,7 +437,36 @@ public class MySQLDB extends DataBase {
 
         @Override
         public boolean updateData(String Table, String column, String value, String[] index, String type, ArrayList<String> PrimeKey, ArrayList<String> tmp) {
-            return false;
+            String command = "UPDATE " + Table + " SET " + column + " = ? WHERE ";
+            if (PrimeKey == null || PrimeKey.isEmpty()) {
+                command += "ROWID = " + index[0] + ";";
+            }
+            else {
+                //  command += PrimeKey + " = '" + tmp + "'";
+                for (final String primary : PrimeKey) {
+                    command += primary + " = ? AND ";
+                }
+                command = command.substring(0, command.length()-5) + ";";
+            }
+            System.out.println(command);
+            try {
+                PreparedStatement pstmt = connection.prepareStatement(command);
+                //  pstmt.execute(command.toString());
+                pstmt.setObject(1, value);
+                if (PrimeKey != null) {
+                    final int size = PrimeKey.size();
+                    for (int indexKey = 0; indexKey < size; indexKey++) {
+                        pstmt.setObject(indexKey+2, tmp.get(indexKey));
+                    }
+                }
+                int affectedRows = pstmt.executeUpdate();
+                System.out.println("rows " + affectedRows);
+                //  statement.execute(command);
+            } catch (SQLException e) {
+                MsgException = e.getMessage();
+                return false;
+            }
+            return true;
         }
 
         @Override
@@ -653,8 +665,8 @@ public class MySQLDB extends DataBase {
 
     @Override
     public long totalPages(String table) {
-        try {
-            ResultSet ret = statement.executeQuery("SELECT COUNT(*) FROM " + table + ";");
+        try (final Statement statement = connection.createStatement();
+             final ResultSet ret = statement.executeQuery("SELECT COUNT(*) FROM " + table + ";")) {
             if (ret.next()) {
                 return (long) Math.ceil((double) ret.getLong(1) / buffer);
             }
@@ -778,8 +790,8 @@ public class MySQLDB extends DataBase {
     }
 
     @Override
-    public boolean connect(String url, final String name, String userName, String password) {
-        final String completeURL = "jdbc:mysql://" + url + name;
+    public boolean connect(String url, final String name, String userName, String password, boolean ssl) {
+        final String completeURL = "jdbc:mysql://" + url + name + "?useSSL=" + ssl + "&requireSSL=" + ssl;
         System.out.println(completeURL);
         try {
             connection = DriverManager.getConnection(completeURL, userName, password);
@@ -797,6 +809,66 @@ public class MySQLDB extends DataBase {
     @Override
     public String getUrl() {
         return "";
+    }
+
+    @Override
+    public ArrayList<FunctionController.Function> getFunctions() {
+
+        final ArrayList<FunctionController.Function> functions = new ArrayList<>();
+
+        String query = """
+                SELECT ROUTINE_NAME, ROUTINE_DEFINITION, DTD_IDENTIFIER, DEFINER, IS_DETERMINISTIC, SQL_DATA_ACCESS
+                FROM information_schema.ROUTINES
+                WHERE ROUTINE_TYPE = 'FUNCTION'
+                AND ROUTINE_SCHEMA NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys')
+                AND ROUTINE_SCHEMA = DATABASE();""";
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                String functionName = rs.getString("ROUTINE_NAME");
+                String code = rs.getString("ROUTINE_DEFINITION");
+                String user = rs.getString("DEFINER");
+                String return_type = rs.getString("DTD_IDENTIFIER");
+                String determinate = rs.getString("IS_DETERMINISTIC");
+                determinate = determinate.equals("YES") ? "DETERMINISTIC" : "NOT DETERMINISTIC";
+                String access = rs.getString("SQL_DATA_ACCESS");
+                functions.add(new FunctionController.Function(functionName, "RETURNS " + return_type + "\n" + determinate + "\n" + access + "\n" + code, user));
+            }
+
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return null;
+        }
+        return functions;
+    }
+
+    @Override
+    public ArrayList<ProcedureController.Procedure> getProcedure() {
+
+        final ArrayList<ProcedureController.Procedure> procedures = new ArrayList<>();
+
+        String query = """
+                SELECT ROUTINE_SCHEMA, ROUTINE_NAME
+                FROM information_schema.ROUTINES
+                WHERE ROUTINE_TYPE = 'PROCEDURE'
+                AND ROUTINE_SCHEMA = DATABASE();""";
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                String functionName = rs.getString("ROUTINE_NAME");
+                String code =  rs.getString("ROUTINE_DEFINITION");
+                procedures.add(new ProcedureController.Procedure(functionName, code));
+            }
+
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return null;
+        }
+        return procedures;
     }
 
     @Override
@@ -865,7 +937,59 @@ public class MySQLDB extends DataBase {
 
     @Override
     public boolean createTable(TableMetadata metadata, boolean temporary, boolean rowid) {
-        return false;
+        final String Temporary = temporary ? "TEMPORARY " : "";
+        final String Rowid = rowid ? "" : " WITHOUT ROWID ";
+        //  final String prime = rowid ? "" : "PRIMARY KEY";
+        StringBuilder command = new StringBuilder("CREATE " + Temporary + "TABLE " + metadata.getName() + " (");
+
+        for (final ColumnMetadata column : metadata.getColumnMetadata()) {
+            final String NotNull = column.NOT_NULL ? " NOT NULL " : "";
+            final String Default = !Objects.equals(column.defaultValue, "") && !Objects.equals(column.defaultValue, "null") ? " DEFAULT " + column.defaultValue : "";
+            final String IsUnique = column.isUnique ? " UNIQUE " : "";
+            //   String Default = "";
+            final boolean isForeign = column.foreign.isForeign;
+            //      final String ForeignTable = column.ForeignKey == null || Objects.equals(column.ForeignKey[0], "") ? "REFERENCES " + column.ForeignKey[0] + "(" + column.ForeignKey[1] + ")" : "";
+            //   final String[] ForeignTable = column.ForeignKey;
+            String Type = column.Type;
+            if (Arrays.asList(databaseInfo.getListChars()).contains(Type)) {
+                Type += "(" + column.size + ")";
+            } else if (Type.equals("DECIMAL")) Type += "(" + column.integerDigits + ", " + column.decimalDigits + ")";
+            String ColumnName;
+            String prime = "";
+            if (column.IsPrimaryKey) {
+                //   ColumnName = "PRIMARY KEY (" + column.Name + ")";
+                //     ColumnName = column.Name + " " + Type + " " + NotNull + " PRIMARY KEY";
+                ColumnName = column.Name;
+                prime = " PRIMARY KEY ";
+            }
+            else if (isForeign) {
+                final String onUpdate = column.foreign.onUpdate.isEmpty() ? "" : " ON UPDATE " + column.foreign.onUpdate;
+                final String onDelete = column.foreign.onEliminate.isEmpty() ? "" : " ON DELETE " + column.foreign.onEliminate;
+                ColumnName = column.Name + " " + Type + ", FOREIGN KEY (" + column.Name + ") REFERENCES " + column.foreign.tableRef + "(" + column.foreign.columnRef + ")" + onUpdate + onDelete;
+                Type = "";
+            }
+            else {
+                ColumnName = column.Name;
+            }
+            command.append(ColumnName).append(" ").append(Type).append(NotNull).append(prime).append(IsUnique).append(Default).append(", ");
+        }
+
+        final int strSize = command.length();
+
+        final String check = metadata.getCheck() == null || metadata.getCheck().isEmpty() ? "" : ", CHECK (" + metadata.getCheck() + ")";
+
+        command.delete(strSize-2, strSize).append(check).append(")").append(Rowid).append(";");
+        try {
+            System.out.println(command);
+            initializeTime();
+            statement.execute(command.toString());
+            endTime();
+            putMessage(new Logger(getUsername(), command.toString(), statement.getWarnings() != null ? statement.getWarnings().getMessage() : "", computeTime()));
+        } catch (SQLException e) {
+            MsgException = e.getMessage();
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -899,12 +1023,12 @@ public class MySQLDB extends DataBase {
 
     @Override
     public ArrayList<ViewController.View> getViews(String table) throws SQLException {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
     public ArrayList<ViewController.View> getViews() throws SQLException {
-        return null;
+        return new ArrayList<>();
     }
 
     @Override

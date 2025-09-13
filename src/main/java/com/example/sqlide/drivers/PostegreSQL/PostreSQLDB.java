@@ -1,13 +1,17 @@
 package com.example.sqlide.drivers.PostegreSQL;
 
+import com.example.sqlide.Function.FunctionController;
 import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.DataForDB;
 import com.example.sqlide.Metadata.TableMetadata;
+import com.example.sqlide.Procedure.ProcedureController;
 import com.example.sqlide.View.ViewController;
+import com.example.sqlide.drivers.MySQL.MySQLInfo;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseFetcherInterface;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseUpdaterInterface;
+import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
 
 import java.io.BufferedReader;
@@ -18,35 +22,15 @@ import java.util.*;
 
 public class PostreSQLDB extends DataBase {
 
-    public TypesModelList typesOfDB;
-
     public int buffer = 250;
 
-    private String MsgException;
-
     public PostreSQLDB() {
-        typesOfDB = new PostgreSQLTypeList();
         idType = "CTID";
+        SQLType = SQLTypes.POSTGRESQL;
+        super.databaseInfo = new PostgreSQLInfo();
         //Fetcher(databaseFetcherInterface);
         Updater(updater);
         Inserter(inserterInterface);
-    }
-
-    @Override
-    public String GetException() {
-        final String tmp = MsgException;
-        MsgException = "";
-        return tmp;
-    }
-
-    @Override
-    public String[] getList() {
-        return typesOfDB.listOfTypes;
-    }
-
-    @Override
-    public String[] getListChars() {
-        return typesOfDB.chars;
     }
 
     @Override
@@ -289,7 +273,7 @@ public class PostreSQLDB extends DataBase {
     }
 
     @Override
-    public boolean deleteColumn(String column, String table) {
+    public boolean deleteColumn(ArrayList<ColumnMetadata> columns, String columnName, String table) {
         return false;
     }
 
@@ -697,7 +681,7 @@ public class PostreSQLDB extends DataBase {
         }
 
         @Override
-        public boolean insertData(String Table, ArrayList<HashMap<String, String>> data) {
+        public boolean insertData(String Table, ArrayList<LinkedHashMap<String, String>> data) {
             StringBuilder command = new StringBuilder("INSERT INTO " + Table + " (");
             for (final String column : data.getFirst().keySet()) {
                 command.append(column).append(", ");
@@ -1047,8 +1031,8 @@ public class PostreSQLDB extends DataBase {
     }
 
     @Override
-    public boolean connect(String url, String name, String userName, String password) {
-        final String completeURL = "jdbc:postgresql://" + url + name;
+    public boolean connect(String url, String name, String userName, String password, boolean ssl) {
+        final String completeURL = "jdbc:postgresql://" + url + name + "?useSSL=" + ssl + "&requireSSL=" + ssl;
         try {
             connection = DriverManager.getConnection(completeURL, userName, password);
             statement = connection.createStatement();
@@ -1063,6 +1047,16 @@ public class PostreSQLDB extends DataBase {
     @Override
     public String getUrl() {
         return "";
+    }
+
+    @Override
+    public ArrayList<FunctionController.Function> getFunctions() {
+        return null;
+    }
+
+    @Override
+    public ArrayList<ProcedureController.Procedure> getProcedure() {
+        return null;
     }
 
     @Override
