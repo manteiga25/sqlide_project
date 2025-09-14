@@ -33,6 +33,17 @@ module com.example.sqlide {
     requires javafx.swing;
     requires java.compiler;
     requires org.jsoup;
+    requires javafx.graphics;
+    requires net.sf.jsqlparser;
+
+    requires ai.djl.api;
+    requires ai.djl.tokenizers;
+    requires com.github.oshi;
+    requires smile.base;
+    requires smile.core;
+    requires smile.plot;
+    requires javafx.base;
+    requires com.example.sqlide;
 
     opens com.example.sqlide to javafx.fxml;
     opens com.example.sqlide.exporter.Excel to javafx.fxml;
@@ -64,6 +75,12 @@ module com.example.sqlide {
     opens com.example.sqlide.Chart to javafx.fxml;
     opens com.example.sqlide.Import to javafx.fxml;
     opens com.example.sqlide.View to javafx.fxml;
+    opens com.example.sqlide.Function to javafx.fxml;
+    opens com.example.sqlide.Metadata to javafx.fxml;
+    opens com.example.sqlide.Task to javafx.fxml;
+    opens com.example.sqlide.Procedure to javafx.fxml;
+    opens com.example.sqlide.DataScience to javafx.fxml;
+
 
     exports com.example.sqlide;
     exports com.example.sqlide.exporter.Excel;
@@ -96,8 +113,10 @@ module com.example.sqlide {
     exports com.example.sqlide.Import;
     exports com.example.sqlide.View;
     exports com.example.sqlide.Metadata;
-    opens com.example.sqlide.Metadata to javafx.fxml;
     exports com.example.sqlide.Task;
-    opens com.example.sqlide.Task to javafx.fxml;
+    exports com.example.sqlide.Function;
+    exports com.example.sqlide.Procedure;
+    exports com.example.sqlide.DataScience;
+
 
 }
