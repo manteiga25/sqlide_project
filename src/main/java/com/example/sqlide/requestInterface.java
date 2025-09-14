@@ -4,6 +4,7 @@ import com.example.sqlide.drivers.model.SQLTypes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public interface requestInterface {
 
@@ -19,7 +20,7 @@ public interface requestInterface {
 
     boolean createView(String table, String code, String string);
 
-    public abstract String insertData(final String table, final ArrayList<HashMap<String, String>> data);
+    public abstract String insertData(final String table, final ArrayList<LinkedHashMap<String, String>> data);
 
     public abstract boolean createReport(final String title, final String query);
 
@@ -33,4 +34,7 @@ public interface requestInterface {
 
     public boolean createGraphic(final String table, final String name, final String x, final String y, final ArrayList<HashMap<String, String>> labels);
 
+    public boolean createFunction(final HashMap<String, String> functions);
+
+    public boolean createProcedure(HashMap<String, String> procedures);
 }

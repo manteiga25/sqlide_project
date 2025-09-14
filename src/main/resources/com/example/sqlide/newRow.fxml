@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.net.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
@@ -22,6 +23,11 @@
                 <padding>
                     <Insets bottom="10" />
                 </padding>
+      <stylesheets>
+         <URL value="@../../../css/ContextMenuStyle.css" />
+         <URL value="@../../../css/ChoiceBoxModern.css" />
+         <URL value="@../../../css/DatePicker.css" />
+      </stylesheets>
             </FlowPane>
 
     <!-- Área de botões -->

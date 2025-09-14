@@ -51,6 +51,8 @@
                             <MenuItem mnemonicParsing="false" onAction="#initEditTriggerWindow" text="Edit Trigger" />
                             <MenuItem mnemonicParsing="false" onAction="#initEventWindow" text="Add Event" />
                             <MenuItem mnemonicParsing="false" onAction="#initEditEventWindow" text="Edit Event" />
+                     <MenuItem mnemonicParsing="false" onAction="#initFunctionWindow" text="Functions" />
+                     <MenuItem mnemonicParsing="false" onAction="#initProcedureWindow" text="Procedure" />
                         </items>
                     </Menu>
                 </menus>

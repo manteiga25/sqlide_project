@@ -39,6 +39,10 @@ public interface NotificationInterface {
 
     }
 
+    default void createInformationNotification(final String title, final String message) {
+        Notification.showInformationNotification(title, message);
+    }
+
     default void createErrorNotification(final String id, final String title, final String message) {
         try {
             Notification.showErrorNotification(id, title, message);

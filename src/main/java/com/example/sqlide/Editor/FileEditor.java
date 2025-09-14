@@ -1,5 +1,6 @@
 package com.example.sqlide.Editor;
 
+import com.example.sqlide.Assistant.AssistantCodeInterface;
 import com.example.sqlide.Container.Editor.TextAreaAutocomplete;
 import com.example.sqlide.Container.Editor.Words.SQLWords;
 import javafx.fxml.FXML;
@@ -11,6 +12,7 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
@@ -21,12 +23,13 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
-public class FileEditor {
+public class FileEditor implements AssistantCodeInterface {
 
     private String path;
 
@@ -35,6 +38,8 @@ public class FileEditor {
     private final KeyCombination cntrlS = new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN);
 
     private final TextAreaAutocomplete editorText = new TextAreaAutocomplete();
+
+    private AssistantCoderInterface assistantInterface;
 
     private Tab tab;
 
@@ -80,6 +85,8 @@ public class FileEditor {
         VBox.setVgrow(EditorContainer, Priority.ALWAYS);
 
         EditorContainer.getChildren().addAll(editorText, toolsBox);
+
+        editorText.setCoder(this);
 
         VBox.setVgrow(editorText, Priority.ALWAYS);
 
@@ -173,4 +180,22 @@ public class FileEditor {
         }
     }
 
+    public void setInterface(AssistantCoderInterface assistantInterface) {
+        this.assistantInterface = assistantInterface;
+        editorText.addContextOptions(createContextOptions());
+    }
+
+    private MenuItem createContextOptions() {
+        MenuItem SendToAssistant = new MenuItem();
+        HBox SendLineBox = new HBox(
+                new Label("Send line to assistant"),
+                new Region()
+        );
+        SendLineBox.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(SendLineBox.getChildren().get(1), Priority.ALWAYS);
+        SendLineBox.setPrefWidth(120);
+        SendToAssistant.setGraphic(SendLineBox);
+        SendToAssistant.setOnAction(_->assistantInterface.sendToAssistant(editorText.getSelectedText()));
+        return SendToAssistant;
+    }
 }
