@@ -2,6 +2,7 @@ package com.example.sqlide.Console;
 
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.drivers.model.SQLTypes;
+import com.example.sqlide.misc.path;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,6 +14,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 
@@ -124,4 +126,5 @@ public class ConsoleController {
             box.getChildren().remove(0, box.getChildren().size()-1);
         }
     }
+
 }

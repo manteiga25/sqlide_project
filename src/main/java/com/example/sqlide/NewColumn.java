@@ -3,9 +3,11 @@ package com.example.sqlide;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
+import com.example.sqlide.drivers.model.DatabaseInfo;
 import com.example.sqlide.drivers.model.SQLTypes;
 import com.example.sqlide.drivers.model.TypesModelList;
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXCheckBox;
 import com.jfoenix.controls.JFXTextField;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -32,19 +34,16 @@ public class NewColumn {
     @FXML private TextField ColumnNameInput, text1, text2, text3, DefaultValueText, SetName, WordBox;
     @FXML private Label LabelDB;
     @FXML private ChoiceBox<String> typeBox, ForeignKeyBox, indexBox, updateForeignBox, deleteForeignBox;
-    @FXML private CheckBox primaryKeyOption, NotNullOption, ForeignKeyOption, DefaultOption,
+    @FXML private JFXCheckBox primaryKeyOption, NotNullOption, ForeignKeyOption, DefaultOption,
             UniqueOption, FillOption, IndexOption, AutoincrementOption, CheckOption;
     @FXML private Button AddButton, EditList;
 
     private Stage window;
     private TableInterface ref;
     private NewTable newTable;
-    private String TableName, DBName;
     private HashMap<String, ArrayList<String>> KeysForForeign;
     private ColumnMetadata originalMetadata;
-    private SQLiteTypes types;
     private String[] charList;
-    private TypesModelList list;
     private boolean Edit = false;
     private final ObservableList<String> setList = FXCollections.observableArrayList();
     private String comment = "";
@@ -65,7 +64,7 @@ public class NewColumn {
         SetName.setPromptText("Set name");
     }
 
-    public void NewColumnWin(String DBName, String TableName, TableInterface ref, Stage subStage,
+/*    public void NewColumnWin(String DBName, String TableName, TableInterface ref, Stage subStage,
                              HashMap<String, ArrayList<String>> KeysForForeign, SQLiteTypes types,
                              String[] list, String[] charList, String[] modes,
                              List<String> foreignModes, SQLTypes sql) {
@@ -83,32 +82,48 @@ public class NewColumn {
         if (sql == SQLTypes.SQLITE) {
             removeCommentButton();
         }
+    } */
+
+    public void NewColumnWin(String DBName, String TableName, TableInterface ref, Stage subStage,
+                             HashMap<String, ArrayList<String>> KeysForForeign, SQLiteTypes types,
+                             DatabaseInfo databaseInfo) {
+
+        setupCommonConfig(DBName, TableName, KeysForForeign, databaseInfo.getList(), databaseInfo.getListChars(), subStage);
+        this.ref = ref;
+
+        updateForeignBox.getItems().addAll(databaseInfo.getForeignModes());
+        deleteForeignBox.getItems().addAll(databaseInfo.getForeignModes());
+
+        if (databaseInfo.getIndexModes() != null) {
+            indexBox.getItems().addAll(databaseInfo.getIndexModes());
+        }
+
+        if (databaseInfo.getSqlType() == SQLTypes.SQLITE) {
+            removeCommentButton();
+        }
     }
 
     public void NewColumnWin(String DBName, String TableName, NewTable ref, Stage subStage,
                              HashMap<String, ArrayList<String>> KeysForForeign, SQLiteTypes types,
-                             String[] list, String[] charList, String[] modes, SQLTypes sql) {
+                             DatabaseInfo databaseInfo) {
 
-        setupCommonConfig(DBName, TableName, KeysForForeign, types, list, charList, subStage);
+        setupCommonConfig(DBName, TableName, KeysForForeign, databaseInfo.getList(), databaseInfo.getListChars(), subStage);
         this.newTable = ref;
 
-        if (modes != null) {
-            indexBox.getItems().addAll(modes);
+        if (databaseInfo.getIndexModes() != null) {
+            indexBox.getItems().addAll(databaseInfo.getIndexModes());
         }
 
-        if (sql == SQLTypes.SQLITE) {
+        if (databaseInfo.getSqlType() == SQLTypes.SQLITE) {
             removeCommentButton();
         }
     }
 
     private void setupCommonConfig(String DBName, String TableName,
                                    HashMap<String, ArrayList<String>> KeysForForeign,
-                                   SQLiteTypes types, String[] list, String[] charList, Stage subStage) {
+                                   String[] list, String[] charList, Stage subStage) {
 
-        this.DBName = DBName;
-        this.TableName = TableName;
         this.KeysForForeign = KeysForForeign != null ? KeysForForeign : new HashMap<>();
-        this.types = types;
         this.charList = charList;
         this.window = subStage;
 
@@ -183,13 +198,13 @@ public class NewColumn {
         String type = typeBox.getValue();
         if (type == null) return;
 
-        boolean isCharType = Arrays.stream(charList).anyMatch(t -> t.equals(type));
+        boolean isCharType = Arrays.asList(charList).contains(type);
         boolean isDecimal = "DECIMAL".equals(type);
         boolean isListType = "ENUM".equals(type) || "SET".equals(type);
 
-        switchSize(!isCharType);
-        switchDecimal(!isDecimal);
-        switchList(!isListType);
+        switchSize(isCharType);
+        switchDecimal(isDecimal);
+        switchList(isListType);
     }
 
     private void switchSize(boolean enable) {
@@ -257,7 +272,7 @@ public class NewColumn {
             dialog.setOnHiding(_ -> comment = textArea.getText());
             dialog.show();
         } catch (Exception e) {
-            ShowError("Error", "Failed to open comment editor: " + e.getMessage());
+            ShowError("Error", "Failed to open comment editor.", e.getMessage());
         }
     }
 
@@ -299,7 +314,6 @@ public class NewColumn {
         }
 
         ColumnMetadata meta = buildColumnMetadata();
-        if (meta == null) return;
 
         saveColumn(meta);
     }
@@ -358,19 +372,17 @@ public class NewColumn {
     private ColumnMetadata buildColumnMetadata() {
         ColumnMetadata meta = new ColumnMetadata();
 
-        // Propriedades básicas
         meta.Name = ColumnNameInput.getText().trim();
         meta.Type = typeBox.getValue();
         meta.IsPrimaryKey = primaryKeyOption.isSelected() && !primaryKeyOption.isDisabled();
         meta.NOT_NULL = NotNullOption.isSelected() && !NotNullOption.isDisabled();
         meta.isUnique = UniqueOption.isSelected() && !UniqueOption.isDisabled();
         meta.defaultValue = DefaultOption.isSelected() ? DefaultValueText.getText().trim() : "";
+        meta.foreign = new ColumnMetadata.Foreign();
 
-        // Configuração de chave estrangeira
         if (ForeignKeyOption.isSelected()) {
             String[] parts = ForeignKeyBox.getValue().split(":");
             if (parts.length >= 2) {
-                meta.foreign = new ColumnMetadata.Foreign();
                 meta.foreign.isForeign = true;
                 meta.foreign.tableRef = parts[0].trim();
                 meta.foreign.columnRef = parts[1].trim();
@@ -379,7 +391,6 @@ public class NewColumn {
             }
         }
 
-        // Configurações numéricas
         meta.size = text1.isDisabled() ? 0 : Integer.parseInt(text1.getText());
         meta.integerDigits = text2.isDisabled() ? 0 : Integer.parseInt(text2.getText());
         meta.decimalDigits = text3.isDisabled() ? 0 : Integer.parseInt(text3.getText());
@@ -415,7 +426,7 @@ public class NewColumn {
             }
             window.close();
         } catch (Exception e) {
-            ShowError("Save Error", "Failed to save column: " + e.getMessage());
+            ShowError("Save Error", "Failed to save column.", e.getMessage());
         }
     }
 

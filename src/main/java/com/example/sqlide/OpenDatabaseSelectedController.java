@@ -3,6 +3,7 @@ package com.example.sqlide;
 import com.example.sqlide.drivers.MySQL.MySQLDB;
 import com.example.sqlide.drivers.PostegreSQL.PostreSQLDB;
 import com.example.sqlide.drivers.model.DataBase;
+import com.jfoenix.controls.JFXCheckBox;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -13,14 +14,17 @@ import static com.example.sqlide.drivers.model.DBnames.DBNamesList;
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
 public class OpenDatabaseSelectedController {
-    @FXML
-    TextField UrlFiels, UserNameField, portField, NameField;
 
     @FXML
-    PasswordField passwordField;
+    private JFXCheckBox sslBox;
+    @FXML
+    private TextField UrlFiels, UserNameField, portField, NameField;
 
     @FXML
-    Label DatabaseLabel;
+    private PasswordField passwordField;
+
+    @FXML
+    private Label DatabaseLabel;
 
     private Stage window;
     private mainController context;
@@ -56,7 +60,7 @@ public class OpenDatabaseSelectedController {
                 Database = new PostreSQLDB();
                 break;
         }
-        context.openDB(Database, URL + "/", DBname, User, pass);
+        context.openDB(Database, URL + "/", DBname, User, pass, sslBox.isSelected());
             closeWindow();
     }
 
