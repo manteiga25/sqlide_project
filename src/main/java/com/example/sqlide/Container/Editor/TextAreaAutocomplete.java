@@ -1,6 +1,9 @@
 package com.example.sqlide.Container.Editor;
 
 
+import ai.djl.translate.TranslateException;
+import com.example.sqlide.Assistant.AssistantCode;
+import com.example.sqlide.Assistant.AssistantCodeInterface;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -19,6 +22,8 @@ import javafx.scene.shape.Path;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Popup;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.model.StyleSpans;
@@ -37,9 +42,13 @@ public class TextAreaAutocomplete extends CodeArea {
 
     private int wordIndex = 0, wordCount;
 
+    private AssistantCodeInterface coder;
+
     private ArrayList<String> words = new ArrayList<>();
 
     private final BooleanProperty changed = new SimpleBooleanProperty(false);
+
+   // private final AssistantCode coder = new AssistantCode();
 
     private int size = 14;
 
@@ -71,11 +80,15 @@ public class TextAreaAutocomplete extends CodeArea {
 
     private Pattern SQL_KEYWORDS;
 
+    public void setCoder(final AssistantCodeInterface coder) {
+        this.coder = coder;
+    }
+
     public void setAutoCompleteWords(final ArrayList<String> words) {
         this.words = words;
         final String regex = words.stream()
                 .map(Pattern::quote) // Escapa caracteres especiais
-                .collect(Collectors.joining(" |"));
+                .collect(Collectors.joining(" | "));
         this.SQL_KEYWORDS = Pattern.compile("(?<KEYWORD>"+regex+")|"+COMMENT_REGEX+"|"+NumberFormat+"|"+STRING_REGEX, Pattern.CASE_INSENSITIVE);
     }
 
@@ -241,7 +254,9 @@ public class TextAreaAutocomplete extends CodeArea {
         SelectItem.setGraphic(selAllBox);
         SelectItem.setOnAction(_->selectAll());
 
-        setContextMenu(new ContextMenu(UndoItem, RedoItem, new SeparatorMenuItem(), CutItem, CopyItem, PasteItem, new SeparatorMenuItem(), DeleteItem, SelectWord, SelectLine, SelectItem));
+
+
+        setContextMenu(new ContextMenu(UndoItem, RedoItem, new SeparatorMenuItem(), CutItem, CopyItem, PasteItem, new SeparatorMenuItem(), DeleteItem, SelectWord, SelectLine, SelectItem, new SeparatorMenuItem()));
 
         DeleteItem.setVisible(false);
         CopyItem.setVisible(false);
@@ -257,24 +272,82 @@ public class TextAreaAutocomplete extends CodeArea {
 
     }
 
+    private JSQLParserException validateSql(final String text) {
+        try {
+            CCJSqlParserUtil.parse(text);
+        } catch (JSQLParserException e) {
+            return e;
+        }
+        return null;
+    }
+
+    private void showErrors(JSQLParserException e) {
+        String message = e.getMessage();
+        Pattern pattern = Pattern.compile("line (\\d+), column (\\d+).");
+        Matcher matcher = pattern.matcher(message);
+
+        if (matcher.find()) {
+            int line = Integer.parseInt(matcher.group(1)) - 1; // JSQLParser is 1-based
+            int column = Integer.parseInt(matcher.group(2)) - 1; // JSQLParser is 1-based
+
+            int errorStart = getAbsolutePosition(line, column);
+            int errorEnd = errorStart + 1;
+
+            String text = getText();
+            if (errorStart < text.length()) {
+                // Try to find the end of the word
+                errorEnd = text.indexOf(" ", errorStart);
+                if (errorEnd == -1) {
+                    errorEnd = text.length();
+                }
+            }
+
+
+            StyleSpansBuilder<Collection<String>> spansBuilder = new StyleSpansBuilder<>();
+            spansBuilder.add(Collections.emptyList(), errorStart);
+            spansBuilder.add(Collections.singleton("error"), errorEnd - errorStart);
+            spansBuilder.add(Collections.emptyList(), getText().length() - errorEnd);
+            setStyleSpans(0, spansBuilder.create());
+        }
+    }
+
     private void initializeHandlers() {
         textProperty().addListener((_, _, text) -> {
             changed.set(true);
             Thread.ofVirtual().start(()->{
+              //  final JSQLParserException code = validateSql(text);
                 final StyleSpans<Collection<String>> style = computeHighlighting(text);
-                Platform.runLater(()->setStyleSpans(0, style));
+                if (coder != null) System.out.println("predict " + coder.predict(this.getText(getCurrentParagraph())));
+                Platform.runLater(()->{
+
+                    setStyleSpans(0, style);
+                //    if (code != null) showErrors(code);
+                  //  System.out.println(code);
+                });
             });
         });
         WordsBox.setOnKeyPressed(event-> {
+
             if (event.getCode() == KeyCode.UP) {
                 if (wordIndex > 0) {
                     WordsBox.getChildren().get(--wordIndex).requestFocus();
+                } else {
+                    WordsBox.getChildren().getLast().requestFocus();
+                    wordIndex = WordsBox.getChildren().size();
                 }
+                event.consume();
             } else if (event.getCode() == KeyCode.DOWN) {
                 if (wordIndex < wordCount-1) {
                     WordsBox.getChildren().get(++wordIndex).requestFocus();
+                } else {
+                    WordsBox.getChildren().getFirst().requestFocus();
+                    wordIndex = 0;
                 }
+                event.consume();
+            } else {
+                entriesPopup.hide();
             }
+
         });
         setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.BACK_SPACE && newWord && !bufferWord.isEmpty()) {
@@ -282,10 +355,13 @@ public class TextAreaAutocomplete extends CodeArea {
             }
         });
         setOnKeyTyped(e -> {
-            if (e.getCharacter().equals(" ")) {  // When space is pressed
+            if (e.getCharacter().equals(" ") || getCaretColumn() == 0) {  // When space is pressed
                 bufferWord = "";
                 entriesPopup.hide();
                 newWord = true;  // Reset for the next word
+                Thread.ofVirtual().start(()->{
+                    if (coder != null) System.out.println("predict " + coder.predict(this.getText(getCurrentParagraph())));
+                });
             } else if (newWord) {
                 // Append typed character to the bufferWord
                 if (e.getCharacter().equals("\b") && bufferWord.length() > 1) {
@@ -298,30 +374,9 @@ public class TextAreaAutocomplete extends CodeArea {
                 if (entriesPopup.getContent() != null) {
                     //Bounds screenLoc = findCaret();
                     //entriesPopup.show(TextAreaAutocomplete.this, screenLoc.getMaxX(), screenLoc.getMinY());
-                    try {
-                        Optional<Bounds> caretBounds = getCharacterBoundsOnScreen(getText(getCurrentParagraph()).length(), getCaretPosition());
-
-                        caretBounds.ifPresent(bounds -> {
-                            // Mostra o popup usando as coordenadas do caret
-                            // bounds.getMinX() -> Posição X (início horizontal do caractere)
-                            // bounds.getMaxY() -> Posição Y (base da linha de texto do caractere)
-                            entriesPopup.show(this, bounds.getMaxX(), bounds.getMaxY()+10);
-                        });
-                    } catch (Exception _) {
-                        try {
-                            Optional<Bounds> caretBounds = getCharacterBoundsOnScreen(getCaretPosition(), getText(getCurrentParagraph()).length());
-
-                            caretBounds.ifPresent(bounds -> {
-                                // Mostra o popup usando as coordenadas do caret
-                                // bounds.getMinX() -> Posição X (início horizontal do caractere)
-                                // bounds.getMaxY() -> Posição Y (base da linha de texto do caractere)
-                                entriesPopup.show(this, bounds.getMaxX(), bounds.getMaxY()+10);
-                            });
-                        } catch (Exception _) {
-                        }
-
-                    }
-
+                        getCaretBounds().ifPresent(bounds ->
+                                entriesPopup.show(this, bounds.getMinX()+15, bounds.getMaxY())
+                        );
                 }
             }
         });
@@ -329,14 +384,10 @@ public class TextAreaAutocomplete extends CodeArea {
         addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, event -> {
             if (event.isControlDown()) {
                 if (event.getDeltaY() > 0) {
-                    if (size != 30) {
-                        setStyle("-fx-font-size: " + ++size + "px;");
-                    }
-                } else {
-                    if (size != 10) {
-                        setStyle("-fx-font-size: " + --size + "px;");
-                    }
-                }
+                    if (size != 30) ++size;
+                } else if (size != 10) --size;
+                setStyle("-fx-font-size: " + size + "px;");
+                event.consume();
             }
         });
 
@@ -346,14 +397,6 @@ public class TextAreaAutocomplete extends CodeArea {
             bufferWord = "";
             entriesPopup.hide();  // Hide the popup when clicked outside
         });
-    }
-
-    private Bounds findCaret() {
-        Optional<Bounds> caretBounds = getCaretBounds();
-
-        Bounds bounds = localToScreen(caretBounds.get());
-
-        return bounds;
     }
 
 // Refresh and show suggestions in the menu
@@ -392,7 +435,11 @@ private void refreshMenu() {
     }
 }
 
-        private class BoxWord extends HBox {
+    public void addContextOptions(final MenuItem items) {
+        getContextMenu().getItems().add(items);
+    }
+
+    private class BoxWord extends HBox {
                 private final String word;
                 public BoxWord(final String word) {
                     super();

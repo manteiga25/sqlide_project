@@ -1,15 +1,19 @@
 package com.example.sqlide;
 
 import com.example.sqlide.Assistant.AssistantController;
+import com.example.sqlide.Assistant.AssistantMainController;
 import com.example.sqlide.Configuration.DatabaseConf;
 import com.example.sqlide.Console.ConsoleController;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
+import com.example.sqlide.Editor.AssistantCoderInterface;
 import com.example.sqlide.EventLayout.EditEventController;
 import com.example.sqlide.EventLayout.EventController;
+import com.example.sqlide.Function.FunctionController;
 import com.example.sqlide.Import.ImportController;
 import com.example.sqlide.Logger.Logger;
 import com.example.sqlide.Notification.NotificationInterface;
+import com.example.sqlide.Procedure.ProcedureController;
 import com.example.sqlide.ScriptLayout.SearchScriptController;
 import com.example.sqlide.Task.TaskManager;
 import com.example.sqlide.TriggerLayout.EditTriggerController;
@@ -22,12 +26,9 @@ import com.example.sqlide.exporter.CSV.CSVController;
 import com.example.sqlide.exporter.Excel.excelController;
 import com.example.sqlide.exporter.JSON.JSONController;
 import com.example.sqlide.exporter.XML.xmlController;
+import com.example.sqlide.misc.memoryInterface;
 import com.jfoenix.controls.JFXButton;
-import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
-import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.application.Platform;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -37,7 +38,6 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
-import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -55,7 +55,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class mainController implements requestInterface, NotificationInterface {
+public class mainController implements requestInterface, NotificationInterface, AssistantCoderInterface, memoryInterface {
 
     @FXML
     private VBox ContainerEmpty;
@@ -77,7 +77,9 @@ public class mainController implements requestInterface, NotificationInterface {
     @FXML
     private MenuItem backupMenu, ImporterMenu;
 
-    private VBox AssistantContainer, NotificationContainer;
+    private VBox NotificationContainer;
+
+    private VBox AssistantContainer;
 
     @FXML
     private SplitPane CenterContainer;
@@ -109,6 +111,8 @@ public class mainController implements requestInterface, NotificationInterface {
     private EditorController editorController = null;
 
     private ConsoleController consoleController = null;
+
+    private AssistantMainController AssitantController = null;
 
     private final SimpleStringProperty currentDB = new SimpleStringProperty();
 
@@ -159,7 +163,7 @@ public class mainController implements requestInterface, NotificationInterface {
     }
 
     @Override
-    public String insertData(String table, final ArrayList<HashMap<String, String>> data) {
+    public String insertData(String table, final ArrayList<LinkedHashMap<String, String>> data) {
 
         final DataBase db = DatabaseOpened.get(currentDB.get());
         if (db != null) {
@@ -228,6 +232,18 @@ public class mainController implements requestInterface, NotificationInterface {
     }
 
     @Override
+    public boolean createFunction(HashMap<String, String> functions) {
+        Platform.runLater(()->initFunctionWindow(functions));
+        return true;
+    }
+
+    @Override
+    public boolean createProcedure(HashMap<String, String> procedures) {
+        Platform.runLater(()->initProcedureWindow(procedures));
+        return true;
+    }
+
+    @Override
     public HashMap<String, ArrayList<HashMap<String, String>>> getTableMetadata() {
         final DatabaseInterface db = DBopened.get(currentDB.get());
         HashMap<String, ArrayList<HashMap<String, String>>> meta = null;
@@ -278,6 +294,12 @@ public class mainController implements requestInterface, NotificationInterface {
         setHDividerSpace();
         loadNotification();
         initTaskView();
+    }
+
+    @Override
+    public void onLowMemory() {
+        this.createInformationNotification("Low memory", "The system has low memory ram to use.");
+        ignore.set(true);
     }
 
     private void initTaskView() {
@@ -416,8 +438,8 @@ public class mainController implements requestInterface, NotificationInterface {
         }
     }
 
-    public void openDB(final DataBase db, final String URL, final String DBName, final String UserName, final String password) {
-        if (!db.connect(URL, DBName, UserName, password)) {
+    public void openDB(final DataBase db, final String URL, final String DBName, final String UserName, final String password, final boolean ssl) {
+        if (!db.connect(URL, DBName, UserName, password, ssl)) {
             ShowError("Error SQL", "Error to open Database " + URL, db.GetException());
             return;
         }
@@ -850,7 +872,7 @@ public class mainController implements requestInterface, NotificationInterface {
                 Stage subStage = new Stage();
                 subStage.setTitle("Event");
                 subStage.setScene(new Scene(root));
-                secondaryController.initEventController(dataBase, subStage);
+                secondaryController.initEventController(dataBase, task, subStage);
                 secondaryController.addEvent(values);
 
                 // Opcional: definir a modalidade da subjanela
@@ -884,7 +906,7 @@ public class mainController implements requestInterface, NotificationInterface {
             Stage subStage = new Stage();
             subStage.setTitle("Subjanela");
             subStage.setScene(new Scene(root));
-            secondaryController.initEventController(dataBase, subStage);
+            secondaryController.initEventController(dataBase, task, subStage);
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -895,6 +917,140 @@ public class mainController implements requestInterface, NotificationInterface {
             ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
         }
         } else ShowError("No supported", "SQLite doesn't support event's.");
+
+    }
+
+    private void initFunctionWindow(final HashMap<String, String> functions) {
+
+        final DataBase dataBase = DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId());
+
+        if (dataBase.getSQLType() != SQLTypes.SQLITE) {
+
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("Function/FunctionInterface.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
+
+                FunctionController secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                Stage subStage = new Stage();
+                subStage.setTitle("Subjanela");
+                subStage.setScene(new Scene(root));
+                secondaryController.initFunctionController(dataBase, task, subStage);
+
+                if (functions != null) for (final String funcName : functions.keySet()) secondaryController.addFunction(new FunctionController.Function(funcName, functions.get(funcName), dataBase.getUsername()));
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                // Mostrar a subjanela
+                subStage.show();
+            } catch (Exception e) {
+                ShowError("Error to load", "Error tom load stage.", e.getMessage());
+            }
+        } else ShowError("No supported", "SQLite doesn't support function's.");
+
+    }
+
+    @FXML
+    private void initProcedureWindow() {
+
+        final DataBase dataBase = DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId());
+
+        if (dataBase.getSQLType() != SQLTypes.SQLITE) {
+
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("Procedure/ProcedureInterface.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
+
+                ProcedureController secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                Stage subStage = new Stage();
+                subStage.setTitle("Subjanela");
+                subStage.setScene(new Scene(root));
+                secondaryController.initProcedureController(dataBase, task, subStage);
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                // Mostrar a subjanela
+                subStage.show();
+            } catch (Exception e) {
+                ShowError("Error to load", "Error tom load stage.", e.getMessage());
+            }
+        } else ShowError("No supported", "SQLite doesn't support procedure's.");
+
+    }
+
+    private void initProcedureWindow(final HashMap<String, String> functions) {
+
+        final DataBase dataBase = DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId());
+
+        if (dataBase.getSQLType() != SQLTypes.SQLITE) {
+
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("Procedure/ProcedureInterface.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
+
+                ProcedureController secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                Stage subStage = new Stage();
+                subStage.setTitle("Subjanela");
+                subStage.setScene(new Scene(root));
+                secondaryController.initProcedureController(dataBase, task, subStage);
+
+                if (functions != null) for (final String funcName : functions.keySet()) secondaryController.addProcedure(new ProcedureController.Procedure(funcName, functions.get(funcName)));
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                // Mostrar a subjanela
+                subStage.show();
+            } catch (Exception e) {
+                ShowError("Error to load", "Error tom load stage.", e.getMessage());
+            }
+        } else ShowError("No supported", "SQLite doesn't support procedure's.");
+
+    }
+
+    @FXML
+    private void initFunctionWindow() {
+
+        final DataBase dataBase = DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId());
+
+        if (dataBase.getSQLType() != SQLTypes.SQLITE) {
+
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("Function/FunctionInterface.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
+
+                FunctionController secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                Stage subStage = new Stage();
+                subStage.setTitle("Subjanela");
+                subStage.setScene(new Scene(root));
+                secondaryController.initFunctionController(dataBase, task, subStage);
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                // Mostrar a subjanela
+                subStage.show();
+            } catch (Exception e) {
+                ShowError("Error to load", "Error tom load stage.", e.getMessage());
+            }
+        } else ShowError("No supported", "SQLite doesn't support function's.");
 
     }
 
@@ -987,16 +1143,18 @@ public class mainController implements requestInterface, NotificationInterface {
     private void loadAssistant() {
         try {
             // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("Assistant/AssistantStage.fxml"));
+            //FXMLLoader loader = new FXMLLoader(getClass().getResource("Assistant/AssistantStage.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("Assistant/AssistantMain.fxml"));
             //    VBox miniWindow = loader.load();
             AssistantContainer = loader.load();
 
-            AssistantController controller = loader.getController();
-            controller.setAssistantFunctionsInterface(this);
+            AssitantController = loader.getController();
+            //AssistantContainer = AssitantController.getContainer();
+            AssitantController.setAssistantFunctionsInterface(this);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {
-            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
+            ShowError("Error to load", "Error tom load stage.", e.getMessage());
         }
     }
 
@@ -1096,6 +1254,7 @@ public class mainController implements requestInterface, NotificationInterface {
 
             editorController = loader.getController();
             editorController.setList(DatabasesOpened, DatabasesName);
+            editorController.setAssistantInterface(this);
 
             // Criar um novo Stage para a subjanela
         } catch (Exception e) {
@@ -1138,5 +1297,10 @@ public class mainController implements requestInterface, NotificationInterface {
         } catch (Exception e) {
             ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
         }
+    }
+
+    @Override
+    public void sendToAssistant(final String code) {
+        //AssitantController..SendMessage(code);
     }
 }

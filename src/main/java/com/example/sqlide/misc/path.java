@@ -7,6 +7,7 @@ import org.docx4j.vml.officedrawing.STRType;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 
@@ -26,11 +27,30 @@ public abstract class path {
                     if (!selectedFile.delete()) {
                         throw new IOException("");
                     }
-                    path = selectedFile.getAbsolutePath();
+
                     //  createFolderEditor(selectedFile.getAbsolutePath(), selectedFile.getName());
                 }
+                path = selectedFile.getAbsolutePath();
             }
             return path;
+    }
+
+    public static String selectPath(Stage stage) throws IOException {
+        FileChooser selectFileWindow = new FileChooser();
+
+        String path = null;
+
+        final File selectedFile = selectFileWindow.showSaveDialog(stage);
+        if (selectedFile != null) {
+            if (selectedFile.exists()) {
+                if (!selectedFile.delete()) {
+                    throw new IOException("");
+                }
+                //  createFolderEditor(selectedFile.getAbsolutePath(), selectedFile.getName());
+            }
+            path = selectedFile.getAbsolutePath();
+        }
+        return path;
     }
 
 }

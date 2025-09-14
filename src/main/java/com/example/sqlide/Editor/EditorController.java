@@ -1,6 +1,7 @@
 package com.example.sqlide.Editor;
 
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.mainController;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -49,6 +50,8 @@ public class EditorController {
     private ObservableList<String> SchemasName = FXCollections.observableArrayList();
 
     private final ArrayList<FileEditor> editors = new ArrayList<>();
+
+    private AssistantCoderInterface assistantInterface;
 
     public Node getContainer() {
         return Container;
@@ -215,6 +218,7 @@ public class EditorController {
     @FXML
     public void createScript() {
         final FileEditor editor = new FileEditor(null);
+        editor.setInterface(assistantInterface);
         final Tab newTab = new Tab("");
         TabContainer.getTabs().add(newTab);
         editor.putContainer(newTab);
@@ -233,6 +237,7 @@ public class EditorController {
         folderTab.setText(name);
         try {
             FileEditor editor = new FileEditor(path);
+            editor.setInterface(assistantInterface);
             editor.readScript();
             editor.putContainer(folderTab);
             editors.add(editor);
@@ -242,4 +247,7 @@ public class EditorController {
         }
     }
 
+    public void setAssistantInterface(AssistantCoderInterface assistantInterface) {
+        this.assistantInterface = assistantInterface;
+    }
 }

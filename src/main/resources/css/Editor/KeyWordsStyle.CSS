@@ -10,3 +10,10 @@
 .string {
     -fx-fill: #CE9178 !important; /* Cor laranja para strings */
 }
+.error {
+    -fx-underline: true !important;
+    -fx-fill: red !important;
+}
+.code {
+    -fx-fill: #D3D3D3 !important;
+}
