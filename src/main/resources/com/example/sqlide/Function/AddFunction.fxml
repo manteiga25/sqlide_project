@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" spacing="20.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Function.AddFunction">
+   <children>
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
+         <children>
+            <Label text="Function name:" textFill="#f2f2f2">
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font>
+            </Label>
+            <JFXTextField fx:id="FunctionField" style="-fx-text-fill: #f2f2f2;" stylesheets="@../../../../css/ContextMenuStyle.css" HBox.hgrow="ALWAYS" />
+         </children>
+      </HBox>
+      <JFXCheckBox fx:id="DeterminateBox" checkedColor="#3574f0" layoutX="106.0" layoutY="81.0" mnemonicParsing="false" selected="true" text="Deterministic" textFill="WHITE" />
+      <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="158.0" spacing="5.0">
+         <children>
+            <Label text="Data access:" textFill="WHITE" />
+            <ChoiceBox fx:id="AccessBox" prefWidth="150.0" stylesheets="@../../../../css/ChoiceBoxModern.css" />
+         </children>
+      </HBox>
+      <HBox alignment="CENTER_RIGHT" layoutX="10.0" layoutY="202.0" spacing="5.0">
+         <children>
+            <Button mnemonicParsing="false" onAction="#close" style="-fx-background-color: #3574F0;" text="cancel" textFill="#f2f2f2">
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font>
+            </Button>
+            <Button mnemonicParsing="false" onAction="#add" style="-fx-background-color: #3574F0;" text="Add" textFill="#f2f2f2">
+               <font>
+                  <Font name="Arial" size="12.0" />
+               </font>
+            </Button>
+         </children>
+      </HBox>
+   </children>
+   <padding>
+      <Insets bottom="5.0" left="10.0" right="10.0" />
+   </padding>
+</VBox>

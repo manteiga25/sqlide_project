@@ -1,0 +1,53 @@
+/* Aplica a todos os diálogos */
+.dialog-pane {
+    -fx-background-color: #2C2C2C;
+    -fx-border-color: #3C3C3C;
+    -fx-padding: 20;
+}
+
+/* Header (título e texto superior) */
+.dialog-pane > .header-panel {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 15 0;
+}
+
+.dialog-pane > .header-panel > .label {
+    -fx-text-fill: #EBEBEB;
+    -fx-font-family: "JetBrains Mono Medium";
+    -fx-font-size: 16px;
+}
+
+/* Label do contentText */
+.dialog-pane .content.label {
+    -fx-text-fill: #CFCFCF;
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 13px;
+}
+
+/* Caixa de texto */
+.dialog-pane .text-field {
+    -fx-background-color: #3C3C3C;
+    -fx-text-fill: #FFFFFF;
+    -fx-prompt-text-fill: #888888;
+    -fx-background-radius: 6;
+    -fx-padding: 6;
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 13px;
+    -fx-border-color: #555555;
+    -fx-border-radius: 6;
+}
+
+/* Botões OK / Cancel */
+.dialog-pane .button {
+    -fx-background-color: #3C6E71;
+    -fx-text-fill: #FFFFFF;
+    -fx-background-radius: 20;
+    -fx-font-family: "JetBrains Mono";
+    -fx-font-size: 13px;
+    -fx-padding: 6 14;
+    -fx-cursor: hand;
+}
+
+.dialog-pane .button:hover {
+    -fx-background-color: #4E9A9D;
+}
