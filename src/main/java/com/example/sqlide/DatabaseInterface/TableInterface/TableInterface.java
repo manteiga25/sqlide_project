@@ -3,14 +3,17 @@ package com.example.sqlide.DatabaseInterface.TableInterface;
 import com.example.sqlide.*;
 import com.example.sqlide.AdvancedSearch.AdvancedSearchController;
 import com.example.sqlide.Chart.ChartController;
+import com.example.sqlide.Container.LongField.LongField;
+import com.example.sqlide.DataScience.DataScienceController;
 import com.example.sqlide.DatabaseInterface.TableInterface.ColumnInterface.ColumnInterface;
 import com.example.sqlide.DatabaseInterface.DatabaseInterface;
 import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.Metadata.TableMetadata;
 import com.example.sqlide.View.ViewController;
 import com.example.sqlide.drivers.model.DataBase;
-import com.example.sqlide.DeleteColumn;
 import com.example.sqlide.misc.ClipBoard;
+import com.example.sqlide.misc.Dialog;
+import com.example.sqlide.misc.memoryInterface;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXTextField;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
@@ -36,16 +39,25 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.xlsx4j.sml.Col;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static com.example.sqlide.popupWindow.handleWindow.*;
 
-public class TableInterface {
+public class TableInterface implements memoryInterface {
+
+    private static enum StagesNamesEnum {
+        AdvancedWindow,
+        ChartWindow,
+        CreateWindow,
+        CreateRowWindow,
+        DataScience
+    }
 
     private final DataBase Database;
 
@@ -79,7 +91,7 @@ public class TableInterface {
 
     private Label pageLabel;
 
-    private JFXTextField pageField;
+    private LongField pageField;
 
     private JFXTextField codeField;
 
@@ -90,6 +102,12 @@ public class TableInterface {
     private String codeSQL = "";
 
     private Thread fetcherThread = null;
+
+    private Task<Void> fetch = null;
+
+    private final WeakHashMap<StagesNamesEnum, Stage> stagesOpened = new WeakHashMap<>();
+
+    private final Stack<StagesNamesEnum> stageName = new Stack<>();
 
     public TableMetadata getTableMetadata() {
         return TableMetadata;
@@ -178,13 +196,9 @@ public class TableInterface {
         });
         //Platform.runLater(this::createDatabaseTab);
         
-        Platform.runLater(()-> {
-            try {
-                createDatabaseTab();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        Platform.runLater(this::createDatabaseTab);
+        readColumns();
+        this.initializeMemory();
     }
 
     public void createRowId() {
@@ -193,7 +207,7 @@ public class TableInterface {
         }
     }
 
-    private void createDatabaseTab() throws SQLException {
+    private void createDatabaseTab() {
         Tab newTab = new Tab();
         newTab.textProperty().bind(TableMetadata.getNameProperty());
         newTab.idProperty().bind(TableMetadata.getNameProperty());
@@ -207,7 +221,7 @@ public class TableInterface {
         HBox ButtonsLine = new HBox(8);
         // searchBox.setStyle("-fx-border-color: black; -fx-border-radius: 50;");
 
-        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvDelButton(), createAdvButton(), createCleanButton(), createViewBox(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode(), createChartButton());
+        ButtonsLine.getChildren().addAll(createReloadButton(), createColumnButton(), createDeleteButton(), createAddButton(), createDelButton(), createAdvDelButton(), createAdvButton(), createCleanButton(), createViewBox(), createLabelPage(), createPageField(), createLabelCode(), createCodeField(), createButtonCode(), createChartButton(), createDtaScienceButton());
 
         ScrollPane buttonsScroll = new ScrollPane();
         buttonsScroll.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm());
@@ -330,7 +344,7 @@ public class TableInterface {
         return CleanAdvancedSearch;
     }
 
-    private ComboBox<ViewController.View> createViewBox() throws SQLException {
+    private ComboBox<ViewController.View> createViewBox() {
         ComboBox<ViewController.View> viewBox = new ComboBox<>();
         viewBox.setPromptText("select view...");
         viewBox.getItems().addAll(TableMetadata.getViews());
@@ -353,6 +367,16 @@ public class TableInterface {
         return Chart;
     }
 
+    private JFXButton createDtaScienceButton() {
+        JFXButton Chart = new JFXButton("Data Science");
+        Chart.setOnAction(_-> openDataScienceStage());
+        FontAwesomeIconView icon = new FontAwesomeIconView(FontAwesomeIcon.DASHBOARD);
+        icon.setSize("1.5em");
+        icon.setFill(Color.WHITE);
+        Chart.setGraphic(icon);
+        return Chart;
+    }
+
     private Label createLabelPage() {
         Label label = new Label("Page");
         label.setPadding(new Insets(5,0,0,0));
@@ -360,22 +384,18 @@ public class TableInterface {
         return label;
     }
 
-    private TextField createPageField() {
-        pageField = new JFXTextField();
-        pageField.setText("0");
+    private LongField createPageField() {
+        pageField = new LongField();
+        pageField.setNumber(0);
         pageField.setAlignment(Pos.CENTER);
         pageField.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/css/TextFieldStyle.css")).toExternalForm());
-       // pageField.setStyle("-fx-text-fill: white; -fx-background-color: #3c3c3c; -fx-border-color: black; -fx-border-radius: 5px; -fx-background-radius: 5px");
+      //  pageField.setStyle("-fx-text-fill: white; -fx-background-color: #3c3c3c; -fx-border-color: black; -fx-border-radius: 5px; -fx-background-radius: 5px");
         pageField.setPrefWidth(40);
-        pageField.setOnAction(event -> {
-            try {
-                final long num = Long.parseLong(pageField.getText());
+        pageField.setOnAction(_ -> {
+                final long num = pageField.getNumber();
                 if (num <= totalPages && num >= 0) {
                     PageNum.set(num);
                 }
-            } catch (NumberFormatException e) {
-                ShowError("Invalid value", "You need to insert a positive integer value to switch page.");
-            }
         });
 
         return pageField;
@@ -476,6 +496,7 @@ public class TableInterface {
                                     //  fetchData(codeSQL);
                                     if (fetcherThread != null && fetcherThread.isAlive()) {
                                         fetcherThread.interrupt();
+                                        fetch.cancel(true);
                                         try {
                                             fetcherThread.join();
                                         } catch (InterruptedException _) {
@@ -552,69 +573,86 @@ public class TableInterface {
     }
 
     private void loadAdvancedWin(final String command) {
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedSearchStage.fxml"));
-            //    VBox miniWindow = loader.load();
-            Parent root = loader.load();
+        final boolean exists = stageName.search(StagesNamesEnum.AdvancedWindow) != -1;
 
-            AdvancedSearchController secondaryController = loader.getController();
+        Stage subStage;
 
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Create Column");
-            subStage.setScene(new Scene(root));
-            secondaryController.setCode(command);
-            secondaryController.setTable(TableMetadata.getName());
-            secondaryController.setColumns(context.getColumnsNames());
-            secondaryController.setStage(subStage);
-            if (command.equals("DELETE")) {
-                secondaryController.setSelector(" ");
-                secondaryController.removeOrder();
-                secondaryController.removeLeft();
-            }
-          //  secondaryController.initWin(ColumnsNames, subStage, this);
-
-            subStage.showingProperty().addListener(_->{
-                if (secondaryController.isClosedByUser()) {
-                    if (command.equals("SELECT")) {
-                        if (secondaryController.getQuery().toUpperCase().contains("SELECT")) {
-                            codeField.setText(secondaryController.getQuery());
-                            AdvancedSearchButton.fire();
-                        } else {
-                            ShowInformation("Invalid query", "The query " + secondaryController.getQuery() + " is invalid.");
-                        }
-                    } else {
-                        if (secondaryController.getQuery().toUpperCase().contains("DELETE")) {
-                        deleteQuery(secondaryController.getQuery());
-                    } else {
-                        ShowInformation("Invalid query", "The query " + secondaryController.getQuery() + " is invalid.");
-                    }
-                    }
-                }
-            });
-
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
-
-            // Mostrar a subjanela
+        if (exists) {
+            stageName.remove(StagesNamesEnum.AdvancedWindow);
+            subStage = stagesOpened.get(StagesNamesEnum.AdvancedWindow);
             subStage.show();
-        } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file.", e.getMessage());
+            stageName.push(StagesNamesEnum.AdvancedWindow);
+        }  else {
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/AdvancedSearch/AdvancedSearchStage.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
+
+                AdvancedSearchController secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                subStage = new Stage();
+                subStage.setTitle("Create Column");
+                subStage.setScene(new Scene(root));
+                secondaryController.setCode(command);
+                secondaryController.setTable(TableMetadata.getName());
+                secondaryController.setColumns(context.getColumnsNames());
+                secondaryController.setStage(subStage);
+                if (command.equals("DELETE")) {
+                    secondaryController.setSelector(" ");
+                    secondaryController.removeOrder();
+                    secondaryController.removeLeft();
+                }
+                //  secondaryController.initWin(ColumnsNames, subStage, this);
+
+                subStage.showingProperty().addListener(_ -> {
+                    if (secondaryController.isClosedByUser()) {
+                        if (command.equals("SELECT")) {
+                            if (secondaryController.getQuery().toUpperCase().contains("SELECT")) {
+                                codeField.setText(secondaryController.getQuery());
+                                AdvancedSearchButton.fire();
+                            } else {
+                                ShowInformation("Invalid query", "The query " + secondaryController.getQuery() + " is invalid.");
+                            }
+                        } else {
+                            if (secondaryController.getQuery().toUpperCase().contains("DELETE")) {
+                                deleteQuery(secondaryController.getQuery());
+                            } else {
+                                ShowInformation("Invalid query", "The query " + secondaryController.getQuery() + " is invalid.");
+                            }
+                        }
+                    }
+                });
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                subStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    subStage.hide();
+                });
+
+                // Mostrar a subjanela
+                subStage.show();
+
+                stageName.push(StagesNamesEnum.AdvancedWindow);
+                stagesOpened.put(StagesNamesEnum.AdvancedWindow, subStage);
+            } catch (Exception e) {
+                ShowError("Read asset", "Error to load asset file.", e.getMessage());
+            }
         }
     }
 
     private void deleteQuery(final String query) {
-        final Thread delete = new Thread(()->{
+        Thread.ofVirtual().start(()->{
             try {
                 Database.executeCode(query);
                 prepareFetch();
             } catch (SQLException e) {
-                ShowError("Error to delete", "Error to delete items.\n" + e.getMessage());
+                ShowError("Error to delete", "Error to delete items.", e.getMessage());
             }
         });
-        delete.setDaemon(true);
-        delete.start();
     }
 
     private void removeItem() {
@@ -647,7 +685,9 @@ public class TableInterface {
         menuItem1.setOnAction(e->openRenameWin());
         MenuItem menuItem2 = new MenuItem("Delete Table");
         menuItem2.setOnAction(e->deleteDBTab());
-        contextMenu.getItems().addAll(menuItem1, menuItem2);
+        MenuItem dataScienceItem = new MenuItem("Data Science Stage");
+        dataScienceItem.setOnAction(e -> openDataScienceStage());
+        contextMenu.getItems().addAll(menuItem1, menuItem2, dataScienceItem);
 
         col.setContextMenu(contextMenu);
 
@@ -667,6 +707,7 @@ public class TableInterface {
     }
 
     private void openRenameWin() {
+
         try {
             // Carrega o arquivo FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/RenameTable.fxml"));
@@ -693,117 +734,196 @@ public class TableInterface {
     }
 
     public void loadChart(final String title, final String x, final String y, final ArrayList<HashMap<String, String>> labels) {
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Chart/ChartStage.fxml"));
-            //    VBox miniWindow = loader.load();
-            Parent root = loader.load();
+        final boolean exists = stageName.search(StagesNamesEnum.ChartWindow) != -1;
 
-            ChartController secondaryController = loader.getController();
-            secondaryController.setAttributes(TableMetadata.getName(), getColumnsMetadataName(), Database.Fetcher());
-            secondaryController.setTitle(title);
-            secondaryController.setNumber(y);
-            secondaryController.setAxis(x);
-            if (labels != null) secondaryController.setLabels(labels);
+        Stage subStage;
 
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Create Chart");
-            subStage.setScene(new Scene(root));
-
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
-
-            // Mostrar a subjanela
+        if (exists) {
+            stageName.remove(StagesNamesEnum.ChartWindow);
+            subStage = stagesOpened.get(StagesNamesEnum.ChartWindow);
             subStage.show();
+            stageName.push(StagesNamesEnum.ChartWindow);
+        }  else {
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/Chart/ChartStage.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
 
-        } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file", e.getMessage());
+                ChartController secondaryController = loader.getController();
+                secondaryController.setAttributes(TableMetadata.getName(), getColumnsMetadataName(), Database.Fetcher());
+                secondaryController.setTitle(title);
+                secondaryController.setNumber(y);
+                secondaryController.setAxis(x);
+                if (labels != null) secondaryController.setLabels(labels);
+
+                // Criar um novo Stage para a subjanela
+                subStage = new Stage();
+                subStage.setTitle("Create Chart");
+                subStage.setScene(new Scene(root));
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.WINDOW_MODAL);
+
+                subStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    subStage.hide();
+                });
+
+                // Mostrar a subjanela
+                subStage.show();
+
+                stagesOpened.put(StagesNamesEnum.ChartWindow, subStage);
+                stageName.push(StagesNamesEnum.ChartWindow);
+
+            } catch (Exception e) {
+                ShowError("Read asset", "Error to load asset file", e.getMessage());
+            }
+        }
+    }
+
+    private void openDataScienceStage() {
+        final boolean exists = stageName.search(StagesNamesEnum.DataScience) != -1;
+
+        Stage stage;
+
+        if (exists) {
+            stageName.remove(StagesNamesEnum.DataScience);
+            stage = stagesOpened.get(StagesNamesEnum.DataScience);
+            stage.show();
+            stageName.push(StagesNamesEnum.DataScience);
+        }  else {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/DataScience/DataScienceStage.fxml"));
+                Parent root = loader.load();
+
+                DataScienceController controller = loader.getController();
+                controller.setDatabase(Database.Updater(), Database.Fetcher());
+                controller.setTaskInterface(context.getTaskInterface());
+                controller.setMetadata(TableMetadata.getName(), TableMetadata.getColumnMetadata());
+                stage = new Stage();
+                stage.setTitle("Data Science Stage - " + TableMetadata.getName());
+                stage.setScene(new Scene(root));
+
+                // controller.initializeData(Database, this, stage);
+
+                stage.initModality(Modality.WINDOW_MODAL);
+                stage.show();
+
+                stagesOpened.put(StagesNamesEnum.DataScience, stage);
+                stageName.push(StagesNamesEnum.DataScience);
+            } catch (IOException e) {
+                ShowError("Error loading Data Science Stage", "Could not load the FXML file.", e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
     private void createDBColInterface() {
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NewColumn.fxml"));
-            //    VBox miniWindow = loader.load();
-            Parent root = loader.load();
+        final boolean exists = stageName.search(StagesNamesEnum.CreateWindow) != -1;
 
-            NewColumn secondaryController = loader.getController();
+        Stage subStage;
 
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Create Column");
-            subStage.setScene(new Scene(root));
-            secondaryController.NewColumnWin(Database.getDatabaseName(), TableMetadata.getName(), this, subStage, context.getColumnPrimaryKey(TableMetadata.getName()), Database.types, Database.getList(), Database.getListChars(), Database.getIndexModes(), Database.getForeignModes(), Database.getSQLType());
-
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
-
-            // Mostrar a subjanela
+        if (exists) {
+            stageName.remove(StagesNamesEnum.CreateWindow);
+            subStage = stagesOpened.get(StagesNamesEnum.CreateWindow);
             subStage.show();
-        } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file.", e.getMessage());
+            stageName.push(StagesNamesEnum.CreateWindow);
+        }  else {
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NewColumn.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
+
+                NewColumn secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                subStage = new Stage();
+                subStage.setTitle("Create Column");
+                subStage.setScene(new Scene(root));
+                secondaryController.NewColumnWin(Database.getDatabaseName(), TableMetadata.getName(), this, subStage, context.getColumnPrimaryKey(TableMetadata.getName()), Database.types, Database.getDatabaseInfo());
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                subStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    subStage.hide();
+                });
+
+                // Mostrar a subjanela
+                subStage.show();
+
+                stageName.push(StagesNamesEnum.CreateWindow);
+                stagesOpened.put(StagesNamesEnum.CreateWindow, subStage);
+            } catch (Exception e) {
+                ShowError("Read asset", "Error to load asset file.", e.getMessage());
+            }
         }
     }
 
     @FXML
     public void NewRowInterface() {
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NewRow.fxml"));
-            //    VBox miniWindow = loader.load();
-            Parent root = loader.load();
+        final boolean exists = stageName.search(StagesNamesEnum.CreateRowWindow) != -1;
 
-            NewRow secondaryController = loader.getController();
+        Stage subStage;
 
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Insert Row");
-            subStage.setScene(new Scene(root));
-            //  secondaryController.NewRowWin(dbName, TableName, this, subStage, dataList.get(TableName).getFirst().type);
-            secondaryController.NewRowWin(Database.getDatabaseName(), TableMetadata.getName(), this, subStage, getColumnsMetadata(), Database.types);
-
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
-
-            // Mostrar a subjanela
+        if (exists) {
+            stageName.remove(StagesNamesEnum.CreateRowWindow);
+            subStage = stagesOpened.get(StagesNamesEnum.CreateRowWindow);
             subStage.show();
-        } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file.", e.getMessage());
+            stageName.push(StagesNamesEnum.CreateRowWindow);
+        }  else {
+            try {
+                // Carrega o arquivo FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/NewRow.fxml"));
+                //    VBox miniWindow = loader.load();
+                Parent root = loader.load();
+
+                NewRow secondaryController = loader.getController();
+
+                // Criar um novo Stage para a subjanela
+                subStage = new Stage();
+                subStage.setTitle("Insert Row");
+                subStage.setScene(new Scene(root));
+                //  secondaryController.NewRowWin(dbName, TableName, this, subStage, dataList.get(TableName).getFirst().type);
+                secondaryController.NewRowWin(Database.getDatabaseName(), TableMetadata.getName(), this, subStage, getColumnsMetadata(), Database.types);
+
+                // Opcional: definir a modalidade da subjanela
+                subStage.initModality(Modality.APPLICATION_MODAL);
+
+                subStage.setOnCloseRequest(event -> {
+                    event.consume();
+                    subStage.hide();
+                });
+
+                // Mostrar a subjanela
+                subStage.show();
+
+                stageName.push(StagesNamesEnum.CreateRowWindow);
+                stagesOpened.put(StagesNamesEnum.CreateRowWindow, subStage);
+            } catch (Exception e) {
+                ShowError("Read asset", "Error to load asset file.", e.getMessage());
+            }
         }
     }
 
     private void DeleteColumnInterface() {
-        try {
 
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/DeleteColumnInterface.fxml"));
-            Parent root = loader.load();
+        final String delete = Dialog.ChoiceDialogStage(ColumnsNames, "Delete column", "Choice a column to delete.", "Columns:");
 
-            DeleteColumn secondaryController = loader.getController();
+        deleteColumn(TableMetadata.getName(), delete, ColumnsNames.indexOf(delete));
 
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Remove Column");
-            subStage.setScene(new Scene(root));
-            secondaryController.DeleteColumnInnit(TableMetadata.getName(), ColumnsNames, subStage, this);
-
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
-
-            // Mostrar a subjanela
-            subStage.show();
-        } catch (Exception e) {
-            ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
-        }
     }
 
     public void deleteColumn(final String Table, final String column, final int id) {
         final Stage loading = LoadingStage("Deleting column", "This operation can be slower.");
         Thread.ofVirtual().start(()->{
-            if (getColumnsMetadata().get(column).index != null) {
+
+            if (!getColumnsMetadata().get(column).IsPrimaryKey && (getColumnsMetadata().get(column).index != null && !getColumnsMetadata().get(column).index.isEmpty())) {
                 try {
+                    System.out.println(getColumnsMetadata().get(column).index);
                     Database.removeIndex(getColumnsMetadata().get(column).index);
                 } catch (SQLException e) {
                     Platform.runLater(loading::close);
@@ -811,11 +931,13 @@ public class TableInterface {
                     return ;
                 }
             }
-            if (!Database.deleteColumn(column, Table)) {
+
+            if (!Database.deleteColumn(columnsInterfaceList.stream().map(ColumnInterface::getMetadata).collect(Collectors.toCollection(ArrayList::new)), column, Table)) {
                 Platform.runLater(loading::close);
                 ShowError("Error SQL", "Error to delete column " + column + " from Table " + Table, Database.GetException());
                 return ;
             }
+
             Platform.runLater(()->{
                 deleteColumnContainer(column, id);
                 loading.close();
@@ -851,7 +973,7 @@ public class TableInterface {
             }
 
             @Override
-            protected Void call() throws Exception {
+            protected Void call() throws SQLException {
                 if (!Database.createColumn(TableMetadata.getName(), ColName, meta, fill)) throw new SQLException(Database.GetException());
                 if (meta.IsPrimaryKey) for (DataForDB data : dataList) data.RemoveColumn(Database.getRowId());
                 TableMetadata.addColumn(meta);
@@ -862,7 +984,7 @@ public class TableInterface {
             @Override
             protected void failed() {
                 super.failed();
-                ShowError("Error SQL", "Error to create column " + ColName + " on Table " + TableMetadata.getName() + " on Database " + "dbName", Database.GetException());
+                ShowError("Error SQL", "Error to create column " + ColName + " on Table " + TableMetadata.getName() + " on Database " + "dbName", getException().getMessage());
             }
 
             @Override
@@ -914,7 +1036,7 @@ public class TableInterface {
 
     private void prepareFetch() {
 
-        Task<Void> fetch = null;
+
 
         if (!isFetching.get()) {
 
@@ -925,6 +1047,13 @@ public class TableInterface {
 
             fetch = new Task<>() {
                 ArrayList<DataForDB> data;
+
+                @Override
+                protected void scheduled() {
+                    super.scheduled();
+                    updateMessage("Fetching data.");
+                    updateTitle("Fetching Data");
+                }
 
                 @Override
                 protected Void call() throws Exception {
@@ -969,7 +1098,7 @@ public class TableInterface {
          //   fetch.cancel(true);
         } else {
             fetch.cancel(true);
-           // fetcherThread.interrupt();
+            fetcherThread.interrupt();
         }
     }
 
@@ -1010,7 +1139,7 @@ public class TableInterface {
                 // }
                 System.out.println("Simulating: Change type for " + currentColumnNameInDB + " to " + newMetadata.Type);
                 String buildType = newMetadata.Type;
-                if (Arrays.stream(Database.getListChars())
+                if (Arrays.stream(Database.getDatabaseInfo().getListChars())
                         .anyMatch(s -> s.equals(newMetadata.Type))) {
                     buildType = newMetadata.Type + "(" + newMetadata.size  + ")";
                 }
@@ -1279,6 +1408,7 @@ public class TableInterface {
             codeSQL = "";
             codeField.setText("SELECT * FROM " + TableMetadata.getName() + ";");
             fetcherThread.interrupt();
+            fetch.cancel(true);
             Thread resetThread = new Thread(() -> {
                 isFetching.set(false);
                 prepareFetch();
@@ -1337,4 +1467,19 @@ public class TableInterface {
         dataList.clear();
     }
 
+    @Override
+    public void onLowMemory() {
+        final StagesNamesEnum stageId = stageName.pop();
+        if (stageId != null) {
+            final Stage stage = stagesOpened.get(stageId);
+            if (!stage.isShowing()) {
+                stage.close();
+                stagesOpened.remove(stageId);
+            }
+            else {
+                stageName.push(stageId);
+                stagesOpened.put(stageId, stage);
+            }
+        }
+    }
 }

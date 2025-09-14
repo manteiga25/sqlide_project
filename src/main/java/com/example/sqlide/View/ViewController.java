@@ -5,6 +5,7 @@ import com.example.sqlide.Container.Editor.Words.SQLWords;
 import com.example.sqlide.Notification.NotificationInterface;
 import com.example.sqlide.Task.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
+import com.example.sqlide.misc.Dialog;
 import com.jfoenix.controls.JFXTextField;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -198,26 +199,13 @@ public class ViewController implements NotificationInterface {
 
     @FXML
     private void add() {
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("AddView.fxml"));
-            //    VBox miniWindow = loader.load();
-            Pane root = loader.load();
+        String view = Dialog.TextDialog("View interface", "Add view", "Name of the view:");
 
-            Stage subStage = new Stage();
-            subStage.setTitle("Add view");
-            subStage.setResizable(false);
-            subStage.initModality(Modality.APPLICATION_MODAL);
-            subStage.setScene(new Scene(root));
+        if (view == null) return;
 
-            AddView controller = loader.getController();
-            controller.setStage(subStage);
-            controller.setList(ViewList);
-
-            subStage.show();
-        } catch (Exception e) {
-            ShowError("Error to load", "Error tom load stage.", e.getMessage());
-        }
+        if (view.isEmpty() || ViewList.stream().noneMatch(view_name -> view_name.Name.get().equals(view))) {
+            ViewList.add(new ViewController.View(view, "", ""));
+        } else ShowInformation("Null", "You need to insert a valid name.");
     }
 
     @FXML

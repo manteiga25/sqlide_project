@@ -9,6 +9,7 @@ import com.example.sqlide.Notification.NotificationInterface;
 import com.example.sqlide.Task.TaskInterface;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.exporter.JSON.JSONController;
+import com.example.sqlide.misc.Dialog;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -43,8 +44,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.example.sqlide.popupWindow.handleWindow.LoadingStage;
-import static com.example.sqlide.popupWindow.handleWindow.ShowError;
+import static com.example.sqlide.popupWindow.handleWindow.*;
 import static java.nio.file.Files.exists;
 
 public class TriggerController implements loadingInterface, NotificationInterface {
@@ -290,31 +290,12 @@ public class TriggerController implements loadingInterface, NotificationInterfac
 
     @FXML
     private void addTrigger() {
-        try {
-            // Carrega o arquivo FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("addTrigger.fxml"));
-            Parent root = loader.load();
+        String trigger = Dialog.TextDialog("Trigger interface", "Add trigger", "Name of the trigger:");
 
-            AddTrigger secondaryController = loader.getController();
+        if (trigger == null) return;
 
-            // Criar um novo Stage para a subjanela
-            Stage subStage = new Stage();
-            subStage.setTitle("Add Trigger");
-            subStage.setScene(new Scene(root));
-            secondaryController.setNames(triggersFound);
-            secondaryController.setStage(subStage);
-
-            // Opcional: definir a modalidade da subjanela
-            subStage.initModality(Modality.APPLICATION_MODAL);
-
-            // Mostrar a subjanela
-            subStage.showAndWait();
-
-            triggersSelected.getItems().clear();
-            triggersSelected.getItems().addAll(triggersFound.keySet());
-
-        } catch (Exception e) {
-            ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
-        }
+        if (!trigger.isEmpty() || !triggersFound.containsKey(trigger)) {
+            triggersFound.put(trigger, "");
+        } else ShowInformation("Null", "You need to insert a valid name.");
     }
 }
