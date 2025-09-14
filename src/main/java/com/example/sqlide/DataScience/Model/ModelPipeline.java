@@ -9,7 +9,10 @@ import smile.classification.KNN;
 import smile.classification.LogisticRegression;
 import smile.data.*;
 import smile.data.formula.Formula;
+import smile.data.type.StructField;
+import smile.data.type.StructType;
 import smile.data.vector.DoubleVector;
+import smile.data.vector.FloatVector;
 import smile.data.vector.IntVector;
 import smile.data.vector.ValueVector;
 import smile.regression.*;
@@ -85,22 +88,18 @@ public class ModelPipeline {
     }
 
     private DataFrame processData(ArrayList<HashMap<String, String>> raw_data) {
-        ArrayList<Double> y_ = raw_data.parallelStream().map(m -> m.get(y))
-                .map(Double::parseDouble)                // converte para Double
-                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        double[] y_ = raw_data.parallelStream().map(m -> m.get(y))
+                .mapToDouble(Double::parseDouble)
+                .toArray();
 
-        DataFrame data = new DataFrame(new DoubleVector(y, y_.stream()
-                .mapToDouble(Double::doubleValue) // converte Double -> double
-                .toArray()));
+        DataFrame data = new DataFrame(new DoubleVector(y, y_));
 
         schema.parallelStream().forEach(list_x->{
-            ArrayList<Double> x = raw_data.parallelStream().map(m -> m.get(list_x))
-                    .map(Double::parseDouble)                // converte para Double
-                    .collect(Collectors.toCollection(ArrayList::new));
+            double[] x = raw_data.stream().map(m -> m.get(list_x))
+                    .mapToDouble(Double::parseDouble)                // converte para Double
+                    .toArray();
             synchronized (data) {
-                data.add(new DoubleVector(list_x, x.stream()
-                        .mapToDouble(Double::doubleValue) // converte Double -> double
-                        .toArray()));
+                data.add(new DoubleVector(list_x, x));
             }
         });
 

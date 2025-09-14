@@ -263,8 +263,8 @@
             </Tab>
 
             <Tab text="Distribuição">
-                <SplitPane dividerPositions="0.5" style="-fx-background-color: transparent;" stylesheets="@../../../../css/SplitHorizontal.css">
-                    <VBox spacing="5.0">
+                <SplitPane dividerPositions="0.5" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="-fx-background-color: transparent;" stylesheets="@../../../../css/SplitHorizontal.css">
+                    <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
                   <HBox alignment="CENTER_LEFT" spacing="5.0">
                      <children>
                               <Label text="Target:" />
@@ -277,7 +277,7 @@
                         <Insets right="5.0" />
                      </VBox.margin></TextArea>
                     </VBox>
-                    <VBox spacing="5.0">
+                    <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
                   <HBox alignment="CENTER_LEFT" spacing="5.0">
                      <children>
                         <Label text="Histogram type:" />
@@ -383,7 +383,7 @@
                               </VBox>
                            </content></Tab>
                         <Tab text="Evaluate Graph">
-                            <StackPane >
+                            <StackPane>
                                 <ScatterChart fx:id="graphModelEvaluation" stylesheets="@../../../../css/ChartStyle.css" title="Model evaluation" verticalGridLinesVisible="false" VBox.vgrow="ALWAYS">
                                     <xAxis>
                                         <CategoryAxis label="Predicted" side="BOTTOM" />

@@ -644,8 +644,9 @@ public class DataScienceController {
                 super.failed();
                 getException().printStackTrace();
                 Throwable exception = this.getException();
-                if (exception instanceof OutOfMemoryError) ShowError("Error", "Error to train model.", exception.getMessage());
-                else ShowError("Error", "Device has no memory to train model. Try to set a minor batch or limit value.");
+                if (exception instanceof OutOfMemoryError) ShowError("Error", "Device has no memory to train model. Try to set a minor batch or limit value.");
+                else if (exception instanceof NumberFormatException) ShowError("Error type", "You need to use numeric values for train model.", exception.getMessage());
+                else ShowError("Error", "Error to train model.", exception.getMessage());
             }
 
             @Override

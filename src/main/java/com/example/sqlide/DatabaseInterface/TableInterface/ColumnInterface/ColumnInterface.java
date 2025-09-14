@@ -26,6 +26,7 @@ import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 import static com.example.sqlide.popupWindow.handleWindow.ShowError;
 

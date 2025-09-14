@@ -175,14 +175,14 @@ public class CsvImporter implements FileImporter {
             // Order of finalTargetDbColumnNames should ideally match sourceCsvHeaders for clarity,
             // or a specific order defined by columnMapping's iteration (LinkedHashMap if order matters).
             // For safety, let's iterate sourceCsvHeaders to maintain their order for columns that are mapped.
-            for (String srcHeader : sourceCsvHeaders) {
-                if (columnMapping.containsKey(srcHeader)) {
-                    String targetHeader = columnMapping.get(srcHeader);
+            for (String srcHeader : columnMapping.keySet()) {
+              //  if (columnMapping.containsKey(srcHeader)) {
+                    String targetHeader = srcHeader;
                     if (targetHeader != null && !targetHeader.trim().isEmpty() && !targetHeader.equalsIgnoreCase("(Skip Import)")) { // Handle skip
                         effectiveColumnMapping.put(srcHeader, targetHeader);
                         finalTargetDbColumnNames.add(targetHeader);
                     }
-                }
+                //}
             }
         }
 
@@ -210,7 +210,7 @@ public class CsvImporter implements FileImporter {
 
 
         long recordsProcessedCount = 0;
-        ArrayList<HashMap<String, String>> batchData = new ArrayList<>();
+        ArrayList<LinkedHashMap<String, String>> batchData = new ArrayList<>();
 
         try (Reader dataReader = new FileReader(file);
              CSVParser dataParser = new CSVParser(dataReader, getCsvFormat(true))) { // true to skip header for data reading
@@ -222,7 +222,7 @@ public class CsvImporter implements FileImporter {
                     continue;
                 }
 
-                HashMap<String, String> rowDataForDb = new LinkedHashMap<>(); // Use LinkedHashMap to preserve order if inserter cares
+                LinkedHashMap<String, String> rowDataForDb = new LinkedHashMap<>(); // Use LinkedHashMap to preserve order if inserter cares
                 boolean validRow = true;
                 for (String targetDbColName : finalTargetDbColumnNames) {
                     String sourceCsvHeader = null;
