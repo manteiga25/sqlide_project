@@ -19,11 +19,14 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.concurrent.BlockingQueue;
@@ -36,7 +39,10 @@ public class AssistantController implements AssistantSpeatchInterface {
     @FXML
     private Hyperlink BackButton;
     @FXML
-    private Button FuncButton, SearchButton, DeepButton;
+    private Button FuncButton, SearchButton, DeepButton, AttachImageButton;
+
+    @FXML
+    private Label imageStatusLabel;
 
     @FXML
     private VBox MessagesBox;
@@ -54,8 +60,10 @@ public class AssistantController implements AssistantSpeatchInterface {
 
     private final BooleanProperty search = new SimpleBooleanProperty(false), function = new SimpleBooleanProperty(false), deep = new SimpleBooleanProperty(false);
 
-    final BlockingQueue<String> sender = new LinkedBlockingQueue<>(), reciver = new LinkedBlockingQueue<>();
+    final BlockingQueue<JSONObject> sender = new LinkedBlockingQueue<>(), reciver = new LinkedBlockingQueue<>();
     private File file;
+
+    private String base64Image = null;
 
     Process process;
 
@@ -130,19 +138,25 @@ public class AssistantController implements AssistantSpeatchInterface {
         readerT.start();
     }
 
+    private JSONObject getAiSettings() {
+        File settingsFile = new File("ai_settings.json");
+        if (settingsFile.exists()) {
+            try {
+                return new JSONObject(Files.readString(settingsFile.toPath()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return new JSONObject();
+    }
+
     private void initializeOutput(final Process process) {
         final Thread writerT = new Thread(() -> {
             try (BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(process.getOutputStream()))) {
-                String linha;
-                while (!(linha = sender.take()).isEmpty()) {
-                    JSONObject jsonSender = new JSONObject();
-                    jsonSender.put("content", linha);
-                    jsonSender.put("type", true);
-                    jsonSender.put("search", search.get());
-                    jsonSender.put("deep", deep.get());
-                    jsonSender.put("command", function.get());
-                    writer.write(jsonSender.toString());
+                    new OutputStreamWriter(process.getOutputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                JSONObject payload;
+                while ((payload = sender.take()) != null) {
+                    writer.write(payload.toString());
                     writer.newLine();
                     writer.flush();
                 }
@@ -206,152 +220,95 @@ public class AssistantController implements AssistantSpeatchInterface {
 
                 System.out.println("função " + function);
 
+                JSONObject response = new JSONObject();
+                response.put("type", "response");
                 switch (function) {
                     case "type":
-                        System.out.println(AssistantFunctionsInterface.getSQLType().name());
-                        sender.put(AssistantFunctionsInterface.getSQLType().name());
+                        response.put("content", AssistantFunctionsInterface.getSQLType().name());
                         break;
                     case "Show_Data":
-                        final boolean status = AssistantFunctionsInterface.ShowData(parameters.getString(0), parameters.getString(1));
-                        sender.put(String.valueOf(status));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.ShowData(parameters.getString(0), parameters.getString(1))));
                         break;
-
                     case "Request_Data":
-                        final ArrayList<HashMap<String, String>> data = AssistantFunctionsInterface.getData(parameters.getString(0), parameters.getString(1));
-                        sender.put(data.toString());
+                        response.put("content", AssistantFunctionsInterface.getData(parameters.getString(0), parameters.getString(1)).toString());
                         break;
-
                     case "GetTableMeta":
-                        final HashMap<String, ArrayList<HashMap<String, String>>> meta = AssistantFunctionsInterface.getTableMetadata();
-                        sender.put(meta.toString());
+                        response.put("content", AssistantFunctionsInterface.getTableMetadata().toString());
                         break;
-
                     case "CreateTable":
-
                         final ArrayList<HashMap<String, String>> Table = new ArrayList<>();
                         final JSONArray jsonArray = parameters.getJSONArray(1);
-
                         for (int i = 0; i < jsonArray.length(); i++) {
                             final JSONObject obj = jsonArray.getJSONObject(i);
                             final HashMap<String, String> map = new HashMap<>();
-
-                            for (String key : obj.keySet()) {
-                                map.put(key, obj.getString(key));
-                            }
-
+                            for (String key : obj.keySet()) map.put(key, obj.getString(key));
                             Table.add(map);
                         }
-
-                        sender.put(Boolean.toString(AssistantFunctionsInterface.createTable(parameters.getString(0), Table, parameters.getString(2))));
+                        response.put("content", Boolean.toString(AssistantFunctionsInterface.createTable(parameters.getString(0), Table, parameters.getString(2))));
                         break;
-
                     case "CreateView":
-                        System.out.println("criando view");
-                        System.out.println(parameters.getString(0) + " " + parameters.getString(1) + " " + parameters.getString(2));
-                        sender.put(String.valueOf(AssistantFunctionsInterface.createView(parameters.getString(0), parameters.getString(1), parameters.getString(2))));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.createView(parameters.getString(0), parameters.getString(1), parameters.getString(2))));
                         break;
-
                     case "table":
-                        sender.put(AssistantFunctionsInterface.currentTable());
+                        response.put("content", AssistantFunctionsInterface.currentTable());
                         break;
-
                     case "InsertData":
                         final ArrayList<LinkedHashMap<String, String>> Rows = new ArrayList<>();
                         final JSONArray Data = parameters.getJSONArray(1);
                         for (int i = 0; i < Data.length(); i++) {
                             final JSONObject obj = Data.getJSONObject(i);
                             final LinkedHashMap<String, String> map = new LinkedHashMap<>();
-
-                            for (String key : obj.keySet()) {
-                                map.put(key, obj.getString(key));
-                            }
-
+                            for (String key : obj.keySet()) map.put(key, obj.getString(key));
                             Rows.add(map);
                         }
-
-                        sender.put(AssistantFunctionsInterface.insertData(parameters.getString(0), Rows));
+                        response.put("content", AssistantFunctionsInterface.insertData(parameters.getString(0), Rows));
                         break;
-
                     case "createReport":
-                        sender.put(String.valueOf(AssistantFunctionsInterface.createReport(parameters.getString(0), parameters.getString(1))));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.createReport(parameters.getString(0), parameters.getString(1))));
                         break;
-
                     case "sendEmail":
-                        sender.put(String.valueOf(AssistantFunctionsInterface.sendEmail(parameters.getString(0))));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.sendEmail(parameters.getString(0))));
                         break;
-
                     case "CreateGraphic":
                         final ArrayList<HashMap<String, String>> chart = new ArrayList<>();
                         final JSONArray ChartData = parameters.getJSONArray(4);
                         for (int i = 0; i < ChartData.length(); i++) {
                             final JSONObject obj = ChartData.getJSONObject(i);
                             final HashMap<String, String> map = new HashMap<>();
-
-                            for (String key : obj.keySet()) {
-                                map.put(key, obj.getString(key));
-                            }
-
+                            for (String key : obj.keySet()) map.put(key, obj.getString(key));
                             chart.add(map);
                         }
-                        System.out.println(chart);
-                        sender.put(String.valueOf(AssistantFunctionsInterface.createGraphic(parameters.getString(0), parameters.getString(1), parameters.getString(2), parameters.getString(3), chart)));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.createGraphic(parameters.getString(0), parameters.getString(1), parameters.getString(2), parameters.getString(3), chart)));
                         break;
-
                     case "CreateTrigger":
                         final HashMap<String, String> trigger = new HashMap<>();
-                        final JSONObject obj = parameters.getJSONObject(0);
-
-                        for (String key : obj.keySet()) {
-                            System.out.println(key);
-                            trigger.put(key, obj.getString(key));
-                        }
-
-                     //   trigger.put(map);
-                        sender.put(String.valueOf(AssistantFunctionsInterface.createTriggers(trigger)));
+                        final JSONObject objTrigger = parameters.getJSONObject(0);
+                        for (String key : objTrigger.keySet()) trigger.put(key, objTrigger.getString(key));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.createTriggers(trigger)));
                         break;
-
                     case "CreateFunction":
                         final HashMap<String, String> functions = new HashMap<>();
                         final JSONObject functionObject = parameters.getJSONObject(0);
-
-                        for (String key : functionObject.keySet()) {
-                            System.out.println(key);
-                            functions.put(key, functionObject.getString(key));
-                        }
-
-                        //   trigger.put(map);
-                        sender.put(String.valueOf(AssistantFunctionsInterface.createFunction(functions)));
+                        for (String key : functionObject.keySet()) functions.put(key, functionObject.getString(key));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.createFunction(functions)));
                         break;
-
                     case "CreateProcedure":
                         final HashMap<String, String> procedures = new HashMap<>();
                         final JSONObject procedure = parameters.getJSONObject(0);
-
-                        for (String key : procedure.keySet()) {
-                            System.out.println(key);
-                            procedures.put(key, procedure.getString(key));
-                        }
-
-                        //   trigger.put(map);
-                        sender.put(String.valueOf(AssistantFunctionsInterface.createProcedure(procedures)));
+                        for (String key : procedure.keySet()) procedures.put(key, procedure.getString(key));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.createProcedure(procedures)));
                         break;
-
                     case "CreateEvent":
                         final HashMap<String, String> event = new HashMap<>();
                         final JSONObject child = parameters.getJSONObject(0);
-
-                        for (String key : child.keySet()) {
-                            System.out.println(key);
-                            event.put(key, child.getString(key));
-                        }
-
-                        //   trigger.put(map);
-                        sender.put(String.valueOf(AssistantFunctionsInterface.createEvents(event)));
+                        for (String key : child.keySet()) event.put(key, child.getString(key));
+                        response.put("content", String.valueOf(AssistantFunctionsInterface.createEvents(event)));
                         break;
-
                     default:
                         System.out.println("Função não reconhecida: " + function);
+                        response.put("content", "Error: Function not recognized");
                 }
+                sender.put(response);
             }
 
         }
@@ -400,15 +357,18 @@ public class AssistantController implements AssistantSpeatchInterface {
 
                 @Override
                 protected Void call() throws Exception {
-                    System.out.println(parseMessage(message));
-                    // final String generated = removeDeepSeekThink(TakToAi(parseMessage(message) + " (use '```' for programing code)"));
-                    //  final String generated = removeDeepSeekThink(TakToAi(parseMessage(message)));
-                    // System.out.println(generated);
-                    //   styleAiMessage("Assistant:" + generated, box);
-                    sender.put(message);
+                    JSONObject payload = new JSONObject();
+                    payload.put("type", "message");
+                    payload.put("content", message);
+                    payload.put("image", base64Image);
+                    payload.put("search", search.get());
+                    payload.put("deep", deep.get());
+                    payload.put("command", function.get());
+                    payload.put("settings", getAiSettings());
+
+                    sender.put(payload);
 
                     Assistant_message = new JSONObject(reciver.take());
-                    System.out.println("as " + Assistant_message);
                     if (!Assistant_message.getBoolean("status")) throw new Exception(Assistant_message.getString("message"));
                     return null;
                 }
@@ -434,6 +394,8 @@ public class AssistantController implements AssistantSpeatchInterface {
                         MessagesBox.getChildren().removeAll(progress, actionLabel);
                         BackButton.setDisable(false);
                         SendButton.setDisable(false);
+                        base64Image = null;
+                        imageStatusLabel.setText("");
                     });
                     try {
                         WriteUserToJson(message);
@@ -665,6 +627,24 @@ public class AssistantController implements AssistantSpeatchInterface {
     @FXML
     private void back() {
         assistantMainController.backPort();
+    }
+
+    @FXML
+    private void handleAttachImage() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.webp")
+        );
+        File selectedFile = fileChooser.showOpenDialog(BackButton.getScene().getWindow());
+        if (selectedFile != null) {
+            try {
+                byte[] fileContent = Files.readAllBytes(selectedFile.toPath());
+                base64Image = Base64.getEncoder().encodeToString(fileContent);
+                imageStatusLabel.setText("Image: " + selectedFile.getName());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
    /* @FXML
