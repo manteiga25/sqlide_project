@@ -27,8 +27,9 @@ public class DatabaseConf {
         TreeItem<String> conf = new TreeItem<>("Configuration");
 
         TreeItem<String> mem = new TreeItem<>("Memory");
+        TreeItem<String> ai = new TreeItem<>("AI Assistant");
 
-        conf.getChildren().add(mem);
+        conf.getChildren().addAll(mem, ai);
 
         TreeViewContainer.setRoot(conf);
 
@@ -40,6 +41,12 @@ public class DatabaseConf {
                         if (!currentMenu.equals("Memory")) {
                             initializeMem();
                             currentMenu = "Memory";
+                        }
+                        break;
+                    case "AI Assistant":
+                        if (!currentMenu.equals("AI Assistant")) {
+                            initializeAi();
+                            currentMenu = "AI Assistant";
                         }
                         break;
                     default:
@@ -62,6 +69,17 @@ public class DatabaseConf {
             MenuContainer.getChildren().clear();
             MenuContainer.getChildren().add(root);
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void initializeAi() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("AiAssistantConf.fxml"));
+            Node root = loader.load();
+            MenuContainer.getChildren().clear();
+            MenuContainer.getChildren().add(root);
         } catch (Exception e) {
             e.printStackTrace();
         }

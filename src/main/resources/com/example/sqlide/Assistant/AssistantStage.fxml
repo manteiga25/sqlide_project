@@ -70,6 +70,19 @@
                                 <Tooltip text="Assistant uses all brain to generate response" />
                             </tooltip>
                         </Button>
+                        <Button fx:id="AttachImageButton" mnemonicParsing="false" onAction="#handleAttachImage" text="Image">
+                            <tooltip>
+                                <Tooltip text="Attach an image to the message" />
+                            </tooltip>
+                            <graphic>
+                                <FontAwesomeIconView glyphName="IMAGE" size="14.0" />
+                            </graphic>
+                        </Button>
+                        <Label fx:id="imageStatusLabel" textFill="#3574F0">
+                            <font>
+                                <Font name="JetBrains Mono Medium" size="10.0" />
+                            </font>
+                        </Label>
                         <Region HBox.hgrow="ALWAYS" />
                         <HBox>
                            <children>
