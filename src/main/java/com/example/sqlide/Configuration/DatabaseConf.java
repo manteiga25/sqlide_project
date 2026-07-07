@@ -27,8 +27,9 @@ public class DatabaseConf {
         TreeItem<String> conf = new TreeItem<>("Configuration");
 
         TreeItem<String> mem = new TreeItem<>("Memory");
+        TreeItem<String> ai = new TreeItem<>("AI Assistant");
 
-        conf.getChildren().add(mem);
+        conf.getChildren().addAll(mem, ai);
 
         TreeViewContainer.setRoot(conf);
 
@@ -42,12 +43,29 @@ public class DatabaseConf {
                             currentMenu = "Memory";
                         }
                         break;
+                    case "AI Assistant":
+                        if (!currentMenu.equals("AI Assistant")) {
+                            initializeAi();
+                            currentMenu = "AI Assistant";
+                        }
+                        break;
                     default:
                         System.out.println("Nenhuma ação definida para: " + selected);
                 }
             }
         });
 
+    }
+
+    public void initializeAi() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("aiConf.fxml"));
+            Node root = loader.load();
+            MenuContainer.getChildren().clear();
+            MenuContainer.getChildren().add(root);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void initializeMem() {

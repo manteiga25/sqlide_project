@@ -80,6 +80,17 @@
                                   <tooltip>
                                       <Tooltip text="Talk to Assistant" />
                                   </tooltip></Button> -->
+                                  <JFXButton fx:id="AttachButton" mnemonicParsing="false" onAction="#attachImage" style="-fx-background-color: #3574F0; -fx-border-radius: 30px;" textAlignment="CENTER" textFill="WHITE">
+                                      <graphic>
+                                          <FontAwesomeIconView glyphName="PAPERCLIP" size="16.0" />
+                                      </graphic>
+                                      <tooltip>
+                                          <Tooltip text="Attach Image" />
+                                      </tooltip>
+                                      <HBox.margin>
+                                          <Insets right="5.0" />
+                                      </HBox.margin>
+                                  </JFXButton>
                                   <JFXButton fx:id="MicrophoneButton" mnemonicParsing="false" onAction="#record" style="-fx-background-color: #3574F0; -fx-border-radius: 30px;" textAlignment="CENTER" textFill="WHITE">
                                       <graphic>
                                           <FontAwesomeIconView glyphName="MICROPHONE" size="16.0" />

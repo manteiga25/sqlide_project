@@ -12,6 +12,14 @@ public interface DatabaseInserterInterface {
 
     public abstract boolean insertData(String Table, ArrayList<LinkedHashMap<String, String>> data);
 
+    default boolean insertData(String Table, List<HashMap<String, String>> data) {
+        ArrayList<LinkedHashMap<String, String>> linkedData = new ArrayList<>();
+        for (HashMap<String, String> map : data) {
+            linkedData.add(new LinkedHashMap<>(map));
+        }
+        return insertData(Table, linkedData);
+    }
+
     public abstract boolean removeData(String Table, HashMap<String, String> data, ArrayList<Long> rowid);
 
     public abstract boolean removeData(String Table, ArrayList<String> rowid) throws SQLException;
