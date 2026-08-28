@@ -182,7 +182,7 @@
       <dependency>
           <groupId>ch.qos.logback</groupId>
           <artifactId>logback-classic</artifactId>
-          <version>1.5.13</version> <!-- Verifique a versão mais recente -->
+          <version>1.5.18</version> <!-- Verifique a versão mais recente -->
       </dependency>
       <dependency>
           <groupId>org.fxmisc.richtext</groupId>
