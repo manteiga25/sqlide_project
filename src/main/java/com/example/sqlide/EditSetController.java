@@ -25,19 +25,20 @@ public class EditSetController {
     @FXML
     private void initialize() {
         SearchField.textProperty().addListener((_, _, text)->{
-            System.out.println(items.filtered(item->item.contains(text)));
             filter.clear();
             filter.addAll(items.filtered(item->item.contains(text)));
         });
         ListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         ListView.setCellFactory(TextFieldListCell.forListView());
-        ListView.setOnEditStart(_ -> {
-            ListView.setUserData(ListView.getSelectionModel().getSelectedItems().getFirst());
-        });
+        // O valor antigo vem da linha editada; antes vinha do primeiro item selecionado e,
+        // com vários selecionados, era substituído o valor errado.
         ListView.setOnEditCommit(e->{
-            final String old = ListView.getUserData().toString();
-            items.set(items.indexOf(old), e.getNewValue());
-            filter.set(filter.indexOf(old), e.getNewValue());
+            final String old = filter.get(e.getIndex());
+            final String value = e.getNewValue() == null ? "" : e.getNewValue().trim();
+            if (value.isEmpty() || (!value.equals(old) && items.contains(value))) return;
+            final int position = items.indexOf(old);
+            if (position >= 0) items.set(position, value);
+            filter.set(e.getIndex(), value);
         });
     }
 
@@ -49,7 +50,8 @@ public class EditSetController {
 
     @FXML
     private void deleteData() {
-        final ObservableList<String> seted = ListView.getSelectionModel().getSelectedItems();
+        // Cópia: a seleção muda enquanto se tiram os itens.
+        final List<String> seted = List.copyOf(ListView.getSelectionModel().getSelectedItems());
         items.removeAll(seted);
         ListView.getItems().removeAll(seted);
     }

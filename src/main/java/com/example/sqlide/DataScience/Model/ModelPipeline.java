@@ -1,751 +1,559 @@
 package com.example.sqlide.DataScience.Model;
 
 import com.example.sqlide.DataScience.LabelEncoder;
-import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.scene.chart.XYChart;
 import smile.classification.KNN;
 import smile.classification.LogisticRegression;
-import smile.data.*;
+import smile.data.DataFrame;
 import smile.data.formula.Formula;
-import smile.data.type.StructField;
-import smile.data.type.StructType;
 import smile.data.vector.DoubleVector;
-import smile.data.vector.FloatVector;
 import smile.data.vector.IntVector;
 import smile.data.vector.ValueVector;
-import smile.regression.*;
-import smile.util.Index;
+import smile.regression.GradientTreeBoost;
+import smile.regression.LinearModel;
+import smile.regression.OLS;
+import smile.regression.RandomForest;
+import smile.regression.RegressionTree;
 import smile.validation.ClassificationMetrics;
 import smile.validation.RegressionMetrics;
-import smile.validation.metric.Accuracy;
-import smile.validation.metric.MSE;
 
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
+/**
+ * Treino e avaliação dos modelos.
+ *
+ * <p>Reescrito de raiz. O que estava errado na versão anterior:</p>
+ *
+ * <ul>
+ *   <li>O DataFrame era montado com {@code data.add(vector)} dentro de um
+ *       {@code parallelStream}, mas em Smile 4 o {@code add} <em>devolve</em> um novo
+ *       DataFrame em vez de alterar o existente. O retorno era ignorado, por isso nenhuma
+ *       coluna de features chegava sequer ao modelo — treinava-se só com o alvo.</li>
+ *   <li>A fração de teste vinha de um campo que nunca era preenchido, ficando a zero: o
+ *       conjunto de teste era sempre vazio e as métricas mediam-se sobre nada.</li>
+ *   <li>Todos os modelos eram avaliados com {@code Accuracy}, incluindo os de regressão,
+ *       truncando previsões contínuas para inteiro.</li>
+ *   <li>Cada lote voltava a dividir treino/teste, portanto linhas de teste de um lote
+ *       apareciam no treino do seguinte.</li>
+ * </ul>
+ *
+ * <p>Agora o conjunto de teste é retirado uma vez, à cabeça, e fica fixo. Cada lote novo
+ * junta-se ao conjunto de treino e o modelo é reajustado sobre tudo o que já entrou,
+ * dando uma curva de aprendizagem real ao longo dos passos.</p>
+ */
 public class ModelPipeline {
 
-    private Object model = null;
-
-    private Models model_type = null;
+    /** Parâmetros de um treino. */
+    public record Request(String target,
+                          List<String> features,
+                          Models model,
+                          int testPercent,
+                          double learningRate,
+                          int neighbours,
+                          long seed) {
+    }
 
     private final LabelEncoder labelEncoder = new LabelEncoder();
 
-    private int size;
+    /** Transformações aplicadas às features antes de qualquer modelo as ver. */
+    private final Preprocessor preprocessor = new Preprocessor();
 
-    private double learningRate;
-    private int knnTree;
+    private Request request;
 
-    private List<String> schema;
-    private String y;
+    /** Linhas de treino acumuladas ao longo dos lotes. */
+    private final List<double[]> trainingFeatures = new ArrayList<>();
+    private final List<Double> trainingTargets = new ArrayList<>();
 
-    private final SimpleDoubleProperty accuracy = new SimpleDoubleProperty();
+    /** Conjunto de teste, retirado do primeiro lote e nunca mais tocado. */
+    private double[][] testFeatures;
+    private double[] testTargets;
 
-    public Models getModel_type() {
-        return model_type;
+    private Object model;
+    private TrainingResult lastResult;
+    private int step;
+
+    // ==== Ciclo de vida ====
+
+    /** Começa um treino novo, esquecendo lotes e codificações do anterior. */
+    public void start(Request request) {
+        this.request = request;
+        this.trainingFeatures.clear();
+        this.trainingTargets.clear();
+        this.testFeatures = null;
+        this.testTargets = null;
+        this.model = null;
+        this.lastResult = null;
+        this.step = 0;
+        this.labelEncoder.flush();
+        this.preprocessor.reset();
     }
 
-    public void setSchema(final Collection<String> schema, final String y) {
-        this.schema = (List<String>) schema;
-        this.y = y;
-    }
-
-    public String getY() {
-        return y;
-    }
-
-    public List<String> getSchema() {
-        return schema;
-    }
-
-    public ReadOnlyDoubleProperty getAccuracyProperty() {
-        return accuracy;
-    }
-
-    public LabelEncoder getLabelEncoder() {
-        return labelEncoder;
-    }
-
-    public void setTestSize(final int size) {
-        this.size = size;
-    }
-
-    public void setLearningRate(final double learningRate)  {
-        this.learningRate = learningRate;
+    public Request getRequest() {
+        return request;
     }
 
     public Object getModel() {
         return model;
     }
 
-    public void setModel(Models model) {
-        this.model_type = model;
-        accuracy.set(0);
+    public TrainingResult getLastResult() {
+        return lastResult;
     }
 
-    private DataFrame processData(ArrayList<HashMap<String, String>> raw_data) {
-        double[] y_ = raw_data.parallelStream().map(m -> m.get(y))
-                .mapToDouble(Double::parseDouble)
-                .toArray();
+    public LabelEncoder getLabelEncoder() {
+        return labelEncoder;
+    }
 
-        DataFrame data = new DataFrame(new DoubleVector(y, y_));
+    public Preprocessor getPreprocessor() {
+        return preprocessor;
+    }
 
-        schema.parallelStream().forEach(list_x->{
-            double[] x = raw_data.stream().map(m -> m.get(list_x))
-                    .mapToDouble(Double::parseDouble)                // converte para Double
-                    .toArray();
-            synchronized (data) {
-                data.add(new DoubleVector(list_x, x));
+    /** Define os passos de pré-processamento a aplicar no próximo treino. */
+    public void setPreprocessing(final List<Preprocessor.Step> steps) {
+        preprocessor.setSteps(steps);
+    }
+
+    public int getStep() {
+        return step;
+    }
+
+    public List<String> getFeatures() {
+        return request == null ? List.of() : request.features();
+    }
+
+    public String getTarget() {
+        return request == null ? null : request.target();
+    }
+
+    public Models getModelType() {
+        return request == null ? null : request.model();
+    }
+
+    // ==== Treino ====
+
+    /**
+     * Junta um lote de linhas e reajusta o modelo com tudo o que já foi visto.
+     *
+     * <p>No primeiro lote separa-se o conjunto de teste, com as linhas baralhadas por uma
+     * semente fixa para o resultado ser reprodutível.</p>
+     *
+     * @return o resultado deste passo, ou null se o lote não trouxe linhas utilizáveis
+     */
+    public TrainingResult feed(List<Map<String, String>> rows) {
+        if (request == null) throw new IllegalStateException("Call start() before feeding rows.");
+        if (rows == null || rows.isEmpty()) return lastResult;
+
+        boolean classification = request.model().isClassification();
+
+        // As categorias do alvo têm de ser conhecidas antes de codificar seja o que for.
+        if (classification) {
+            List<String> labels = new ArrayList<>(rows.size());
+            for (Map<String, String> row : rows) {
+                String value = row.get(request.target());
+                if (isPresent(value)) labels.add(value.trim());
             }
-        });
-
-        return data;
-    }
-
-    private static DataFrame splitDataTest(int size, DataFrame data) {
-        Index index = Index.range(size, data.size());
-        return data.get(index);
-    }
-
-    private static DataFrame splitDataTrain(int size, DataFrame data) {
-        Index index = Index.range(0, data.size() - size);
-        return data.get(index);
-    }
-
-    public void Train(final ArrayList<HashMap<String, String>> raw_data) {
-        switch (model_type) {
-            case LINEAR_REGRESSION -> model = TrainLinear(raw_data);
-            case RANDOM_FOREST_REGRESSION -> model = TrainForest(raw_data);
-            case GRADIENT_REGRESSION -> model = TrainGradientLinear(raw_data);
-            case TREE_REGRESSION -> model = TrainRegressionTree(raw_data);
-            case LOGISTIC_REGRESSION -> model = TrainLogistic(raw_data);
-            case LOGISTIC_BINOMIAL_REGRESSION -> model = TrainLogisticBinomial(raw_data);
-            case LOGISTIC_MULTIMODAL_REGRESSION -> model = TrainLogisticMultinomial(raw_data);
-            case RANDOM_FOREST_CLASSIFICATION -> model = TrainClassificationForest(raw_data);
-            case GRADIENT_CLASSIFICATION -> model = TrainGradientClassifier(raw_data);
-            case KNN -> model = TrainKNN(raw_data);
+            labelEncoder.updateEncoder(labels);
         }
-    }
 
-    private RandomForest TrainForest(final ArrayList<HashMap<String, String>> raw_data) {
+        List<double[]> batchFeatures = new ArrayList<>(rows.size());
+        List<Double> batchTargets = new ArrayList<>(rows.size());
 
-        final double test = (double)size / 100;
+        for (Map<String, String> row : rows) {
+            Double target = readTarget(row, classification);
+            if (target == null) continue;
 
-      /*  final String command = getCommand(table, y, cols, buffer);
-
-        ArrayList<HashMap<String, String>> raw_data = fetcher.fetchRawDataMap(String.format(command, 0)); */
-
-        DataFrame data = processData(raw_data), data_train, data_test;
-
-        int size = (int) (data.size() * test);
-
-        data_test = splitDataTest(size, data);
-        data_train = splitDataTrain(size, data);
-
-        Formula formula = Formula.lhs(y);
-
-        /*  while (data.column(y).size() == buffer) {
-            offset += buffer;
-
-            raw_data = fetcher.fetchRawDataMap(String.format(command, offset));
-
-            data = processData(raw_data, y, cols);
-
-            final int size_ = (int) (data.size() * test);
-
-            data_test = splitDataTest(size_, data);
-            data_train = splitDataTrain(size_, data);
-
-            ArrayList<SampleInstance<Tuple, Double>> instance = new ArrayList<>();
-
-            for (Row row : data_train) {
-                instance.add(new SampleInstance<>(row.getStruct(y), row.getDouble(1)));
+            double[] features = new double[request.features().size()];
+            boolean complete = true;
+            for (int f = 0; f < features.length; f++) {
+                Double value = parse(row.get(request.features().get(f)));
+                if (value == null) {
+                    complete = false;
+                    break;
+                }
+                features[f] = value;
             }
+            // Linhas incompletas não entram: nem o treino nem a avaliação sabem o que fazer com elas.
+            if (!complete) continue;
 
-            Dataset<Tuple, Double> dataset = new SimpleDataset<>(instance);
+            batchFeatures.add(features);
+            batchTargets.add(target);
+        }
 
-            model.update(dataset);
-        } */
+        if (batchFeatures.isEmpty()) return lastResult;
 
+        if (testFeatures == null) {
+            splitHoldout(batchFeatures, batchTargets);
 
-        // Define the formula: Target ~ Feature1 + Featur
-        //  LinearModel model =  RidgeRegression.fit(formula, data, 0);
+            // O pré-processamento ajusta-se uma só vez, no conjunto de treino inicial.
+            // Reajustá-lo a cada lote mudaria a escala a meio do treino, e o conjunto de
+            // teste deixaria de ser comparável com o que o modelo viu.
+            if (!preprocessor.isEmpty() && !trainingFeatures.isEmpty()) {
+                preprocessor.fit(trainingFeatures.toArray(new double[0][]));
+                replaceAll(trainingFeatures, preprocessor.transform(trainingFeatures.toArray(new double[0][])));
+                testFeatures = preprocessor.transform(testFeatures);
+            }
+        } else {
+            // Lotes seguintes passam pela transformação já ajustada.
+            final double[][] transformed = preprocessor.isFitted()
+                    ? preprocessor.transform(batchFeatures.toArray(new double[0][]))
+                    : batchFeatures.toArray(new double[0][]);
+            trainingFeatures.addAll(Arrays.asList(transformed));
+            trainingTargets.addAll(batchTargets);
+        }
 
-        RandomForest model = RandomForest.fit(formula, data_train);
+        if (trainingFeatures.isEmpty()) return lastResult;
 
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test.drop(y))).mapToInt(n -> ((Number) n).intValue()).toArray()));
-
-
-        return model;
+        step++;
+        model = fit();
+        lastResult = evaluate();
+        return lastResult;
     }
 
-    private KNN<double[]> TrainKNN(final ArrayList<HashMap<String, String>> raw_data) {
-        final double test = (double)size / 100;
-
-        DataFrame data = processData(raw_data), data_train, data_test;
-
-        int size = (int) (data.size() * test);
-
-        data_test = splitDataTest(size, data);
-        data_train = splitDataTrain(size, data);
-
-        ArrayList<String> y_ = raw_data.parallelStream().map(m -> m.get(y))
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        labelEncoder.updateEncoder(y_);
-        int[] y_encoded = labelEncoder.encode(List.of(data_train.column(y).toStringArray()));
-
-        KNN<double[]> model = KNN.fit(data_train.toArray(schema.toArray(new String[0])), y_encoded, knnTree);
-
-        accuracy.set(Accuracy.of(labelEncoder.encode( List.of(data_test.column(y).toStringArray())), Arrays.stream(model.predict(data_test.drop(y).toArray(schema.toArray(new String[0])))).map(n -> ((Number) n).intValue()).toArray()));
-
-        return model;
-
+    private static void replaceAll(final List<double[]> target, final double[][] values) {
+        target.clear();
+        target.addAll(Arrays.asList(values));
     }
 
-    private GradientTreeBoost TrainGradientLinear(final ArrayList<HashMap<String, String>> raw_data) {
-        final double test = (double)size / 100;
-
-        DataFrame data = processData(raw_data), data_train, data_test;
-
-        int size = (int) (data.size() * test);
-
-        data_test = splitDataTest(size, data);
-        data_train = splitDataTrain(size, data);
-
-        Formula formula = Formula.lhs(y);
-
-        GradientTreeBoost model = GradientTreeBoost.fit(formula, data_train);
-
-
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test.drop(y))).mapToInt(n -> ((Number) n).intValue()).toArray()));
-
-            System.out.println(MSE.of(data_test.column(y).toDoubleArray(), model.predict(data_test)));
-
-            //taModelResults.appendText("Model Linear Regression (Step: " + offset/buffer +"): " + model.RSS() + " " + model.adjustedRSquared() + " " + model.error() + " " + model.ftest() + " " + model.intercept() + " " + model.pvalue()+"\n");
-            //   System.out.println("Coefficients: " + Arrays.toString(model.coefficients()));
-
-        //System.out.println("Coefficients: " + Arrays.toString(model.coefficients()));
-
-        return model;
-    }
-
-    private RegressionTree TrainRegressionTree(ArrayList<HashMap<String, String>> raw_data) {
-        final double test = (double)size / 100;
-
-        DataFrame data = processData(raw_data), data_train, data_test;
-
-        int size = (int) (data.size() * test);
-
-        data_test = splitDataTest(size, data);
-        data_train = splitDataTrain(size, data);
-
-        Formula formula = Formula.lhs(y);
-
-        RegressionTree model = RegressionTree.fit(formula, data_train);
-
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test.drop(y))).mapToInt(n -> ((Number) n).intValue()).toArray()));
-
-        System.out.println(MSE.of(data_test.column(y).toDoubleArray(), model.predict(data_test)));
-
-        //taModelResults.appendText("Model Linear Regression (Step: " + offset/buffer +"): " + model.RSS() + " " + model.adjustedRSquared() + " " + model.error() + " " + model.ftest() + " " + model.intercept() + " " + model.pvalue()+"\n");
-        //   System.out.println("Coefficients: " + Arrays.toString(model.coefficients()));
-
-        //System.out.println("Coefficients: " + Arrays.toString(model.coefficients()));
-
-        return model;
-    }
-
-    private LinearModel TrainLinear(final ArrayList<HashMap<String, String>> raw_data) {
-
-        final double test = (double)size / 100;
-
-        DataFrame data = processData(raw_data), data_train, data_test;
-
-        int size = (int) (data.size() * test);
-
-        data_test = splitDataTest(size, data);
-        data_train = splitDataTrain(size, data);
-
-        Formula formula = Formula.lhs(y);
-
-        LinearModel model = OLS.fit(formula, data_train);
-
-        System.out.println(MSE.of(data_test.column(y).toDoubleArray(), model.predict(data_test)));
-
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test)).mapToInt(n -> ((Number) n).intValue()).toArray()));
-
-        System.out.println("Coefficients: " + Arrays.toString(model.coefficients()));
-
-        return model;
-
-    }
-
-    private LogisticRegression TrainLogistic(final ArrayList<HashMap<String, String>> raw_data) {
-        final int buffer = 1000000;
-        int offset = buffer;
-
-        final double test = (double)size / 100;
-
-        DataFrame data = processData(raw_data), trainData, testData;
-
-        int size = (int) (data.size() * test);
-
-        trainData = splitDataTrain(size, data);
-        testData = splitDataTest(size, data);
-
-
-
-        LogisticRegression model = LogisticRegression.fit(trainData.toArray(schema.toArray(new String[0])), Arrays.stream(trainData.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray());
-        model.setLearningRate(learningRate);
-
-        accuracy.set(Accuracy.of(Arrays.stream(testData.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), model.predict(testData.toArray(schema.toArray(new String[0])))));
-
-        //smile.classification.RandomForest m2 = smile.classification.RandomForest.fit(formula, data);
-
-
-        // Define the formula: Target ~ Feature1 + Featur
-        //  LinearModel model =  RidgeRegression.fit(formula, data, 0);
-
-
-        return model;
-    }
-
-    private LogisticRegression TrainLogisticBinomial(final ArrayList<HashMap<String, String>> raw_data) {
-        final int buffer = 1000000;
-        int offset = buffer;
-
-        final double test = (double)size / 100;
-
-        DataFrame data = processData(raw_data), trainData, testData;
-
-        int size = (int) (data.size() * test);
-
-        trainData = splitDataTrain(size, data);
-        testData = splitDataTest(size, data);
-
-        LogisticRegression model = LogisticRegression.binomial(data.toArray(schema.toArray(new String[0])), Arrays.stream(trainData.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray());
-        model.setLearningRate(learningRate);
-
-        accuracy.set(Accuracy.of(Arrays.stream(testData.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), model.predict(testData.toArray(schema.toArray(new String[0])))));
-
-        //smile.classification.RandomForest m2 = smile.classification.RandomForest.fit(formula, data);
-
-
-        // Define the formula: Target ~ Feature1 + Featur
-        //  LinearModel model =  RidgeRegression.fit(formula, data, 0);
-
-
-        return model;
-    }
-
-    private LogisticRegression TrainLogisticMultinomial(final ArrayList<HashMap<String, String>> raw_data) {
-        final int buffer = 1000000;
-        int offset = buffer;
-
-        final double test = (double)size / 100;
-
-        DataFrame data = processData(raw_data), trainData, testData;
-
-      /*  ArrayList<Double> y_ = fetcher.fetchRawDataMap(String.format("SELECT %s FROM %s WHERE %s IS NOT NULL LIMIT 1000000;", y, table, y)).stream().map(m -> m.get(y))                  // pega o valor da chave
-                .filter(Objects::nonNull)                // descarta null
-                .map(Double::parseDouble)                // converte para Double
-                .collect(Collectors.toCollection(ArrayList::new)); */
-
-
-      /*  DataFrame data = new DataFrame(new DoubleVector(y, y_.stream()
-                .mapToDouble(Double::doubleValue) // converte Double -> double
-                .toArray())); */
-
-        /*for (String col : cols) {
-            ArrayList<Double> x_ = fetcher.fetchRawDataMap(String.format("SELECT %s FROM %s WHERE %s IS NOT NULL LIMIT 1000000;", col, table, col)).stream().map(m -> m.get(col))                  // pega o valor da chave
-                    .filter(Objects::nonNull)                // descarta null
-                    .map(Double::parseDouble)                // converte para Double
-                    .collect(Collectors.toCollection(ArrayList::new));
-            data.add(new DoubleVector(col, x_.stream()
-                    .mapToDouble(Double::doubleValue) // converte Double -> double
-                    .toArray()));
-        } */
-
-
-
-        int size = (int) (data.size() * test);
-
-        trainData = splitDataTrain(size, data);
-        testData = splitDataTest(size, data);
-
-        LogisticRegression model = LogisticRegression.multinomial(data.toArray(schema.toArray(new String[0])), Arrays.stream(trainData.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray());
-        model.setLearningRate(learningRate);
-
-        accuracy.set(Accuracy.of(Arrays.stream(testData.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), model.predict(testData.toArray(schema.toArray(new String[0])))));
-
-        //smile.classification.RandomForest m2 = smile.classification.RandomForest.fit(formula, data);
-
-
-        // Define the formula: Target ~ Feature1 + Featur
-        //  LinearModel model =  RidgeRegression.fit(formula, data, 0);
-
-
-        return model;
-    }
-
-    private smile.classification.GradientTreeBoost TrainGradientClassifier(final ArrayList<HashMap<String, String>> raw_data) {
-        final double test = (double)size / 100;
-
-        final int buffer = 1000000;
-        int offset = buffer;
-
-        ArrayList<String> y_ = raw_data.parallelStream().map(m -> m.get(y))
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        DataFrame data = processData(raw_data), data_train, data_test;
-
-        labelEncoder.updateEncoder(y_);
-        int[] y_encoded = labelEncoder.encode(y_);
-
-        data = data.drop(y);
-        data.add(new IntVector(y, y_encoded));
-
-        int size = (int) (data.size() * test);
-
-        data_test = splitDataTest(size, data);
-        data_train = splitDataTrain(size, data);
-
-        Formula formula = Formula.lhs(y);
-
-        smile.classification.GradientTreeBoost model = smile.classification.GradientTreeBoost.fit(formula, data_train);
-
-        accuracy.set(Accuracy.of(data_test.column(y).stream().mapToInt(n -> ((Number) n).intValue()).toArray(), model.predict(data_test.drop(y))));
-
-
-        //   System.out.println(MSE.of(data_test.column(y).toDoubleArray(), model.predict(data_test)));
-
-        //System.out.println("Coefficients: " + Arrays.toString(model.coefficients()));
-
-        return model;
-    }
-
-    private smile.classification.RandomForest TrainClassificationForest(final ArrayList<HashMap<String, String>> raw_data) {
-        final int buffer = 10000;
-        int offset = buffer;
-
-        final double test = (double)size / 100;
-
-        ArrayList<String> y_ = raw_data.parallelStream().map(m -> m.get(y))
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        DataFrame data = processData(raw_data), data_train, data_test;
-
-        //fetcher.fetchRawDataMap(String.format("SELECT %s FROM %s WHERE %s IS NOT NULL LIMIT %d;", y, table, y, buffer)).parallelStream().map(m -> m.get(y))                  // pega o valor da chave
-        // .collect(Collectors.toCollection(ArrayList::new));
-
-       // LabelEncoder LabelEncoder = new LabelEncoder(y_);
-        labelEncoder.updateEncoder(y_);
-        int[] y_encoded = labelEncoder.encode(y_);
-
-        //data = new DataFrame(new IntVector(y, y_encoded));
-        data = data.drop(y);
-        data.add(new IntVector(y, y_encoded));
-
-        // ArrayList<HashMap<String, String>> x_ = fetcher.fetchRawDataMap(String.format(command, 0));
-
-        Formula formula = Formula.lhs(y);
-
-        int size = (int) (data.size() * test);
-
-        data_test = splitDataTest(size, data);
-        data_train = splitDataTrain(size, data);
-
-        smile.classification.RandomForest model = smile.classification.RandomForest.fit(formula, data_train);
-
-        accuracy.set(Accuracy.of(data_test.column(y).stream().mapToInt(n -> ((Number) n).intValue()).toArray(), model.predict(data_test.drop(y))));
-
-        //smile.classification.RandomForest m2 = smile.classification.RandomForest.fit(formula, data);
-        return model;
-    }
-
-    public void update(final ArrayList<HashMap<String, String>> raw_data) {
-        switch (model_type) {
-            case LINEAR_REGRESSION -> update_linear(raw_data);
-            case RANDOM_FOREST_REGRESSION -> update_forest(raw_data);
-            case GRADIENT_REGRESSION -> update_GradientLinear(raw_data);
-            case TREE_REGRESSION -> update_RegressionTree(raw_data);
-            case LOGISTIC_REGRESSION, LOGISTIC_BINOMIAL_REGRESSION, LOGISTIC_MULTIMODAL_REGRESSION -> updateLogistic(raw_data);
-            case RANDOM_FOREST_CLASSIFICATION -> update_ForestClassification(raw_data);
-            case GRADIENT_CLASSIFICATION -> update_GradientClassifier(raw_data);
+    /** Retira a fração de teste do primeiro lote e guarda o resto para treino. */
+    private void splitHoldout(List<double[]> features, List<Double> targets) {
+        List<Integer> order = new ArrayList<>(features.size());
+        for (int i = 0; i < features.size(); i++) order.add(i);
+        Collections.shuffle(order, new Random(request.seed()));
+
+        int testSize = (int) Math.round(features.size() * (request.testPercent() / 100.0));
+        // Deixa sempre pelo menos uma linha de cada lado quando há dados para isso.
+        testSize = Math.max(1, Math.min(testSize, features.size() - 1));
+        if (features.size() < 2) testSize = 0;
+
+        testFeatures = new double[testSize][];
+        testTargets = new double[testSize];
+        for (int i = 0; i < testSize; i++) {
+            int index = order.get(i);
+            testFeatures[i] = features.get(index);
+            testTargets[i] = targets.get(index);
+        }
+
+        for (int i = testSize; i < order.size(); i++) {
+            int index = order.get(i);
+            trainingFeatures.add(features.get(index));
+            trainingTargets.add(targets.get(index));
         }
     }
 
-    private void update_GradientLinear(final ArrayList<HashMap<String, String>> raw_data) {
-        DataFrame data = processData(raw_data);
+    private Object fit() {
+        double[][] x = trainingFeatures.toArray(new double[0][]);
+        double[] y = trainingTargets.stream().mapToDouble(Double::doubleValue).toArray();
 
-        final int size_ = (int) (data.size() * size);
+        return switch (request.model()) {
+            case LINEAR_REGRESSION -> OLS.fit(formula(), frame(x, y, false));
+            case TREE_REGRESSION -> RegressionTree.fit(formula(), frame(x, y, false));
+            case RANDOM_FOREST_REGRESSION -> RandomForest.fit(formula(), frame(x, y, false));
+            case GRADIENT_REGRESSION -> GradientTreeBoost.fit(formula(), frame(x, y, false));
 
-        DataFrame data_test = splitDataTest(size_, data);
-        DataFrame data_train = splitDataTrain(size_, data);
+            case RANDOM_FOREST_CLASSIFICATION ->
+                    smile.classification.RandomForest.fit(formula(), frame(x, y, true));
+            case GRADIENT_CLASSIFICATION ->
+                    smile.classification.GradientTreeBoost.fit(formula(), frame(x, y, true));
 
-        ArrayList<SampleInstance<Tuple, Double>> instance = new ArrayList<>();
+            case LOGISTIC_REGRESSION -> LogisticRegression.fit(x, toInt(y));
+            case LOGISTIC_BINOMIAL_REGRESSION -> LogisticRegression.binomial(x, toInt(y));
+            case LOGISTIC_MULTIMODAL_REGRESSION -> LogisticRegression.multinomial(x, toInt(y));
+            case KNN -> KNN.fit(x, toInt(y), Math.max(1, Math.min(request.neighbours(), x.length)));
+        };
+    }
 
-        for (Row row : data_train) {
-            instance.add(new SampleInstance<>(row.getStruct(y), row.getDouble(1)));
+    // ==== Avaliação ====
+
+    private TrainingResult evaluate() {
+        boolean classification = request.model().isClassification();
+
+        double[] predicted = predict(testFeatures);
+        double[] actual = testTargets == null ? new double[0] : testTargets;
+
+        LinkedHashMap<String, Object> metrics = classification
+                ? classificationMetrics(actual, predicted)
+                : regressionMetrics(actual, predicted);
+
+        addModelSpecificMetrics(metrics);
+        if (!preprocessor.isEmpty()) metrics.putAll(preprocessor.describe(request.features()));
+
+        return new TrainingResult(
+                model,
+                request.model(),
+                request.model().getTask(),
+                request.features(),
+                request.target(),
+                trainingFeatures.size(),
+                actual.length,
+                metrics,
+                actual,
+                predicted,
+                classification ? labelEncoder.decode(toInt(actual)) : null);
+    }
+
+    /** Previsões para uma matriz de observações, seja qual for a família do modelo. */
+    public double[] predict(double[][] x) {
+        if (x == null || x.length == 0 || model == null) return new double[0];
+
+        double[] predictions = new double[x.length];
+
+        switch (model) {
+            case LinearModel linear -> {
+                DataFrame frame = frame(x, new double[x.length], false);
+                predictions = linear.predict(frame);
+            }
+            case RegressionTree tree -> {
+                DataFrame frame = frame(x, new double[x.length], false);
+                for (int i = 0; i < x.length; i++) predictions[i] = tree.predict(frame.get(i));
+            }
+            case RandomForest forest -> {
+                DataFrame frame = frame(x, new double[x.length], false);
+                for (int i = 0; i < x.length; i++) predictions[i] = forest.predict(frame.get(i));
+            }
+            case GradientTreeBoost boost -> {
+                DataFrame frame = frame(x, new double[x.length], false);
+                for (int i = 0; i < x.length; i++) predictions[i] = boost.predict(frame.get(i));
+            }
+            case smile.classification.RandomForest forest -> {
+                DataFrame frame = frame(x, new double[x.length], true);
+                for (int i = 0; i < x.length; i++) predictions[i] = forest.predict(frame.get(i));
+            }
+            case smile.classification.GradientTreeBoost boost -> {
+                DataFrame frame = frame(x, new double[x.length], true);
+                for (int i = 0; i < x.length; i++) predictions[i] = boost.predict(frame.get(i));
+            }
+            case LogisticRegression logistic -> {
+                for (int i = 0; i < x.length; i++) predictions[i] = logistic.predict(x[i]);
+            }
+            case KNN<?> _ -> {
+                @SuppressWarnings("unchecked")
+                KNN<double[]> knn = (KNN<double[]>) model;
+                for (int i = 0; i < x.length; i++) predictions[i] = knn.predict(x[i]);
+            }
+            default -> throw new IllegalStateException("Unsupported model: " + model.getClass());
         }
 
-        Dataset<Tuple, Double> dataset = new SimpleDataset<>(instance);
-
-        GradientTreeBoost model = (GradientTreeBoost) this.model;
-
-        model.update(dataset);
-
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test.drop(y))).mapToInt(n -> ((Number) n).intValue()).toArray()));
+        return predictions;
     }
 
-    private void update_RegressionTree(final ArrayList<HashMap<String, String>> raw_data) {
-        DataFrame data = processData(raw_data);
+    /**
+     * Previsão para uma única observação, usada pelo separador de previsão manual e pela
+     * imputação por modelo.
+     *
+     * <p>Os valores entram em bruto e passam pela mesma transformação que o treino usou —
+     * de outro modo o modelo receberia uma escala diferente daquela em que foi ajustado.</p>
+     */
+    public double predictOne(double[] features) {
+        final double[] prepared = preprocessor.isFitted() ? preprocessor.transform(features) : features;
+        double[] result = predict(new double[][]{prepared});
+        return result.length == 0 ? Double.NaN : result[0];
+    }
 
-        final int size_ = (int) (data.size() * size);
+    /** Nome da classe prevista, para modelos de classificação com alvo categórico. */
+    public String describePrediction(double prediction) {
+        if (request == null || !request.model().isClassification()) return String.valueOf(prediction);
+        String label = labelEncoder.decode((int) Math.round(prediction));
+        return label.isEmpty() ? String.valueOf(prediction) : label;
+    }
 
-        DataFrame data_test = splitDataTest(size_, data);
-        DataFrame data_train = splitDataTrain(size_, data);
-
-        ArrayList<SampleInstance<Tuple, Double>> instance = new ArrayList<>();
-
-        for (Row row : data_train) {
-            instance.add(new SampleInstance<>(row.getStruct(y), row.getDouble(1)));
+    private LinkedHashMap<String, Object> regressionMetrics(double[] actual, double[] predicted) {
+        LinkedHashMap<String, Object> metrics = new LinkedHashMap<>();
+        if (actual.length == 0) {
+            metrics.put("info", "Test set is empty — lower the evaluation split or load more rows.");
+            return metrics;
         }
-
-        Dataset<Tuple, Double> dataset = new SimpleDataset<>(instance);
-
-        RegressionTree model = (RegressionTree) this.model;
-
-        model.update(dataset);
-
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test.drop(y))).mapToInt(n -> ((Number) n).intValue()).toArray()));
-    }
-
-    private void update_linear(final ArrayList<HashMap<String, String>> raw_data) {
-        DataFrame data = processData(raw_data);
-
-        final int size_ = (int) (data.size() * size);
-
-        DataFrame data_test = splitDataTest(size_, data);
-        DataFrame data_train = splitDataTrain(size_, data);
-
-        LinearModel model = (LinearModel) this.model;
-
-        model.update(data_train);
-
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test.drop(y))).mapToInt(n -> ((Number) n).intValue()).toArray()));
-    }
-
-    private void updateLogistic(final ArrayList<HashMap<String, String>> raw_data) {
-        DataFrame data = processData(raw_data);
-
-        DataFrame trainData = splitDataTrain(size, data);
-        DataFrame testData = splitDataTest(size, data);
-
-        LogisticRegression model = (LogisticRegression) this.model;
-
-        model.update(trainData.toArray(schema.toArray(new String[0])), Arrays.stream(trainData.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray());
-
-        accuracy.set(Accuracy.of(Arrays.stream(testData.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(testData.drop(y).toArray(schema.toArray(new String[0])))).map(n -> ((Number) n).intValue()).toArray()));
-    }
-
-    private void update_GradientClassifier(final ArrayList<HashMap<String, String>> raw_data) {
-        DataFrame data = processData(raw_data);
-
-        final int size_ = (int) (data.size() * size);
-
-        DataFrame data_test = splitDataTest(size_, data);
-        DataFrame data_train = splitDataTrain(size_, data);
-
-        ArrayList<SampleInstance<Tuple, Integer>> instance = new ArrayList<>();
-
-        for (Row row : data_train) {
-            instance.add(new SampleInstance<>( (Tuple) row, row.getInt(y)));
-        }
-
-        Dataset<Tuple, Integer> dataset = new SimpleDataset<>(instance);
-
-        smile.classification.GradientTreeBoost model = (smile.classification.GradientTreeBoost) this.model;
-
-        model.update(dataset);
-
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test.drop(y))).map(n -> ((Number) n).intValue()).toArray()));
-    }
-
-    private void update_forest(final ArrayList<HashMap<String, String>> raw_data) {
-        DataFrame data = processData(raw_data);
-
-        final int size_ = (int) (data.size() * size);
-
-        DataFrame data_test = splitDataTest(size_, data);
-        DataFrame data_train = splitDataTrain(size_, data);
-
-        ArrayList<SampleInstance<Tuple, Double>> instance = new ArrayList<>();
-
-        for (Row row : data_train) {
-            instance.add(new SampleInstance<>(row.getStruct(y), row.getDouble(1)));
-        }
-
-        Dataset<Tuple, Double> dataset = new SimpleDataset<>(instance);
-
-        RandomForest model = (RandomForest) this.model;
-
-        model.update(dataset);
-
-        accuracy.set(Accuracy.of(Arrays.stream(data_test.column(y).toDoubleArray()).mapToInt(n -> ((Number) n).intValue()).toArray(), Arrays.stream(model.predict(data_test.drop(y))).mapToInt(n -> ((Number) n).intValue()).toArray()));
-    }
-
-    private void update_ForestClassification(final ArrayList<HashMap<String, String>> raw_data) {
-        smile.classification.RandomForest model_ = TrainClassificationForest(raw_data);
-
-        smile.classification.RandomForest model = (smile.classification.RandomForest) this.model;
-
-        model.merge(model_);
-    }
-
-    public void setKNN(int knnTree) {
-        this.knnTree = knnTree;
-    }
-
-    public Map<String, Object> getModelMetrics() {
-
-        Map<String, Object> metrics = null;
-
-        switch (model_type) {
-            case LINEAR_REGRESSION -> metrics = getLinearMetrics();
-            case RANDOM_FOREST_REGRESSION -> metrics = getRandomForestRegressionMetrics();
-            case GRADIENT_REGRESSION -> metrics = getGradientRegressionMetrics();
-            case TREE_REGRESSION -> metrics = getTreeRegressionMetrics();
-            case LOGISTIC_REGRESSION, LOGISTIC_BINOMIAL_REGRESSION, LOGISTIC_MULTIMODAL_REGRESSION
-                    -> metrics = getLogisticMetrics();
-            case RANDOM_FOREST_CLASSIFICATION -> metrics = getRandomForestClassificationMetrics();
-            case GRADIENT_CLASSIFICATION -> metrics = getGradientClassificationMetrics();
-            case KNN -> metrics = getKnnMetrics();
-        }
-
+        RegressionMetrics computed = RegressionMetrics.of(0, 0, actual, predicted);
+        metrics.put("R2", computed.r2());
+        metrics.put("RMSE", computed.rmse());
+        metrics.put("MSE", computed.mse());
+        metrics.put("MAD", computed.mad());
+        metrics.put("RSS", computed.rss());
         return metrics;
     }
 
-    private Map<String, Object> getLinearMetrics() {
-        Map<String, Object> metric = new HashMap<>();
-        LinearModel model = (LinearModel) this.model;
-        metric.put("Intercept", model.intercept());
-        metric.put("Coefficient", Arrays.toString(model.coefficients()));
-        metric.put("Error", model.error());
-        metric.put("F-test", model.ftest());
-        metric.put("P-value", model.pvalue());
-        metric.put("R-squared", model.RSquared());
-        metric.put("R-adjusted-squared", model.adjustedRSquared());
-        metric.put("RSS", model.RSS());
-        return metric;
-    }
-
-    private Map<String, Object> getRandomForestRegressionMetrics() {
-        Map<String, Object> metric = new HashMap<>();
-        smile.regression.RandomForest rf = (smile.regression.RandomForest) this.model;
-        // OOB aggregated regression metrics (se disponível)
-        RegressionMetrics rm = rf.metrics(); // OOB regression metrics (RSS, MSE, RMSE, MAD, R2)
-        metric.put("R2", rm.r2());
-        metric.put("MSE", rm.mse());
-        metric.put("RMSE", rm.rmse());
-        metric.put("MAD", rm.mad());
-        metric.put("RSS", rm.rss());
-        metric.put("Importance", rf.importance()); // feature importance
-        metric.put("NumTrees", rf.size());
-        return metric;
-    }
-
-    private Map<String, Object> getRandomForestClassificationMetrics() {
-        Map<String, Object> metric = new HashMap<>();
-        smile.classification.RandomForest rf = (smile.classification.RandomForest) this.model;
-        // OOB aggregated classification metrics (accuracy, f1, auc, logloss, ...)
-        ClassificationMetrics cm = rf.metrics();
-        metric.put("Accuracy", cm.accuracy());
-        metric.put("Errors", cm.error());
-        metric.put("Precision", cm.precision());
-        metric.put("Recall (Sensitivity)", cm.sensitivity());
-        metric.put("Specificity", cm.specificity());
-        metric.put("F1", cm.f1());
-        metric.put("MCC", cm.mcc());
-        metric.put("AUC", cm.auc());
-        metric.put("LogLoss", cm.logloss());
-        metric.put("Importance", rf.importance());
-        metric.put("NumTrees", rf.size());
-        return metric;
-    }
-
-    private Map<String, Object> getGradientRegressionMetrics() {
-        Map<String, Object> metric = new HashMap<>();
-        // Para Gradient boosting de regressão o objecto costuma ser smile.regression.GradientTreeBoost
-        if (this.model instanceof smile.regression.GradientTreeBoost gbr) {
-            metric.put("Importance", gbr.importance());
-            metric.put("NumTrees", gbr.size());
-        } else {
-            metric.put("info", "Gradient regression model not instance of GradientTreeBoost");
+    private LinkedHashMap<String, Object> classificationMetrics(double[] actual, double[] predicted) {
+        LinkedHashMap<String, Object> metrics = new LinkedHashMap<>();
+        if (actual.length == 0) {
+            metrics.put("info", "Test set is empty — lower the evaluation split or load more rows.");
+            return metrics;
         }
-        return metric;
-    }
+        int[] truth = toInt(actual);
+        int[] guess = toInt(predicted);
 
-    private Map<String, Object> getGradientClassificationMetrics() {
-        Map<String, Object> metric = new HashMap<>();
-        smile.classification.GradientTreeBoost gtb = (smile.classification.GradientTreeBoost) this.model;
-        metric.put("Importance", gtb.importance());
-        metric.put("NumTrees", gtb.size());
-        metric.put("IsSoftClassifier", gtb.soft());
-        // gtb.test(data) pode ser usado para avaliar com um DataFrame de validação
-        return metric;
-    }
+        // Precisão, recall e F1 só estão definidos com duas classes, e o Smile só os
+        // preenche pelo construtor binário — o genérico deixa-os a NaN.
+        boolean binary = labelEncoder.size() == 2;
+        ClassificationMetrics computed = binary
+                ? ClassificationMetrics.binary(0, 0, truth, guess)
+                : ClassificationMetrics.of(0, 0, truth, guess);
 
-    private Map<String, Object> getTreeRegressionMetrics() {
-        Map<String, Object> metric = new HashMap<>();
-        if (this.model instanceof RegressionTree tree) {
-            metric.put("Importance", tree.importance());
-            metric.put("Size", tree.size());
-            // não existe "metrics()" OOB por defeito, para métricas de validação usa o helper abaixo
-        } else {
-            metric.put("info", "Model is not RegressionTree");
+        metrics.put("Accuracy", computed.accuracy());
+        metrics.put("Error", computed.error());
+        if (binary) {
+            metrics.put("Precision", computed.precision());
+            metrics.put("Recall", computed.sensitivity());
+            metrics.put("F1", computed.f1());
         }
-        return metric;
+        metrics.put("Classes", labelEncoder.size());
+        return metrics;
     }
 
-    private Map<String, Object> getLogisticMetrics() {
-        Map<String, Object> metric = new HashMap<>();
-        // SMILE logistic tem classes Binomial / Multinomial com method coefficients()
-        if (this.model instanceof smile.classification.LogisticRegression.Binomial bin) {
-            metric.put("Coefficients", bin.coefficients()); // último elemento é bias
-            metric.put("LogLikelihood", bin.loglikelihood());
-            metric.put("AIC", bin.AIC());
-        } else if (this.model instanceof LogisticRegression.Multinomial multin) {
-            metric.put("CoefficientsMatrix", multin.coefficients());
-            metric.put("LogLikelihood", multin.loglikelihood());
-            metric.put("AIC", multin.AIC());
-        } else {
-            metric.put("info", "Model not recognized as LogisticRegression binomial/multinomial");
+    /** Métricas que só alguns modelos sabem dar sobre si próprios. */
+    private void addModelSpecificMetrics(LinkedHashMap<String, Object> metrics) {
+        switch (model) {
+            case LinearModel linear -> {
+                metrics.put("Intercept", linear.intercept());
+                metrics.put("Coefficients", describeCoefficients(linear.coefficients()));
+                metrics.put("Adjusted R2", linear.adjustedRSquared());
+                metrics.put("F-test", linear.ftest());
+                metrics.put("p-value", linear.pvalue());
+            }
+            case RandomForest forest -> metrics.put("Importance", describeImportance(forest.importance()));
+            case smile.classification.RandomForest forest ->
+                    metrics.put("Importance", describeImportance(forest.importance()));
+            case GradientTreeBoost boost -> metrics.put("Importance", describeImportance(boost.importance()));
+            case smile.classification.GradientTreeBoost boost ->
+                    metrics.put("Importance", describeImportance(boost.importance()));
+            default -> {
+                // Os restantes não expõem nada de útil para lá das métricas do conjunto de teste.
+            }
         }
-        return metric;
     }
 
-    private Map<String, Object> getKnnMetrics() {
-        Map<String, Object> metric = new HashMap<>();
-        // KNN não tem métricas internas — usa validação externa (see helpers below)
-        metric.put("info", "KNN: use validateClassification/validateRegression with a test set to compute metrics");
-        return metric;
-    }
-
-    public void exportModel(final String name) throws Exception {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(name+".ser"))) {
-            oos.writeObject(model);
-            oos.flush();
-            System.out.println("Model exported successfully!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new Exception(e);
+    /** Emparelha cada coeficiente com o nome da sua coluna, em vez de imprimir um array solto. */
+    private String describeCoefficients(double[] coefficients) {
+        StringBuilder text = new StringBuilder();
+        List<String> features = request.features();
+        for (int i = 0; i < coefficients.length && i < features.size(); i++) {
+            if (i > 0) text.append(", ");
+            text.append(features.get(i)).append('=').append(String.format("%.6g", coefficients[i]));
         }
+        return text.toString();
+    }
+
+    private String describeImportance(double[] importance) {
+        return describeCoefficients(importance);
+    }
+
+    /** Importância por coluna, para o gráfico de barras do painel de modelação. */
+    public LinkedHashMap<String, Double> featureImportance() {
+        double[] importance = switch (model) {
+            case RandomForest forest -> forest.importance();
+            case smile.classification.RandomForest forest -> forest.importance();
+            case GradientTreeBoost boost -> boost.importance();
+            case smile.classification.GradientTreeBoost boost -> boost.importance();
+            case LinearModel linear -> linear.coefficients();
+            case null, default -> null;
+        };
+
+        LinkedHashMap<String, Double> map = new LinkedHashMap<>();
+        if (importance == null) return map;
+        List<String> features = request.features();
+        for (int i = 0; i < importance.length && i < features.size(); i++) {
+            map.put(features.get(i), importance[i]);
+        }
+        return map;
+    }
+
+    // ==== Construção do DataFrame ====
+
+    private Formula formula() {
+        return Formula.lhs(request.target());
+    }
+
+    /**
+     * Monta o DataFrame de uma só vez.
+     *
+     * <p>É aqui que estava a raiz do problema antigo: as colunas eram adicionadas uma a uma
+     * ignorando o retorno de {@code add}, e em paralelo, o que também tornava a ordem
+     * imprevisível — e a ordem importa, porque os coeficientes são lidos por índice.</p>
+     */
+    private DataFrame frame(double[][] x, double[] y, boolean categoricalTarget) {
+        List<String> features = request.features();
+        ValueVector[] vectors = new ValueVector[features.size() + 1];
+
+        for (int f = 0; f < features.size(); f++) {
+            double[] column = new double[x.length];
+            for (int row = 0; row < x.length; row++) column[row] = x[row][f];
+            vectors[f] = new DoubleVector(features.get(f), column);
+        }
+
+        vectors[features.size()] = categoricalTarget
+                ? new IntVector(request.target(), toInt(y))
+                : new DoubleVector(request.target(), y);
+
+        return new DataFrame(vectors);
+    }
+
+    private Double readTarget(Map<String, String> row, boolean classification) {
+        String raw = row.get(request.target());
+        if (!isPresent(raw)) return null;
+        if (classification) {
+            int encoded = labelEncoder.encode(raw.trim());
+            return encoded < 0 ? null : (double) encoded;
+        }
+        return parse(raw);
+    }
+
+    private static boolean isPresent(String value) {
+        return value != null && !value.isBlank() && !value.equalsIgnoreCase("null");
+    }
+
+    private static Double parse(String value) {
+        if (!isPresent(value)) return null;
+        try {
+            return Double.parseDouble(value.trim().replace(',', '.'));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static int[] toInt(double[] values) {
+        int[] result = new int[values.length];
+        for (int i = 0; i < values.length; i++) result[i] = (int) Math.round(values[i]);
+        return result;
+    }
+
+    // ==== Exportação ====
+
+    public void exportModel(final String path) throws Exception {
+        if (model == null) throw new IllegalStateException("Train a model first.");
+        String target = path.endsWith(".ser") ? path : path + ".ser";
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(target))) {
+            out.writeObject(model);
+            out.flush();
+        }
+    }
+
+    /** Resumo textual do último passo, para a caixa de resultados. */
+    public String describeLastResult() {
+        if (lastResult == null) return "";
+        StringBuilder text = new StringBuilder();
+        text.append("Step ").append(step)
+                .append(" — ").append(lastResult.type())
+                .append(" (").append(lastResult.trainingRows()).append(" train / ")
+                .append(lastResult.testRows()).append(" test rows)\n");
+        for (Map.Entry<String, Object> metric : lastResult.metrics().entrySet()) {
+            text.append("  ").append(metric.getKey()).append(": ")
+                    .append(formatMetric(metric.getValue())).append('\n');
+        }
+        return text.append('\n').toString();
+    }
+
+    private static String formatMetric(Object value) {
+        if (value instanceof Double number) {
+            if (number.isNaN()) return "n/a";
+            return String.format("%.6g", number);
+        }
+        if (value instanceof double[] array) return Arrays.toString(array);
+        return String.valueOf(value);
     }
 
 }

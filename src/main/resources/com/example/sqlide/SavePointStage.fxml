@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.SavePointController">
+   <children>
+      <HBox alignment="CENTER_RIGHT" spacing="5.0">
+         <children>
+            <Label text="Name:" />
+            <TextField fx:id="NameField" HBox.hgrow="ALWAYS" />
+            <Button mnemonicParsing="false" text="Add" />
+            <Button fx:id="RemoveButton" mnemonicParsing="false" text="Remove" />
+            <Button fx:id="RestoreButton" layoutX="62.0" layoutY="10.0" mnemonicParsing="false" text="Restore" />
+         </children>
+         <padding>
+            <Insets top="10.0" />
+         </padding>
+         <VBox.margin>
+            <Insets left="5.0" right="5.0" />
+         </VBox.margin>
+      </HBox>
+      <TableView fx:id="TablePoints" VBox.vgrow="ALWAYS">
+        <columns>
+          <TableColumn prefWidth="75.0" text="Name" />
+          <TableColumn prefWidth="75.0" text="Data" />
+        </columns>
+         <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+         </columnResizePolicy>
+      </TableView>
+   </children>
+</VBox>

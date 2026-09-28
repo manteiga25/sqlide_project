@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import java.net.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane stylesheets="@../../../../css/ScrollContainerStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Configuration.DebugConf">
+
+    <GridPane fx:id="Container" hgap="5.0" vgap="5.0">
+      <children>
+         <Label text="Parser trace:" textFill="#f5f5f5" />
+         <JFXCheckBox fx:id="parseCheck" mnemonicParsing="false" GridPane.columnIndex="1" />
+         <Label text="Quick check:" textFill="#f5f5f5" GridPane.columnIndex="2" />
+         <Button mnemonicParsing="false" text="Run" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+         <Label text="Temp store:" textFill="#f5f5f5" GridPane.rowIndex="1" />
+         <ChoiceBox fx:id="tempBox" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+         <Label text="Directory:" textFill="#f5f5f5" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+         <HBox GridPane.columnIndex="3" GridPane.rowIndex="1">
+            <children>
+               <TextField fx:id="directoryField" promptText="path...." HBox.hgrow="ALWAYS" />
+               <Button mnemonicParsing="false" />
+            </children>
+         </HBox>
+      </children>
+      <columnConstraints>
+         <ColumnConstraints />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+      </columnConstraints>
+      <rowConstraints>
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+      </rowConstraints>
+      <stylesheets>
+         <URL value="@../../../../css/CheckBox.css" />
+         <URL value="@../../../../css/ChoiceBoxModern.css" />
+         <URL value="@../../../../css/TextFieldModernStyle.css" />
+      </stylesheets></GridPane>
+
+</ScrollPane>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane stylesheets="@../../../../css/ScrollContainerStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Configuration.IOConf">
+
+    <GridPane fx:id="Container" hgap="5.0" stylesheets="@../../../../css/CheckBox.css" vgap="5.0">
+      <children>
+         <Label text="Full sync:" textFill="#fcfcfc" GridPane.columnIndex="0" />
+         <JFXCheckBox fx:id="fullCheck" mnemonicParsing="false" GridPane.columnIndex="1" />
+         <Label text="Cell size:" textFill="#f5f5f5" GridPane.columnIndex="2" />
+         <JFXCheckBox fx:id="cellCheck" mnemonicParsing="false" GridPane.columnIndex="3" />
+         <Label text="Full sync checkpoint;" textFill="#f5f5f5" GridPane.rowIndex="2" />
+         <JFXCheckBox fx:id="syncCheck" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+         <Label text="Source delete:" textFill="#f5f5f5" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+         <JFXCheckBox fx:id="deleteCheck" mnemonicParsing="false" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+         <Label text="Flush method:" GridPane.rowIndex="3" />
+         <Label text="BinLong Sync" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+         <ComboBox prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+         <Label text="Flush neighbours:" GridPane.columnIndex="4" />
+         <Label text="Native AIO:" GridPane.columnIndex="4" GridPane.rowIndex="2" />
+         <JFXCheckBox mnemonicParsing="false" text="CheckBox" GridPane.columnIndex="5" />
+         <JFXCheckBox mnemonicParsing="false" text="CheckBox" GridPane.columnIndex="5" GridPane.rowIndex="2" />
+         <Spinner GridPane.columnIndex="3" GridPane.rowIndex="3" />
+         <Label text="IO Capacity" GridPane.columnIndex="4" GridPane.rowIndex="3" />
+         <Spinner GridPane.columnIndex="5" GridPane.rowIndex="3" />
+         <Label text="IO Max Capacity:" GridPane.rowIndex="4" />
+         <Spinner GridPane.columnIndex="1" GridPane.rowIndex="4" />
+      </children>
+      <columnConstraints>
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints />
+      </columnConstraints>
+      <rowConstraints>
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+      </rowConstraints></GridPane>
+
+</ScrollPane>

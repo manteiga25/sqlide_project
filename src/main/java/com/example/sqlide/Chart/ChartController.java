@@ -81,6 +81,13 @@ public class ChartController {
         numberField.setText(title);
     }
 
+   /** Dialeto da base de dados, para o construtor de consultas escrever os nomes como o motor quer. */
+   private com.example.sqlide.drivers.model.SQLTypes dialect = com.example.sqlide.drivers.model.SQLTypes.SQLITE;
+
+   public void setDialect(final com.example.sqlide.drivers.model.SQLTypes dialect) {
+       this.dialect = dialect;
+   }
+
    public void setAttributes(final String table, final ArrayList<String> columns, final DatabaseFetcherInterface db) {
        this.table = table;
        this.columns = columns;
@@ -463,6 +470,7 @@ public class ChartController {
                     Stage subStage = new Stage();
                     subStage.setTitle("Create Column");
                     subStage.setScene(new Scene(root));
+                    secondaryController.setDialect(dialect);
                     secondaryController.setCode("SELECT");
                     secondaryController.setTable(table);
                     secondaryController.removeLeft();
@@ -528,7 +536,7 @@ public class ChartController {
                 LabelList.refresh();
 
                 if (controllers.get(val) != null) {
-                    controllers.get(val).setSelectedColumn(labelMap.get(val).Func.get() + "(" + labelMap.get(val).Column.get() + ")");
+                    controllers.get(val).setSelectedColumn(labelMap.get(val).selectExpression());
                 }
 
             } catch (IOException e) {
@@ -588,13 +596,27 @@ public class ChartController {
         while (!LabelCopy.isEmpty()) {
             Label label = LabelCopy.getFirst();
             XYChart.Series<String, Double> series = new XYChart.Series<String, Double>();
-            series.setName(label.Func.get() + " of " + label.Name.get());
+            series.setName(label.seriesName());
 
             final List<Label> reduced = labelMap.stream().filter(lab -> lab.Name.get().equals(label.Name.get())).toList();
 
             for (final Label subLabel : reduced) {
                 final ArrayList<Double> subData = db.fetchDataMap(subLabel.Query.get());
-                series.getData().add(new XYChart.Data<String, Double>(subLabel.Category.get(), subData.getFirst()));
+                // fetchDataMap devolve null quando a query nao traz linhas; o getFirst()
+                // directo rebentava com NoSuchElementException e matava o grafico todo.
+                if (subData == null || subData.isEmpty()) continue;
+
+                if (subLabel.isAggregate()) {
+                    series.getData().add(new XYChart.Data<String, Double>(subLabel.Category.get(), subData.getFirst()));
+                } else {
+                    // Sem agregado a query traz varias linhas: cada uma e um ponto.
+                    for (int index = 0; index < subData.size(); index++) {
+                        series.getData().add(new XYChart.Data<String, Double>(
+                                subData.size() == 1 ? subLabel.Category.get()
+                                        : subLabel.Category.get() + " " + (index + 1),
+                                subData.get(index)));
+                    }
+                }
             }
 
             LabelCopy.removeAll(reduced);
@@ -622,7 +644,32 @@ public class ChartController {
     }
 
     static class Label {
+
+        /** Valor de Func quando a coluna entra em bruto, sem agregado. */
+        public static final String NO_FUNCTION = "NONE";
+
         public StringProperty Func = new SimpleStringProperty(), Name = new SimpleStringProperty(), Query = new SimpleStringProperty(), Column = new SimpleStringProperty(), Category = new SimpleStringProperty();
+
+        /**
+         * True quando a coluna e reduzida a um valor por um agregado.
+         *
+         * <p>Sem agregado a serie tem um ponto por linha devolvida, que e o que um grafico
+         * de linhas precisa: obrigar sempre a uma funcao dava um unico ponto por categoria.</p>
+         */
+        public boolean isAggregate() {
+            final String func = Func.get();
+            return func != null && !func.isBlank() && !NO_FUNCTION.equalsIgnoreCase(func);
+        }
+
+        /** A expressao que vai para o SELECT: a coluna, com ou sem agregado a envolve-la. */
+        public String selectExpression() {
+            return isAggregate() ? Func.get() + "(" + Column.get() + ")" : Column.get();
+        }
+
+        /** Nome legivel da serie no grafico. */
+        public String seriesName() {
+            return isAggregate() ? Func.get() + " of " + Name.get() : Name.get();
+        }
 
         public Label(final String Name, final String Category, final String Func, final String Column, final String Query) {
             this.Func.set(Func);

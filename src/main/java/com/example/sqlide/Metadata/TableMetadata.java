@@ -3,6 +3,8 @@ package com.example.sqlide.Metadata;
 import com.example.sqlide.View.ViewController;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,7 +16,7 @@ public class TableMetadata {
 
     private String check;
 
-    private final ArrayList<ColumnMetadata> columnMetadata = new ArrayList<>();
+    private final ObservableList<ColumnMetadata> columnMetadata = FXCollections.observableArrayList();
 
     private final ArrayList<ViewController.View> views = new ArrayList<>();
 
@@ -32,8 +34,21 @@ public class TableMetadata {
         return check;
     }
 
+    /** Primeira coluna da chave primária, ou "" quando a tabela não tem chave (antes rebentava). */
     public String getPrimaryKey() {
-        return PrimaryKey.getFirst().get();
+        return PrimaryKey.isEmpty() ? "" : PrimaryKey.getFirst().get();
+    }
+
+    /**
+     * Refaz a lista da chave primária a partir das colunas, depois de uma coluna mudar. A lista
+     * é a mesma que as células da grelha usam para gravar, por isso muda-se o conteúdo e não
+     * o objeto.
+     */
+    public void refreshPrimaryKeys() {
+        PrimaryKey.clear();
+        for (final ColumnMetadata column : columnMetadata) {
+            if (column.IsPrimaryKey) PrimaryKey.add(new SimpleStringProperty(column.Name));
+        }
     }
 
     public ArrayList<String> getPrimaryKeys() {
@@ -73,7 +88,7 @@ public class TableMetadata {
         columnMetadata.addAll(meta);
     }
 
-    public ArrayList<ColumnMetadata> getColumnMetadata() {
+    public ObservableList<ColumnMetadata> getColumnMetadata() {
         return columnMetadata;
     }
 

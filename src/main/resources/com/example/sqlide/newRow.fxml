@@ -6,35 +6,65 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<VBox alignment="TOP_CENTER" spacing="10.0" style="-fx-background-color: #2C2C2C; -fx-padding: 15;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewRow">
+<VBox minHeight="360.0" minWidth="480.0" prefHeight="560.0" prefWidth="620.0" spacing="0.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.NewRow">
 
-    <!-- Cabeçalho informativo -->
-    <Label fx:id="DBInfo" alignment="CENTER" textAlignment="CENTER" textFill="#E0E0E0">
-        <font>
-            <Font name="JetBrains Mono Regular" size="18.0" />
-        </font>
-        <VBox.margin>
-            <Insets bottom="15" />
-        </VBox.margin>
-    </Label>
+    <stylesheets>
+        <URL value="@../../../css/ContextMenuStyle.css" />
+        <URL value="@../../../css/ChoiceBoxModern.css" />
+        <URL value="@../../../css/DatePicker.css" />
+        <URL value="@../../../css/ScrollHbarStyle.css" />
+        <URL value="@../../../css/newRow.css" />
+    </stylesheets>
 
-    <!-- Área de conteúdo principal com rolagem -->
-            <FlowPane fx:id="GridContainer" hgap="15" style="-fx-background-color: #2C2C2C;" vgap="15" VBox.vgrow="ALWAYS">
-                <padding>
-                    <Insets bottom="10" />
-                </padding>
-      <stylesheets>
-         <URL value="@../../../css/ContextMenuStyle.css" />
-         <URL value="@../../../css/ChoiceBoxModern.css" />
-         <URL value="@../../../css/DatePicker.css" />
-      </stylesheets>
-            </FlowPane>
+    <children>
 
-    <!-- Área de botões -->
-    <HBox alignment="CENTER_RIGHT" spacing="15.0" style="-fx-padding: 10 0 0 0;">
-        <children>
-            <Button mnemonicParsing="false" onAction="#exit" style="-fx-background-color: #555; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;" text="Cancel" />
-            <Button mnemonicParsing="false" onAction="#addData" style="-fx-background-color: #467FF2; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 25;" text="Save" />
-        </children>
-    </HBox>
+        <!-- Cabeçalho -->
+        <VBox spacing="2.0" styleClass="row-header">
+            <padding>
+                <Insets bottom="10.0" left="16.0" right="16.0" top="12.0" />
+            </padding>
+            <children>
+                <Label fx:id="DBInfo" styleClass="row-title" textFill="#FFFFFF" wrapText="true">
+                    <font>
+                        <Font name="JetBrains Mono Medium" size="14.0" />
+                    </font>
+                </Label>
+                <Label fx:id="HintLabel" styleClass="row-hint" text="Required columns are marked with *. Leave a field empty to store NULL." wrapText="true" />
+            </children>
+        </VBox>
+
+        <!-- Campos, um por linha, alinhados numa grelha -->
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+            <content>
+                <GridPane fx:id="GridContainer" hgap="12.0" vgap="4.0">
+                    <padding>
+                        <Insets bottom="14.0" left="16.0" right="16.0" top="14.0" />
+                    </padding>
+                    <columnConstraints>
+                        <ColumnConstraints halignment="RIGHT" minWidth="110.0" prefWidth="150.0" />
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="180.0" />
+                    </columnConstraints>
+                </GridPane>
+            </content>
+        </ScrollPane>
+
+        <!-- Rodapé -->
+        <VBox spacing="8.0" styleClass="row-footer">
+            <padding>
+                <Insets bottom="12.0" left="16.0" right="16.0" top="10.0" />
+            </padding>
+            <children>
+                <Label fx:id="StatusLabel" styleClass="row-hint" wrapText="true" />
+                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                    <children>
+                        <CheckBox fx:id="KeepOpenCheck" selected="true" text="Keep open after saving" textFill="#B0B0B0" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button mnemonicParsing="false" onAction="#clearForm" text="Clear" />
+                        <Button mnemonicParsing="false" onAction="#exit" text="Cancel" />
+                        <Button fx:id="SaveButton" defaultButton="true" mnemonicParsing="false" onAction="#addData" styleClass="row-primary" text="Insert row" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
 </VBox>

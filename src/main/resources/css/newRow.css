@@ -1,85 +1,177 @@
-/* Main Styles */
+/* ===== Insert row form =====
+   Paleta da aplicação: #2C2C2C fundo, #3C3C3C superfícies, #3574F0 realce.
+   As regras anteriores tinham cores de tema claro (#2c3e50, #7f8c8d) que ficavam
+   ilegíveis sobre o fundo escuro da janela. */
+
 .root {
-    -fx-font-family: 'JetBrains Mono', monospace;
-}
-
-.title {
-    -fx-text-fill: #2c3e50;
-    -fx-font-weight: bold;
-}
-
-.subtitle {
-    -fx-text-fill: #7f8c8d;
-    -fx-font-size: 14px;
-}
-
-/* Form Elements */
-.form-label {
-    -fx-text-fill: #34495e;
-    -fx-font-size: 14px;
-    -fx-padding: 5 0 5 0;
-    -fx-alignment: center-right;
-}
-
-.form-control {
-    -fx-padding: 8 12;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-    -fx-font-size: 14px;
-}
-
-.text-field, .combo-box {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #dce1e5;
-    -fx-border-width: 1.5;
-}
-
-.text-field:focused, .combo-box:focused {
-    -fx-border-color: #3498db;
-    -fx-effect: dropshadow(gaussian, rgba(52, 152, 219, 0.3), 8, 0, 0, 0);
-}
-
-/* Buttons */
-.button {
-    -fx-font-weight: bold;
-    -fx-font-size: 14px;
-    -fx-padding: 8 20;
-    -fx-background-radius: 6;
-    -fx-cursor: hand;
-}
-
-.primary {
-    -fx-background-color: #3498db;
-    -fx-text-fill: white;
-}
-
-.primary:hover {
-    -fx-background-color: #2980b9;
-}
-
-.secondary {
-    -fx-background-color: transparent;
-    -fx-text-fill: #7f8c8d;
-    -fx-border-color: #bdc3c7;
-    -fx-border-width: 1.5;
-}
-
-.secondary:hover {
-    -fx-background-color: #f8f9fa;
-}
-
-/* Validation */
-.error {
-    -fx-border-color: #e74c3c !important;
-}
-
-.validation-indicator {
-    -fx-text-fill: #e74c3c;
-    -fx-font-size: 16px;
-}
-
-.error-tooltip {
-    -fx-background-color: #f8d7da;
-    -fx-text-fill: #721c24;
+    -fx-font-family: 'Segoe UI', 'Arial', sans-serif;
     -fx-font-size: 12px;
+}
+
+/* ---------- cabeçalho e rodapé ---------- */
+.row-header {
+    -fx-background-color: #3C3C3C;
+    -fx-border-color: transparent transparent #4A4A4A transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.row-footer {
+    -fx-background-color: #262626;
+    -fx-border-color: #3C3C3C transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.row-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FFFFFF;
+}
+
+.row-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: #9A9A9A;
+}
+
+/* ---------- etiquetas das colunas ---------- */
+.column-label {
+    -fx-text-fill: #E0E0E0;
+    -fx-font-size: 12px;
+}
+
+/* Coluna obrigatória: o asterisco é desenhado numa Label própria. */
+.column-required {
+    -fx-text-fill: #E5C07B;
+    -fx-font-weight: bold;
+}
+
+/* Tipo da coluna, por baixo do campo. */
+.column-type {
+    -fx-text-fill: #7A7A7A;
+    -fx-font-family: 'Consolas', monospace;
+    -fx-font-size: 10px;
+}
+
+/* Mensagem de erro por campo, em vez de um diálogo por cada problema. */
+.field-error {
+    -fx-text-fill: #E06C75;
+    -fx-font-size: 10px;
+}
+
+/* ---------- campos ---------- */
+.text-field, .password-field {
+    -fx-background-color: #3A3A3A;
+    -fx-text-fill: #E0E0E0;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-border-color: #4A4A4A;
+    -fx-border-width: 1;
+    -fx-prompt-text-fill: #7A7A7A;
+    -fx-padding: 5 8 5 8;
+}
+
+.text-field:focused {
+    -fx-border-color: #3574F0;
+}
+
+/* Estado de erro, aplicado e retirado pelo controlador a cada validação. */
+.field-invalid {
+    -fx-border-color: #E06C75;
+    -fx-border-width: 1.5;
+}
+
+.combo-box, .choice-box, .date-picker {
+    -fx-background-color: #3A3A3A;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-border-color: #4A4A4A;
+    -fx-border-width: 1;
+    -fx-mark-color: #C0C0C0;
+}
+
+.combo-box .list-cell,
+.choice-box > .label,
+.date-picker .text-field {
+    -fx-text-fill: #E0E0E0;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #3A3A3A;
+    -fx-border-color: #4A4A4A;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: #3A3A3A;
+    -fx-text-fill: #E0E0E0;
+    -fx-padding: 5 10 5 10;
+}
+
+.combo-box-popup .list-view .list-cell:filled:hover,
+.combo-box-popup .list-view .list-cell:filled:selected {
+    -fx-background-color: #2E436E;
+}
+
+/* Colunas geridas pelo motor (autoincremento) ficam visíveis mas fora de alcance. */
+.field-auto {
+    -fx-opacity: 0.55;
+}
+
+/* ---------- botões ---------- */
+.button {
+    -fx-background-color: #3F3F3F;
+    -fx-text-fill: #E0E0E0;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-border-color: #4F4F4F;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+    -fx-padding: 6 14 6 14;
+}
+
+.button:hover {
+    -fx-background-color: #4A4A4A;
+}
+
+.button:pressed {
+    -fx-background-color: #353535;
+}
+
+.row-primary {
+    -fx-background-color: #3574F0;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: #3574F0;
+    -fx-font-weight: bold;
+}
+
+.row-primary:hover {
+    -fx-background-color: #4A84F5;
+    -fx-border-color: #4A84F5;
+}
+
+.check-box {
+    -fx-text-fill: #B0B0B0;
+}
+
+.check-box .box {
+    -fx-background-color: #3A3A3A;
+    -fx-border-color: #5A5A5A;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #3574F0;
+    -fx-border-color: #3574F0;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #FFFFFF;
+}
+
+/* ---------- deslocamento ---------- */
+.scroll-pane, .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane {
+    -fx-border-color: transparent;
 }

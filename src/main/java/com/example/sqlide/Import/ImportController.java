@@ -497,6 +497,7 @@ public class ImportController {
                     importProgressBar.setProgress(1); 
                 });
             } catch (Exception e) {
+                e.printStackTrace();
                 Platform.runLater(() -> {
                     statusTextArea.appendText("Import failed: " + e.getMessage() + "\n");
                     // e.printStackTrace();

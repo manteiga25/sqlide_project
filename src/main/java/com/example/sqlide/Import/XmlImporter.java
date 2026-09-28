@@ -20,8 +20,8 @@ import java.util.*;
 
 public class XmlImporter implements FileImporter {
 
-    private List<String> errors = new ArrayList<>();
-    private DoubleProperty progress = new SimpleDoubleProperty(0.0);
+    private final List<String> errors = new ArrayList<>();
+    private final DoubleProperty progress = new SimpleDoubleProperty(0.0);
     private File lastOpenedFile = null;
     private List<String> detectedTableElementNamesCache = null; // Cache for detected "table" (row) element names
 
@@ -131,9 +131,9 @@ public class XmlImporter implements FileImporter {
         // Refine: only keep names that appear more than once if there are many,
         // or if only one distinct child of root, assume it's the repeating element.
         List<String> refinedTableNames = new ArrayList<>();
-        if(tableNames.size() == 1 && rootElementName != null && !rootElementName.equals(tableNames.get(0))) {
+        if(tableNames.size() == 1 && !rootElementName.equals(tableNames.getFirst())) {
             // If there's only one type of element under the root, assume it's the row element.
-            refinedTableNames.add(tableNames.get(0));
+            refinedTableNames.add(tableNames.getFirst());
         } else {
             for(String name : tableNames){
                 if(elementCounts.getOrDefault(name, 0) > 1){ // Must appear at least twice to be a "table" of rows
@@ -144,10 +144,10 @@ public class XmlImporter implements FileImporter {
                 }
             }
         }
-        if (refinedTableNames.isEmpty() && !tableNames.isEmpty() && !tableNames.get(0).equals(rootElementName)) {
+        if (refinedTableNames.isEmpty() && !tableNames.isEmpty() && !tableNames.getFirst().equals(rootElementName)) {
             // If filtering removed everything, but there was one candidate, take it.
             // This handles cases like <root><row>data</row></root> (only one row)
-            refinedTableNames.add(tableNames.get(0));
+            refinedTableNames.add(tableNames.getFirst());
         }
 
 
@@ -282,9 +282,6 @@ public class XmlImporter implements FileImporter {
                                 XMLEvent endChildEvent = eventReader.peek();
                                 if(endChildEvent.isEndElement() && endChildEvent.asEndElement().getName().getLocalPart().equals(childName)){
                                     eventReader.nextEvent(); // consume end child
-                                } else if (endChildEvent.isStartElement()){
-                                    // Complex content, for preview, might take first text or mark as complex
-                                    // For now, current childValue is fine (might be empty if complex)
                                 }
 
 
@@ -360,8 +357,7 @@ public class XmlImporter implements FileImporter {
         // DDL for createNewTable is deferred to controller/Step 6.
 
         long recordsProcessedCount = 0;
-        long totalRecordsEstimate = 0; // StAX makes exact count hard without two passes.
-        ArrayList<HashMap<String, String>> batchData = new ArrayList<>();
+        ArrayList<LinkedHashMap<String, String>> batchData = new ArrayList<>();
         XMLInputFactory factory = createXmlInputFactory();
 
         try (FileReader fileReader = new FileReader(file)) {
@@ -372,7 +368,6 @@ public class XmlImporter implements FileImporter {
                 if (event.isStartElement()) {
                     StartElement startElement = event.asStartElement();
                     if (startElement.getName().getLocalPart().equals(rowElementName)) {
-                        totalRecordsEstimate++; // For approximate progress
                         HashMap<String, String> currentXmlRecord = new HashMap<>();
 
                         Iterator<Attribute> attributes = startElement.getAttributes();
@@ -411,7 +406,7 @@ public class XmlImporter implements FileImporter {
                         }
 
                         // Map to DB row
-                        HashMap<String, String> rowDataForDb = new LinkedHashMap<>();
+                        LinkedHashMap<String, String> rowDataForDb = new LinkedHashMap<>();
                         for (String targetDbColName : finalTargetDbColumnNames) {
                             String sourceXmlKey = null;
                             for (Map.Entry<String, String> entry : effectiveColumnMapping.entrySet()) {

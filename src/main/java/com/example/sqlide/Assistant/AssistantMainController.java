@@ -42,7 +42,8 @@ public class AssistantMainController implements AssistantMain {
     @FXML
     private VBox Container;
 
-    private VBox currentBox = Container;
+    /** Painel de conversa atualmente montado, ou null quando se está na lista. */
+    private VBox currentBox = null;
 
     public AssistantMainController() throws IOException {
         dir = createDir();
@@ -63,7 +64,8 @@ public class AssistantMainController implements AssistantMain {
 
     private void readConversations() {
         File folder = new File("Assistant");
-        filesNames.addAll(List.of(folder.list()));
+        String[] names = folder.list();
+        if (names != null) filesNames.addAll(List.of(names));
     }
 
     @FXML
@@ -86,7 +88,8 @@ public class AssistantMainController implements AssistantMain {
         File file = new File(dir.toAbsolutePath()+File.separator+name+".json");
         if (!file.createNewFile()) throw new IOException();
         final String nameConversation = file.getName().substring(0, file.getName().indexOf("."));
-        filesNames.add(nameConversation);
+        // A lista guarda nomes de ficheiro, que é o que create() compara antes de criar.
+        filesNames.add(file.getName());
         createConversationBox(nameConversation);
     }
 
@@ -105,26 +108,28 @@ public class AssistantMainController implements AssistantMain {
             VBox.setVgrow(currentBox, Priority.ALWAYS);
 
             AssistantController currentController = loader.getController();
-            currentController.inflate(content);
+            // A ligação à base de dados tem de vir primeiro: é ela que cria o motor
+            // onde o inflate() repõe a memória da conversa.
+            currentController.setAssistantFunctionsInterface(request);
             currentController.setFile(file);
             currentController.setBackPort(this);
-            currentController.setAssistantFunctionsInterface(request);
+            currentController.inflate(content);
             changeToChat();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /** Troca o conteúdo por inteiro, em vez de remover o primeiro filho às cegas. */
     private void changeToChat() {
-        MainContainer.getChildren().removeFirst();
-        MainContainer.getChildren().add(currentBox);
+        MainContainer.getChildren().setAll(currentBox);
     }
 
     private void deleteConversation(final ConversationBox id) {
         try {
             if (ShowConfirmation("Delete", "Delete the conversation?")) {
                 Files.delete(Path.of(dir.toAbsolutePath() + File.separator + id.getId() + ".json"));
-                filesNames.remove(id.getId());
+                filesNames.remove(id.getId() + ".json");
                 Container.getChildren().remove(id);
             }
         } catch (Exception e) {
@@ -145,8 +150,10 @@ public class AssistantMainController implements AssistantMain {
 
     @Override
     public void backPort() {
-            MainContainer.getChildren().removeFirst();
-            MainContainer.getChildren().add(Container);
+        // A conversa é descartada ao sair: ao voltar a entrar é recarregada do ficheiro,
+        // com os interruptores lidos de novo da configuração.
+        currentBox = null;
+        MainContainer.getChildren().setAll(Container);
     }
 
     public void setAssistantFunctionsInterface(requestInterface request) {

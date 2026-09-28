@@ -3,6 +3,7 @@ package com.example.sqlide.DatabaseInterface;
 import com.example.sqlide.*;
 import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.Email.EmailController;
+import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.Metadata.TableMetadata;
 import com.example.sqlide.Report.ReportController;
 import com.example.sqlide.Task.TaskInterface;
@@ -15,6 +16,9 @@ import com.jfoenix.controls.JFXButton;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -30,6 +34,8 @@ import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
@@ -46,11 +52,13 @@ public class DatabaseInterface implements memoryInterface {
         CreateTable
     }
 
+    private DatabaseSchemaVisualizer databaseSchemaVisualizer = null;
+
     private DataBase DatabaseSeted = null;
 
     private final String dbName;
 
-    private final ArrayList<TableInterface> TableInterfaceList = new ArrayList<>();
+    private final ObservableList<TableInterface> TableInterfaceList = FXCollections.observableArrayList();
 
     final Tab DBPane;
 
@@ -76,6 +84,17 @@ public class DatabaseInterface implements memoryInterface {
         return taskInterface;
     }
 
+    /** Rotinas do esquema, lidas quando a base de dados abriu. */
+    public ArrayList<com.example.sqlide.Metadata.RoutineMetadata> getRoutines() {
+        return routines;
+    }
+
+    private final ArrayList<com.example.sqlide.Metadata.RoutineMetadata> routines = new ArrayList<>();
+
+    public List<TableMetadata> getTableMetadataList() {
+        return TableInterfaceList.stream().map(TableInterface::getTableMetadata).toList();
+    }
+
     public HashMap<String, ArrayList<String>> getColumnPrimaryKeyName(final String tableToIgnore) {
         final HashMap<String, ArrayList<String>> list = new HashMap<>();
         for (final TableInterface table : TableInterfaceList) {
@@ -97,8 +116,14 @@ public class DatabaseInterface implements memoryInterface {
     }
 
     public void readTables() throws SQLException {
+        // Funções, agregados e vistas do esquema, lidas uma vez na abertura.
+        routines.clear();
+        routines.addAll(DatabaseSeted.getRoutines());
+
         final ArrayList<String> Tables = DatabaseSeted.getTables();
-        final ArrayList<ViewController.View> views = DatabaseSeted.getViews();
+        // Um driver que devolva null (o PostgreSQL devolvia) não pode impedir a base de abrir.
+        final ArrayList<ViewController.View> read = DatabaseSeted.getViews();
+        final ArrayList<ViewController.View> views = read == null ? new ArrayList<>() : read;
         for (final String t : Tables) {
             final ArrayList<ViewController.View> TableView = new ArrayList<>();
             for (final ViewController.View view : views) if (view.code.get().contains(" " + t + " ")) TableView.add(view);
@@ -140,6 +165,7 @@ public class DatabaseInterface implements memoryInterface {
                 subStage.setScene(new Scene(root));
                 secondaryController.setText(content);
                 secondaryController.setDb(DatabaseSeted);
+                secondaryController.setRoutines(routines);
                 secondaryController.setTablesAndColumns(getColumnsNames());
                 //secondaryController.DeleteColumnInnit(TableName.get(), ColumnsNames, subStage, this);
 
@@ -275,8 +301,14 @@ public class DatabaseInterface implements memoryInterface {
                 dialogStage.initOwner(generateReportButton.getScene().getWindow());
             } */
 
-                //   dialogController.initializeDialog(DatabaseSeted, dialogStage);
-                // dialogController.setTable(TableInterfaceList.get(DBTabContainer.getSelectionModel().getSelectedIndex()).getTableName().get(), getColumnsNames());
+                // Sem isto os botoes de query e de treino nao tinham base de dados nem
+                // colunas: a chamada estava comentada e a janela abria vazia.
+                final int selected = DBTabContainer.getSelectionModel().getSelectedIndex();
+                if (selected >= 0 && selected < TableInterfaceList.size()) {
+                    final String tableName = TableInterfaceList.get(selected).getTableName().get();
+                    dialogController.setTable(DatabaseSeted, tableName,
+                            getColumnsNames().getOrDefault(tableName, new ArrayList<>()), routines);
+                }
 
                 dialogStage.setScene(new Scene(root));
                 dialogStage.setOnCloseRequest(event -> {
@@ -296,16 +328,73 @@ public class DatabaseInterface implements memoryInterface {
         }
     }
 
+    private void openSchemaStage(javafx.event.ActionEvent event) {
+        JFXButton button = (JFXButton) event.getSource();
+        if (databaseSchemaVisualizer == null) {
+            databaseSchemaVisualizer = new DatabaseSchemaVisualizer();
+            databaseSchemaVisualizer.getContainer().getStylesheets().addAll(Objects.requireNonNull(getClass().getResource("/css/ScrollHbarStyle.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/ContextMenuStyle.css")).toExternalForm(), Objects.requireNonNull(getClass().getResource("/css/schemaStyle.css")).toExternalForm());
+            databaseSchemaVisualizer.setTableMetadataList(new ArrayList<>(getTableMetadataList()));
+            databaseSchemaVisualizer.setDatabase(DatabaseSeted);
+            TableInterfaceList.addListener((ListChangeListener<? super TableInterface>) (list)->{
+                while (list.next()) {
+                    if (list.wasAdded()){
+                        databaseSchemaVisualizer.addTable(list.getAddedSubList().getFirst().getTableMetadata());
+                    } else {
+                        databaseSchemaVisualizer.removeTable(list.getRemoved().getFirst().getTableMetadata());
+                    }
+                }
+            });
+        }
+        VBox box = (VBox) DBPane.getContent();
+        if (databaseSchemaVisualizer.getContainer().getParent() == null) {
+            button.setText("Data editor");
+            box.getChildren().removeLast();
+            box.getChildren().add(databaseSchemaVisualizer.getContainer());
+        } else {
+            button.setText("Schema");
+            box.getChildren().removeLast();
+            box.getChildren().add(DBTabContainer);
+        }
+    }
+
     public HashMap<String, ArrayList<String>> getColumnPrimaryKey(final String TableToIgnore) {
         HashMap<String, ArrayList<String>> KeysList = new HashMap<>();
 
         for (final TableInterface table : TableInterfaceList) {
             if (!table.getTableName().get().equals(TableToIgnore)) {
-                System.out.println("pass ");
                 KeysList.put(table.getTableName().get(), table.getPrimaryKeys());
             }
         }
         return KeysList;
+    }
+
+    /**
+     * Colunas que uma chave estrangeira pode referenciar (chaves primárias e colunas UNIQUE),
+     * com a mesma chave "tabela: coluna" que a caixa do formulário de colunas usa. O
+     * formulário vai buscar aqui o tipo, que tem de ser igual nos dois lados.
+     */
+    public LinkedHashMap<String, ColumnMetadata> getReferenceableColumns() {
+        final LinkedHashMap<String, ColumnMetadata> columns = new LinkedHashMap<>();
+        for (final TableMetadata table : getTableMetadataList()) {
+            for (final ColumnMetadata column : table.getColumnMetadata()) {
+                if (column.IsPrimaryKey || column.isUnique) columns.put(table.getName() + ": " + column.Name, column);
+            }
+        }
+        return columns;
+    }
+
+    /**
+     * Uma tabela mudou de nome: as chaves estrangeiras das outras que apontavam para ela
+     * passam a apontar para o nome novo (o motor já o fez na base de dados).
+     */
+    public void tableRenamed(final String oldName, final String newName) {
+        for (final TableMetadata table : getTableMetadataList()) {
+            for (final ColumnMetadata column : table.getColumnMetadata()) {
+                if (column.foreign != null && column.foreign.isForeign && oldName.equals(column.foreign.tableRef)) {
+                    column.foreign.tableRef = newName;
+                }
+            }
+        }
     }
 
     public HashMap<String, ArrayList<String>> getColumnsNames() {
@@ -367,6 +456,9 @@ public class DatabaseInterface implements memoryInterface {
         JFXButton deleteTab = new JFXButton("Delete table");
         deleteTab.setOnAction(e -> deleteDBTab());
 
+        JFXButton schemaButton = new JFXButton("Schema");
+        schemaButton.setOnAction(this::openSchemaStage);
+
         JFXButton ViewButton = new JFXButton("Manage View");
         ViewButton.setOnAction(_->openViewStage("", ""));
 
@@ -379,7 +471,7 @@ public class DatabaseInterface implements memoryInterface {
         JFXButton TrainButton = new JFXButton("Create Model");
         TrainButton.setOnAction(e -> openTrainStage());
 
-        ButtonsLine.getChildren().addAll(undoButton, save, createTab, deleteTab, ViewButton, SendEmailButton, ReportButton, TrainButton);
+        ButtonsLine.getChildren().addAll(undoButton, save, createTab, deleteTab, schemaButton, ViewButton, SendEmailButton, ReportButton, TrainButton);
 
         DBTabContainer = new TabPane();
         VBox.setVgrow(DBTabContainer, Priority.ALWAYS);
@@ -402,17 +494,12 @@ public class DatabaseInterface implements memoryInterface {
         }
     }
 
+    /**
+     * Janela "Create table". É sempre uma janela nova: a antiga era guardada e, ao reabrir,
+     * mostrava a tabela anterior — e ignorava o nome e as colunas que o Assistente mandava.
+     */
     public void createDBTabInterface(final String Table, final ArrayList<HashMap<String, String>> column, final String check) {
-        final boolean exists = stageName.search(StagesNamesEnum.CreateTable) != -1;
-
-        Stage dialogStage;
-
-        if (exists) {
-            stageName.remove(StagesNamesEnum.CreateTable);
-            dialogStage = stagesOpened.get(StagesNamesEnum.CreateTable);
-            dialogStage.show();
-            stageName.push(StagesNamesEnum.CreateTable);
-        }  else {
+        {
             try {
                 // Carrega o arquivo FXML
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/sqlide/newTable.fxml"));
@@ -434,16 +521,8 @@ public class DatabaseInterface implements memoryInterface {
                 // Opcional: definir a modalidade da subjanela
                 subStage.initModality(Modality.APPLICATION_MODAL);
 
-                subStage.setOnCloseRequest(event -> {
-                    event.consume();
-                    subStage.hide();
-                });
-
                 // Mostrar a subjanela
                 subStage.show();
-
-                stageName.push(StagesNamesEnum.CreateTable);
-                stagesOpened.put(StagesNamesEnum.CreateTable, subStage);
             } catch (Exception e) {
                 ShowError("Read asset", "Error to load asset file\n" + e.getMessage());
             }
@@ -464,9 +543,10 @@ public class DatabaseInterface implements memoryInterface {
 
     @FXML
     public void createDBTab(final String TableName) throws SQLException {
+        // O construtor já lê as colunas: o readColumns() que estava aqui punha cada coluna
+        // duas vezes na grelha e nos metadados da tabela nova.
         TableInterface table = new TableInterface(DatabaseSeted, TableName, DBTabContainer, this);
       //  table.createDatabaseTab();
-        table.readColumns();
       /*  table.createDBcolContainer(new ColumnMetadata(false, rowid, new ColumnMetadata.Foreign(), null, 0, "INTEGER", "id", false, 0, 0, null));
         if (rowid) {
             table.createRowId();
@@ -477,6 +557,10 @@ public class DatabaseInterface implements memoryInterface {
     @FXML
     public void deleteDBTab() {
         final int indexTab = DBTabContainer.getSelectionModel().getSelectedIndex();
+        if (indexTab < 0 || indexTab >= TableInterfaceList.size()) {
+            ShowInformation("No table", "Select the table to delete.");
+            return;
+        }
         final TableInterface TableName = TableInterfaceList.get(indexTab);
         final String tableName = TableName.getTableName().get();
 

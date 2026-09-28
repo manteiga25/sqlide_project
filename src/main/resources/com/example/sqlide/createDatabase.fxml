@@ -69,6 +69,21 @@
                             </font>
                         </Label>
                     </VBox>
+                    <VBox alignment="CENTER" GridPane.columnIndex="3">
+                        <ImageView fitHeight="150.0" fitWidth="318.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="https://i.imgur.com/34j8q2f.png" />
+                            </image>
+                            <VBox.margin>
+                                <Insets />
+                            </VBox.margin>
+                        </ImageView>
+                        <Label alignment="CENTER" text="MS Access" textFill="WHITE">
+                            <font>
+                                <Font size="18.0" />
+                            </font>
+                        </Label>
+                    </VBox>
                 </GridPane>
             </content>
             <VBox.margin>

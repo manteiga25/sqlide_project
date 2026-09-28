@@ -1,491 +1,718 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import atlantafx.base.controls.*?>
-<?import com.jfoenix.controls.*?>
-<?import java.lang.*?>
 <?import java.net.*?>
-<?import javafx.collections.*?>
-<?import javafx.embed.swing.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import org.controlsfx.control.*?>
 
-<BorderPane fx:id="MainContainer" style="-fx-background-color: #0f1720;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.DataScience.DataScienceController">
+<BorderPane fx:id="MainContainer" prefHeight="760.0" prefWidth="1360.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.DataScience.DataScienceController">
 
-    <!-- TOP: Title bar / toolbar -->
+    <stylesheets>
+        <URL value="@../../../../css/ds.css" />
+        <URL value="@../../../../css/ContextMenuStyle.css" />
+    </stylesheets>
+
+    <!-- ===== Cabeçalho ===== -->
     <top>
-        <!-- Cabeçalho unificado com título, busca e status -->
-        <VBox spacing="8" style="-fx-padding: 12;">
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <Label style="-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;" text="Data Science Center" />
-                <Region HBox.hgrow="ALWAYS" />
-                <Button fx:id="btnUndo" style="-fx-background-color: #4B5563;" text="Desfazer" />
-            </HBox>
-
-            <HBox alignment="CENTER_LEFT" spacing="10">
-                <TextField fx:id="searchField" prefWidth="300" promptText="Pesquisar colunas..." style="-fx-background-radius: 4;" />
-                <ProgressBar fx:id="globalProgress" prefWidth="150" visible="false" />
-                <Label fx:id="lblStatus" style="-fx-text-fill: #9CA3AF;" text="Pronto" />
-            </HBox>
+        <VBox spacing="8.0" styleClass="ds-toolbar">
+            <padding>
+                <Insets bottom="10.0" left="12.0" right="12.0" top="10.0" />
+            </padding>
+            <children>
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <children>
+                        <Label styleClass="ds-title" text="Data Science" />
+                        <Label fx:id="lblTable" styleClass="ds-hint" text="no table" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <ProgressBar fx:id="globalProgress" prefWidth="140.0" progress="0.0" visible="false" />
+                        <Label fx:id="lblStatus" styleClass="ds-hint" text="Ready" />
+                        <Button mnemonicParsing="false" onAction="#reloadEverything" text="Refresh" />
+                    </children>
+                </HBox>
+            </children>
         </VBox>
     </top>
 
-    <!-- LEFT: Dataset / Columns / Metadata -->
+    <!-- ===== Colunas ===== -->
     <left>
-        <VBox spacing="8" style="-fx-padding: 12; -fx-background-color: linear-gradient(#071024, #0d1320);">
-         <HBox alignment="CENTER_LEFT">
+        <VBox prefWidth="300.0" spacing="8.0">
+            <padding>
+                <Insets bottom="12.0" left="12.0" right="6.0" top="12.0" />
+            </padding>
             <children>
-      
-                  <Label style="-fx-text-fill: #E6EEF5; -fx-font-size: 13; -fx-font-weight: 600;" text="Colunas" />
-                <Spacer />
-               <Button mnemonicParsing="false" onAction="#load_table_metadata" text="Reload" />
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <children>
+                        <Label styleClass="ds-section" text="Columns" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button mnemonicParsing="false" onAction="#load_table_metadata" text="Reload" />
+                    </children>
+                </HBox>
+
+                <TextField fx:id="searchField" promptText="Filter columns..." />
+
+                <TableView fx:id="tblColumns" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colName" prefWidth="110.0" text="Name" />
+                        <TableColumn fx:id="colType" prefWidth="80.0" text="Type" />
+                        <TableColumn fx:id="colNulls" prefWidth="55.0" text="Nulls" />
+                        <TableColumn fx:id="colNullPct" prefWidth="55.0" text="Null %" />
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                    </columnResizePolicy>
+                </TableView>
+
+                <Label styleClass="ds-section" text="Column profile" />
+                <TextArea fx:id="taColumnProfile" editable="false" prefRowCount="9" wrapText="true" />
             </children>
-         </HBox>
-
-            <TableView fx:id="tblColumns" style="-fx-background-radius: 8; -fx-border-radius: 8;">
-                <columns>
-                    <TableColumn fx:id="colName" prefWidth="-1.0" text="Nome" />
-                    <TableColumn fx:id="colType" prefWidth="-1.0" text="Tipo" />
-                    <TableColumn fx:id="colNulls" prefWidth="-1.0" text="Nulls" />
-                </columns>
-            <columnResizePolicy>
-               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-            </columnResizePolicy>
-            </TableView>
-
-            <Separator />
-
-            <VBox spacing="6">
-                <Label style="-fx-text-fill: #9CA3AF; -fx-font-size: 12;" text="Metadados  Estatísticas" />
-                <TextArea fx:id="taMetadata" editable="false" prefRowCount="6" wrapText="true" />
-            </VBox>
-         <padding>
-            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-         </padding>
         </VBox>
     </left>
 
-    <!-- CENTER: Main Tabbed workspace -->
+    <!-- ===== Área principal ===== -->
     <center>
-        <TabPane fx:id="mainTabs" stylesheets="@../../../../css/SpinnerStyle.css" tabClosingPolicy="UNAVAILABLE">
+        <TabPane fx:id="mainTabs" tabClosingPolicy="UNAVAILABLE">
+            <padding>
+                <Insets bottom="12.0" left="6.0" right="6.0" top="12.0" />
+            </padding>
+            <tabs>
 
-            <!-- Imputation -->
-            <Tab text="Imputação">
-                <SplitPane dividerPositions="0.5" orientation="HORIZONTAL" style="-fx-background-color: transparent;" stylesheets="@../../../../css/SplitHorizontal.css">
-                    <items>
-                        <!-- Left: controls -->
-                        <VBox fx:id="ImputBox" spacing="10">
-                            <Label style="-fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: 700;" text="Imputação de Valores Nulos" />
+                <!-- Resumo -->
+                <Tab text="Overview">
+                    <SplitPane dividerPositions="0.62" orientation="HORIZONTAL">
+                        <items>
+                            <VBox spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                        <children>
+                                            <Label styleClass="ds-section" text="Descriptive statistics" />
+                                            <Region HBox.hgrow="ALWAYS" />
+                                            <Button mnemonicParsing="false" onAction="#computeQuickStats" styleClass="ds-primary" text="Compute" />
+                                            <Button mnemonicParsing="false" onAction="#exportStatistics" text="Export CSV" />
+                                        </children>
+                                    </HBox>
+                                    <Label styleClass="ds-hint" text="Aggregates run on the database server, over the whole table." />
+                                    <TableView fx:id="tableStat" VBox.vgrow="ALWAYS">
+                                        <columns>
+                                            <TableColumn fx:id="columnName" prefWidth="110.0" text="Column" />
+                                            <TableColumn fx:id="columnCount" prefWidth="70.0" text="Rows" />
+                                            <TableColumn fx:id="columnNulls" prefWidth="60.0" text="Nulls" />
+                                            <TableColumn fx:id="columnMin" prefWidth="80.0" text="Min" />
+                                            <TableColumn fx:id="columnMax" prefWidth="80.0" text="Max" />
+                                            <TableColumn fx:id="columnMean" prefWidth="80.0" text="Mean" />
+                                            <TableColumn fx:id="columnMedian" prefWidth="80.0" text="Median" />
+                                            <TableColumn fx:id="columnSTD" prefWidth="80.0" text="Std dev" />
+                                            <TableColumn fx:id="columnVariance" prefWidth="90.0" text="Variance" />
+                                            <TableColumn fx:id="columnSkew" prefWidth="75.0" text="Skew" />
+                                            <TableColumn fx:id="columnKurtosis" prefWidth="75.0" text="Kurtosis" />
+                                        </columns>
+                                    </TableView>
+                                </children>
+                            </VBox>
 
-                            <HBox alignment="CENTER_LEFT" spacing="8">
-                                <Label style="-fx-text-fill:#9CA3AF;" text="Target (Y):" />
-                                <ChoiceBox fx:id="cbImputeColumn" />
-                        <Button mnemonicParsing="false" onAction="#AddColumn" text="Add" />
-                            </HBox>
+                            <VBox spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                        <children>
+                                            <Label styleClass="ds-section" text="Correlation" />
+                                            <Region HBox.hgrow="ALWAYS" />
+                                            <Button mnemonicParsing="false" onAction="#renderCorrelation" text="Compute" />
+                                            <Button fx:id="btnExportCorr" mnemonicParsing="false" onAction="#handleExportCorrelationMatrix" text="Export CSV" />
+                                        </children>
+                                    </HBox>
+                                    <Label styleClass="ds-hint" text="Pearson between every pair of numeric columns." />
+                                    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+                                        <content>
+                                            <StackPane fx:id="chartCorrelation" styleClass="ds-surface" />
+                                        </content>
+                                    </ScrollPane>
+                                </children>
+                            </VBox>
+                        </items>
+                    </SplitPane>
+                </Tab>
 
-                            <HBox alignment="CENTER_LEFT" spacing="8">
-                                <Label style="-fx-text-fill:#9CA3AF;" text="Método:" />
-                                <ComboBox fx:id="comboImputeMethod" prefWidth="240">
-                                    <items>
-                                        <FXCollections fx:factory="observableArrayList">
-                                            <String fx:value="Linear Regression (prever com outras colunas)" />
-                                            <String fx:value="Média" />
-                                            <String fx:value="Mediana" />
-                                            <String fx:value="KNN (k-Nearest)" />
-                                            <String fx:value="Interpolação" />
-                                        </FXCollections>
-                                    </items>
-                                </ComboBox>
-                        <Label text="Or use model on modeling stage" />
-                            </HBox>
+                <!-- Distribuição -->
+                <Tab text="Distribution">
+                    <SplitPane dividerPositions="0.32" orientation="HORIZONTAL">
+                        <items>
+                            <VBox spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <Label styleClass="ds-section" text="Shape of the distribution" />
+                                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                        <children>
+                                            <Label text="Column:" />
+                                            <ChoiceBox fx:id="boxTarget" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                                        </children>
+                                    </HBox>
+                                    <HBox spacing="8.0">
+                                        <children>
+                                            <Button mnemonicParsing="false" onAction="#calculateDistribution" styleClass="ds-primary" text="Analyse" />
+                                            <Button mnemonicParsing="false" onAction="#clearDistributionLog" text="Clear log" />
+                                        </children>
+                                    </HBox>
+                                    <TextArea fx:id="textDistribution" editable="false" wrapText="true" VBox.vgrow="ALWAYS" />
+                                </children>
+                            </VBox>
 
-                            <TitledPane expanded="false" text="Parâmetros (avançado)">
-                                <VBox spacing="8">
-                                    <HBox spacing="6"><Label text="k (KNN):" /><Spinner fx:id="spinK" editable="true" /></HBox>
-                                    <HBox spacing="6"><Label text="Max Iterações (Regressão):" /><Spinner fx:id="spinIter" editable="true" /></HBox>
-                                    <HBox spacing="6"><Label text="Normalizar:" /><CheckBox fx:id="chkNormalize" selected="true" /></HBox>
-                                </VBox>
-                            </TitledPane>
+                            <VBox spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                        <children>
+                                            <Label text="Histogram:" />
+                                            <ChoiceBox fx:id="boxFrequency" />
+                                            <Label text="Bins:" />
+                                            <Spinner fx:id="binSpinner" editable="true" prefWidth="90.0" />
+                                            <Region HBox.hgrow="ALWAYS" />
+                                            <Button mnemonicParsing="false" onAction="#cleanGraph" text="Clear chart" />
+                                        </children>
+                                    </HBox>
+                                    <ScrollPane fx:id="graphstack" fitToHeight="true" VBox.vgrow="ALWAYS">
+                                        <content>
+                                            <BarChart fx:id="chartDistribution" animated="false" barGap="1.0" categoryGap="3.0" legendVisible="false">
+                                                <xAxis>
+                                                    <CategoryAxis side="BOTTOM" />
+                                                </xAxis>
+                                                <yAxis>
+                                                    <NumberAxis side="LEFT" />
+                                                </yAxis>
+                                            </BarChart>
+                                        </content>
+                                    </ScrollPane>
+                                </children>
+                            </VBox>
+                        </items>
+                    </SplitPane>
+                </Tab>
 
-                            <HBox spacing="8">
-                                <Button fx:id="btnRunImpute" text="Executar Imputação" />
-                                <Button fx:id="btnPreviewImpute" text="Pré-visualizar" />
-                                <Button fx:id="btnRevertImpute" text="Reverter" />
-                            </HBox>
+                <!-- Valores em falta -->
+                <Tab text="Missing values">
+                    <SplitPane dividerPositions="0.42" orientation="HORIZONTAL">
+                        <items>
+                            <VBox fx:id="ImputBox" spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <Label styleClass="ds-section" text="Fill missing values" />
+                                    <Label styleClass="ds-hint" text="Preview first, then apply. Applying writes an UPDATE to the table." wrapText="true" />
 
-                            <ProgressIndicator fx:id="piImpute" visible="false" />
+                                    <GridPane hgap="8.0" vgap="6.0">
+                                        <columnConstraints>
+                                            <ColumnConstraints halignment="RIGHT" minWidth="70.0" />
+                                            <ColumnConstraints hgrow="ALWAYS" />
+                                        </columnConstraints>
+                                        <rowConstraints>
+                                            <RowConstraints />
+                                            <RowConstraints />
+                                            <RowConstraints />
+                                        </rowConstraints>
+                                        <children>
+                                            <Label text="Column:" GridPane.rowIndex="0" />
+                                            <ChoiceBox fx:id="cbImputeColumn" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                            <Separator style="-fx-base: black;" />
+                                            <Label text="Method:" GridPane.rowIndex="1" />
+                                            <ComboBox fx:id="comboImputeMethod" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                            <Label style="-fx-text-fill:#9CA3AF;" text="Logs" />
-                            <TextArea fx:id="taImputeLog" editable="false" prefRowCount="8" style="-fx-base: transparent;" wrapText="true" VBox.vgrow="ALWAYS" />
-                     <padding>
-                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                     </padding>
-                        </VBox>
+                                            <Label fx:id="lblConstant" text="Value:" GridPane.rowIndex="2" />
+                                            <TextField fx:id="tfConstantValue" promptText="value to write" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                        </children>
+                                    </GridPane>
 
-                        <!-- Right: visualization / model diagnostics -->
-                        <VBox maxHeight="1.7976931348623157E308" spacing="8">
-                            <Label style="-fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: 700;" text="Diagnóstico de Regressão" />
+                                    <TitledPane fx:id="paneImputeAdvanced" animated="false" expanded="true" text="Predictor columns">
+                                        <content>
+                                            <VBox spacing="6.0">
+                                                <children>
+                                                    <Label styleClass="ds-hint" text="Used by regression and k-NN to predict the missing values." wrapText="true" />
+                                                    <ListView fx:id="lvImputePredictors" prefHeight="130.0" />
+                                                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                                        <children>
+                                                            <Label text="k:" />
+                                                            <Spinner fx:id="spinK" editable="true" prefWidth="80.0" />
+                                                            <Region HBox.hgrow="ALWAYS" />
+                                                            <Button mnemonicParsing="false" onAction="#clearPredictorSelection" text="Clear" />
+                                                        </children>
+                                                    </HBox>
+                                                </children>
+                                            </VBox>
+                                        </content>
+                                    </TitledPane>
 
-                            <TabPane stylesheets="@../../../../css/ChartStyle.css" VBox.vgrow="ALWAYS">
+                                    <HBox spacing="8.0">
+                                        <children>
+                                            <Button fx:id="btnPreviewImpute" mnemonicParsing="false" onAction="#handlePreviewImputation" styleClass="ds-primary" text="Preview" />
+                                            <Button fx:id="btnRunImpute" disable="true" mnemonicParsing="false" onAction="#handleRunImputation" styleClass="ds-danger" text="Apply to database" />
+                                            <ProgressIndicator fx:id="piImpute" prefHeight="20.0" prefWidth="20.0" visible="false" />
+                                        </children>
+                                    </HBox>
+                                </children>
+                            </VBox>
+
+                            <VBox spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <Label styleClass="ds-section" text="Preview" />
+                                    <TextArea fx:id="taModelSummary" editable="false" prefRowCount="6" wrapText="true" />
+                                    <Label styleClass="ds-section" text="Rows that would change" />
+                                    <TableView fx:id="tblImputePreview" VBox.vgrow="ALWAYS">
+                                        <columnResizePolicy>
+                                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                        </columnResizePolicy>
+                                    </TableView>
+                                    <Label styleClass="ds-section" text="Log" />
+                                    <TextArea fx:id="taImputeLog" editable="false" prefRowCount="5" wrapText="true" />
+                                </children>
+                            </VBox>
+                        </items>
+                    </SplitPane>
+                </Tab>
+
+                <!-- Outliers -->
+                <Tab text="Outliers">
+                    <SplitPane dividerPositions="0.38" orientation="HORIZONTAL">
+                        <items>
+                            <VBox spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <Label styleClass="ds-section" text="Detect outliers" />
+
+                                    <GridPane hgap="8.0" vgap="6.0">
+                                        <columnConstraints>
+                                            <ColumnConstraints halignment="RIGHT" minWidth="80.0" />
+                                            <ColumnConstraints hgrow="ALWAYS" />
+                                        </columnConstraints>
+                                        <rowConstraints>
+                                            <RowConstraints />
+                                            <RowConstraints />
+                                            <RowConstraints />
+                                        </rowConstraints>
+                                        <children>
+                                            <Label text="Column:" GridPane.rowIndex="0" />
+                                            <ChoiceBox fx:id="cbOutlierColumn" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                            <Label text="Method:" GridPane.rowIndex="1" />
+                                            <ComboBox fx:id="comboOutlierMethod" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                                            <Label fx:id="lblThreshold" text="Threshold:" GridPane.rowIndex="2" />
+                                            <TextField fx:id="tfOutlierThresh" promptText="1.5" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                        </children>
+                                    </GridPane>
+
+                                    <HBox spacing="8.0">
+                                        <children>
+                                            <Button fx:id="btnDetectOutliers" mnemonicParsing="false" onAction="#handleDetectOutliers" styleClass="ds-primary" text="Detect" />
+                                            <Button fx:id="btnClampOutliers" disable="true" mnemonicParsing="false" onAction="#handleClampOutliers" text="Clamp to bounds" />
+                                            <Button fx:id="btnRemoveOutliers" disable="true" mnemonicParsing="false" onAction="#handleRemoveOutliers" styleClass="ds-danger" text="Delete rows" />
+                                        </children>
+                                    </HBox>
+
+                                    <Label styleClass="ds-section" text="Result" />
+                                    <TextArea fx:id="taOutlierSummary" editable="false" wrapText="true" VBox.vgrow="ALWAYS" />
+                                </children>
+                            </VBox>
+
+                            <VBox spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <Label styleClass="ds-section" text="Extreme values" />
+                                    <TableView fx:id="tblOutliersPreview" prefHeight="220.0">
+                                        <columnResizePolicy>
+                                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                        </columnResizePolicy>
+                                    </TableView>
+                                    <Label styleClass="ds-section" text="Where the bounds fall" />
+                                    <ScrollPane fitToHeight="true" VBox.vgrow="ALWAYS">
+                                        <content>
+                                            <BarChart fx:id="chartOutlierSpread" animated="false" legendVisible="false">
+                                                <xAxis>
+                                                    <CategoryAxis side="BOTTOM" />
+                                                </xAxis>
+                                                <yAxis>
+                                                    <NumberAxis side="LEFT" />
+                                                </yAxis>
+                                            </BarChart>
+                                        </content>
+                                    </ScrollPane>
+                                </children>
+                            </VBox>
+                        </items>
+                    </SplitPane>
+                </Tab>
+
+                <!-- Previsão de séries -->
+                <Tab text="Forecast">
+                    <SplitPane dividerPositions="0.34" orientation="HORIZONTAL">
+                        <items>
+                            <ScrollPane fitToWidth="true">
+                                <content>
+                                    <VBox spacing="8.0">
+                                        <padding>
+                                            <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                        </padding>
+                                        <children>
+                                            <Label styleClass="ds-section" text="Forecast a series" />
+                                            <Label styleClass="ds-hint" text="The values are read in the order of the column you pick, which is what makes them a series." wrapText="true" />
+
+                                            <GridPane hgap="8.0" vgap="6.0">
+                                                <columnConstraints>
+                                                    <ColumnConstraints halignment="RIGHT" minWidth="105.0" />
+                                                    <ColumnConstraints hgrow="ALWAYS" />
+                                                </columnConstraints>
+                                                <rowConstraints>
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                </rowConstraints>
+                                                <children>
+                                                    <Label text="Values:" GridPane.rowIndex="0" />
+                                                    <ChoiceBox fx:id="cbForecastValue" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                                    <Label text="Order by:" GridPane.rowIndex="1" />
+                                                    <ChoiceBox fx:id="cbForecastOrder" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                                                    <Label text="Method:" GridPane.rowIndex="2" />
+                                                    <ComboBox fx:id="comboForecastMethod" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                </children>
+                                            </GridPane>
+
+                                            <Label fx:id="lblForecastHint" styleClass="ds-hint" wrapText="true" />
+
+                                            <GridPane hgap="8.0" vgap="6.0">
+                                                <columnConstraints>
+                                                    <ColumnConstraints halignment="RIGHT" minWidth="105.0" />
+                                                    <ColumnConstraints hgrow="ALWAYS" />
+                                                </columnConstraints>
+                                                <rowConstraints>
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                </rowConstraints>
+                                                <children>
+                                                    <Label text="Horizon:" GridPane.rowIndex="0" />
+                                                    <Spinner fx:id="horizonSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                                    <Label text="Differencing:" GridPane.rowIndex="1" />
+                                                    <Spinner fx:id="diffSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                                                    <Label text="Order p:" GridPane.rowIndex="2" />
+                                                    <Spinner fx:id="orderPSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                                                    <Label text="Order q:" GridPane.rowIndex="3" />
+                                                    <Spinner fx:id="orderQSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                                                    <Label text="Season length:" GridPane.rowIndex="4" />
+                                                    <Spinner fx:id="seasonSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+                                                    <Label text="Alpha:" GridPane.rowIndex="5" />
+                                                    <Spinner fx:id="alphaSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+
+                                                    <Label text="Beta:" GridPane.rowIndex="6" />
+                                                    <Spinner fx:id="betaSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+
+                                                    <Label text="Gamma:" GridPane.rowIndex="7" />
+                                                    <Spinner fx:id="gammaSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+                                                </children>
+                                            </GridPane>
+
+                                            <HBox spacing="8.0">
+                                                <children>
+                                                    <Button mnemonicParsing="false" onAction="#runForecast" styleClass="ds-primary" text="Forecast" />
+                                                    <Button mnemonicParsing="false" onAction="#clearForecast" text="Clear" />
+                                                </children>
+                                            </HBox>
+                                        </children>
+                                    </VBox>
+                                </content>
+                            </ScrollPane>
+
+                            <VBox spacing="8.0">
+                                <padding>
+                                    <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                </padding>
+                                <children>
+                                    <LineChart fx:id="chartForecast" animated="false" createSymbols="false" VBox.vgrow="ALWAYS">
+                                        <xAxis>
+                                            <NumberAxis label="Step" side="BOTTOM" />
+                                        </xAxis>
+                                        <yAxis>
+                                            <NumberAxis label="Value" side="LEFT" />
+                                        </yAxis>
+                                    </LineChart>
+                                    <Label styleClass="ds-section" text="Results" />
+                                    <TextArea fx:id="taForecastResults" editable="false" prefRowCount="10" wrapText="true" />
+                                </children>
+                            </VBox>
+                        </items>
+                    </SplitPane>
+                </Tab>
+
+                <!-- Modelação -->
+                <Tab text="Modeling">
+                    <SplitPane dividerPositions="0.36" orientation="HORIZONTAL">
+                        <items>
+                            <ScrollPane fitToWidth="true">
+                                <content>
+                                    <VBox fx:id="boxModel" spacing="8.0">
+                                        <padding>
+                                            <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                        </padding>
+                                        <children>
+                                            <Label styleClass="ds-section" text="Train a model" />
+
+                                            <GridPane hgap="8.0" vgap="6.0">
+                                                <columnConstraints>
+                                                    <ColumnConstraints halignment="RIGHT" minWidth="95.0" />
+                                                    <ColumnConstraints hgrow="ALWAYS" />
+                                                </columnConstraints>
+                                                <rowConstraints>
+                                                    <RowConstraints />
+                                                    <RowConstraints />
+                                                </rowConstraints>
+                                                <children>
+                                                    <Label text="Target:" GridPane.rowIndex="0" />
+                                                    <ChoiceBox fx:id="cbTargetColumn" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                                    <Label text="Algorithm:" GridPane.rowIndex="1" />
+                                                    <ComboBox fx:id="comboModelAlgo" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                </children>
+                                            </GridPane>
+
+                                            <Label styleClass="ds-section" text="Feature columns" />
+                                            <ListView fx:id="lvFeatures" prefHeight="150.0" />
+
+                                            <Label styleClass="ds-section" text="Preprocessing" />
+                                            <Label styleClass="ds-hint" text="Fitted once on the training rows, then applied to the test set and to every prediction." wrapText="true" />
+                                            <ListView fx:id="lvPreprocessing" prefHeight="120.0" />
+
+                                            <TitledPane animated="false" expanded="false" text="Training options">
+                                                <content>
+                                                    <GridPane hgap="8.0" vgap="6.0">
+                                                        <columnConstraints>
+                                                            <ColumnConstraints halignment="RIGHT" minWidth="110.0" />
+                                                            <ColumnConstraints hgrow="ALWAYS" />
+                                                        </columnConstraints>
+                                                        <rowConstraints>
+                                                            <RowConstraints />
+                                                            <RowConstraints />
+                                                            <RowConstraints />
+                                                            <RowConstraints />
+                                                            <RowConstraints />
+                                                        </rowConstraints>
+                                                        <children>
+                                                            <Label text="Test split (%):" GridPane.rowIndex="0" />
+                                                            <Spinner fx:id="testSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                                            <Label text="Learning rate:" GridPane.rowIndex="1" />
+                                                            <Spinner fx:id="learningRateSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                                                            <Label text="Batch (rows):" GridPane.rowIndex="2" />
+                                                            <Spinner fx:id="batchSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                                                            <Label text="Row limit:" GridPane.rowIndex="3" />
+                                                            <Spinner fx:id="limitSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                                                            <Label text="Start offset:" GridPane.rowIndex="4" />
+                                                            <Spinner fx:id="offsetSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                                        </children>
+                                                    </GridPane>
+                                                </content>
+                                            </TitledPane>
+
+                                            <HBox fx:id="boxStart" spacing="8.0">
+                                                <children>
+                                                    <Button fx:id="btnTrain" mnemonicParsing="false" onAction="#TrainModel" styleClass="ds-primary" text="Train" />
+                                                    <Button fx:id="btnExportModel" mnemonicParsing="false" onAction="#exportModel" text="Export" />
+                                                    <MenuButton mnemonicParsing="false" text="scikit-learn">
+                                                        <items>
+                                                            <MenuItem mnemonicParsing="false" onAction="#exportForSklearn" text="Export for scikit-learn" />
+                                                            <MenuItem mnemonicParsing="false" onAction="#importFromSklearn" text="Import a model" />
+                                                        </items>
+                                                    </MenuButton>
+                                                </children>
+                                            </HBox>
+
+                                            <Label styleClass="ds-section" text="Results" />
+                                            <TextArea fx:id="taModelResults" editable="false" prefRowCount="12" wrapText="true" VBox.vgrow="ALWAYS" />
+                                        </children>
+                                    </VBox>
+                                </content>
+                            </ScrollPane>
+
+                            <TabPane fx:id="modelTabs" tabClosingPolicy="UNAVAILABLE">
                                 <tabs>
-                                    <Tab text="Resumo">
-                                        <VBox spacing="6">
-                                            <Label style="-fx-text-fill: #9CA3AF;" text="Resumo do Modelo" />
-                                            <TextArea fx:id="taModelSummary" editable="false" prefRowCount="8" style="-fx-base: transparent;" wrapText="true" VBox.vgrow="ALWAYS" />
+                                    <Tab text="Learning curve">
+                                        <VBox>
+                                            <padding>
+                                                <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="ds-hint" text="Metric measured on the held-out test set after each batch of training rows." />
+                                                <LineChart fx:id="TrainGraph" animated="false" createSymbols="true" title="Training progress" verticalGridLinesVisible="false" VBox.vgrow="ALWAYS">
+                                                    <xAxis>
+                                                        <NumberAxis label="Batch" side="BOTTOM" />
+                                                    </xAxis>
+                                                    <yAxis>
+                                                        <NumberAxis label="Score" side="LEFT" />
+                                                    </yAxis>
+                                                </LineChart>
+                                            </children>
                                         </VBox>
                                     </Tab>
-                                    <Tab text="Resíduos">
-                                        <VBox spacing="6">
-                                            <!-- Chart placeholder; controller will put a ScatterChart here -->
-                                            <StackPane fx:id="chartResiduals" style="-fx-border-color: #203040; -fx-border-radius:8; -fx-background-radius:8;" VBox.vgrow="ALWAYS" />
-                                            <Label style="-fx-text-fill:#9CA3AF;" text="Gráfico de resíduos" />
-                                 <padding>
-                                    <Insets top="10.0" />
-                                 </padding>
+
+                                    <Tab text="Predicted vs actual">
+                                        <VBox>
+                                            <padding>
+                                                <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="ds-hint" text="Points on the diagonal are perfect predictions." />
+                                                <ScatterChart fx:id="graphModelEvaluation" animated="false" title="Test set" verticalGridLinesVisible="false" VBox.vgrow="ALWAYS">
+                                                    <xAxis>
+                                                        <NumberAxis label="Actual" side="BOTTOM" />
+                                                    </xAxis>
+                                                    <yAxis>
+                                                        <NumberAxis label="Predicted" side="LEFT" />
+                                                    </yAxis>
+                                                </ScatterChart>
+                                            </children>
                                         </VBox>
                                     </Tab>
-                                    <Tab text="Comparação">
-                                        <VBox spacing="6">
-                                            <StackPane fx:id="chartImputeCompare" style="-fx-border-color: #203040; -fx-border-radius:8; -fx-background-radius:8;" VBox.vgrow="ALWAYS">
-                                    <VBox.margin>
-                                       <Insets top="10.0" />
-                                    </VBox.margin></StackPane>
-                                            <Label style="-fx-text-fill:#9CA3AF;" text="Valores originais x imputados" />
+
+                                    <Tab text="Residuals">
+                                        <VBox>
+                                            <padding>
+                                                <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="ds-hint" text="A shapeless cloud around zero means the model captured the structure." />
+                                                <ScatterChart fx:id="graphModelResidual" animated="false" title="Residuals" verticalGridLinesVisible="false" VBox.vgrow="ALWAYS">
+                                                    <xAxis>
+                                                        <NumberAxis label="Predicted" side="BOTTOM" />
+                                                    </xAxis>
+                                                    <yAxis>
+                                                        <NumberAxis label="Residual" side="LEFT" />
+                                                    </yAxis>
+                                                </ScatterChart>
+                                            </children>
+                                        </VBox>
+                                    </Tab>
+
+                                    <Tab text="Feature weight">
+                                        <VBox>
+                                            <padding>
+                                                <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="ds-hint" text="Importance for tree models, coefficients for linear ones." />
+                                                <BarChart fx:id="chartImportance" animated="false" legendVisible="false" title="Feature weight" VBox.vgrow="ALWAYS">
+                                                    <xAxis>
+                                                        <CategoryAxis side="BOTTOM" />
+                                                    </xAxis>
+                                                    <yAxis>
+                                                        <NumberAxis side="LEFT" />
+                                                    </yAxis>
+                                                </BarChart>
+                                            </children>
+                                        </VBox>
+                                    </Tab>
+
+                                    <Tab text="Predict">
+                                        <VBox spacing="8.0">
+                                            <padding>
+                                                <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="ds-hint" text="Type one value per feature and run the trained model on it." />
+                                                <ScrollPane fitToWidth="true" prefHeight="180.0">
+                                                    <content>
+                                                        <GridPane fx:id="TestBox" hgap="8.0" vgap="6.0">
+                                                            <padding>
+                                                                <Insets bottom="4.0" left="4.0" right="4.0" top="4.0" />
+                                                            </padding>
+                                                        </GridPane>
+                                                    </content>
+                                                </ScrollPane>
+                                                <Button mnemonicParsing="false" onAction="#PredictValue" styleClass="ds-primary" text="Predict" />
+                                                <TextArea fx:id="textPredictHistory" editable="false" wrapText="true" VBox.vgrow="ALWAYS" />
+                                            </children>
                                         </VBox>
                                     </Tab>
                                 </tabs>
-                        <padding>
-                           <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                        </padding>
                             </TabPane>
+                        </items>
+                    </SplitPane>
+                </Tab>
 
-                        </VBox>
-                    </items>
-                </SplitPane>
-            </Tab>
-
-            <!-- Outliers -->
-            <Tab text="Outliers">
-                <BorderPane>
-                    <left>
-                        <VBox spacing="8">
-                            <Label style="-fx-text-fill:white; -fx-font-weight:700;" text="Detecção de Outliers" />
-                            <HBox spacing="8"><Label style="-fx-text-fill:#9CA3AF;" text="Coluna:" /><ChoiceBox fx:id="cbOutlierColumn" prefWidth="200" /></HBox>
-                            <HBox spacing="8"><Label style="-fx-text-fill:#9CA3AF;" text="Método:" /><ComboBox fx:id="comboOutlierMethod" value="IQR"><items><FXCollections fx:factory="observableArrayList"><String fx:value="IQR" /><String fx:value="Z-score" /><String fx:value="Mean" /><String fx:value="Isolation Forest" /></FXCollections></items></ComboBox></HBox>
-                            <HBox spacing="8"><Label style="-fx-text-fill:#9CA3AF;" text="Threshold:" /><TextField fx:id="tfOutlierThresh" prefWidth="120" promptText="ex: 3.0" /></HBox>
-                            <HBox spacing="8"><Button fx:id="btnDetectOutliers" onAction="#handleDetectOutliers" text="Detectar" /><Button fx:id="btnRemoveOutliers" onAction="#handleRemoveOutliers" text="Remover" />
-                        <Button fx:id="btnUpdateOutliers" layoutX="91.0" layoutY="10.0" text="Atualizar" /></HBox>
-
-                            <Separator />
-                            <Label style="-fx-text-fill:#9CA3AF;" text="Visão rápida" />
-                            <TableView fx:id="tblOutliersPreview" VBox.vgrow="ALWAYS">
-                        <columnResizePolicy>
-                           <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-                        </columnResizePolicy></TableView>
-                     <BorderPane.margin>
-                        <Insets bottom="10.0" right="10.0" top="10.0" />
-                     </BorderPane.margin>
-                        </VBox>
-                    </left>
-                    <center>
-                        <VBox spacing="8">
-                            <Label style="-fx-text-fill:#E6EEF5; -fx-font-weight:600;" text="Distribuição" />
-                            <StackPane style="-fx-border-color: #203040; -fx-border-radius:8; -fx-background-radius:8;" stylesheets="@../../../../css/ChartStyle.css" VBox.vgrow="ALWAYS">
-                        <children>
-                           <SwingNode fx:id="chart" />
-                        </children></StackPane>
-                     <BorderPane.margin>
-                        <Insets />
-                     </BorderPane.margin>
-                        </VBox>
-                    </center>
-               <padding>
-                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-               </padding>
-                </BorderPane>
-            </Tab>
-
-            <!-- Metrics -->
-            <Tab text="Métricas">
-                <VBox spacing="8">
-                    <Label style="-fx-text-fill:white; -fx-font-weight:700;" text="Métricas e Estatísticas Descritivas" />
-                    <GridPane hgap="12" vgap="8" VBox.vgrow="ALWAYS">
-                        <columnConstraints>
-                            <ColumnConstraints percentWidth="33" />
-                     <ColumnConstraints minWidth="10.0" percentWidth="34.0" prefWidth="100.0" />
-                            <ColumnConstraints percentWidth="34" />
-                        </columnConstraints>
-                        <rowConstraints>
-                            <RowConstraints />
-                        </rowConstraints>
-
-                        <children>
-                            <VBox spacing="5.0" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.vgrow="ALWAYS">
-                                <Label style="-fx-text-fill:#9CA3AF;" text="Resumo numérico" />
-                        <TableView fx:id="tableStat" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS">
-                          <columns>
-                            <TableColumn fx:id="columnName" prefWidth="-1.0" text="Column" />
-                              <TableColumn fx:id="columnMean" prefWidth="-1.0" text="mean" />
-                              <TableColumn fx:id="columnMedian" prefWidth="-1.0" text="median" />
-                              <TableColumn fx:id="columnSTD" prefWidth="-1.0" text="std" />
-                              <TableColumn fx:id="columnMin" prefWidth="-1.0" text="min" />
-                              <TableColumn fx:id="columnMax" prefWidth="-1.0" text="max" />
-                              <TableColumn fx:id="columnVariance" prefWidth="-1.0" text="variância amostral" />
-                              <TableColumn fx:id="columnSquareVariance" prefWidth="-1.0" text="desvio padrão amostral" />
-                          </columns>
-                           <columnResizePolicy>
-                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-                           </columnResizePolicy>
-                        </TableView>
-                            </VBox>
-
-                            <VBox GridPane.columnIndex="1" GridPane.vgrow="ALWAYS">
-                                <Label style="-fx-text-fill:#9CA3AF;" text="Correlação" />
-                                <StackPane fx:id="chartCorrelation" />
-                                <Button fx:id="btnExportCorr" text="Exportar Matriz" />
-                            </VBox>
-
-                            <VBox GridPane.columnIndex="2" GridPane.vgrow="ALWAYS">
-                                <Label style="-fx-text-fill:#9CA3AF;" text="Dispersão / Relações" />
-                                <StackPane fx:id="chartScatterMatrix" />
-                                <Button fx:id="btnPairPlot" text="Gerar Pairplot" />
-                            </VBox>
-                        </children>
-                    </GridPane>
-               <padding>
-                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-               </padding>
-                </VBox>
-            </Tab>
-
-            <Tab text="Distribuição">
-                <SplitPane dividerPositions="0.5" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" style="-fx-background-color: transparent;" stylesheets="@../../../../css/SplitHorizontal.css">
-                    <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
-                  <HBox alignment="CENTER_LEFT" spacing="5.0">
-                     <children>
-                              <Label text="Target:" />
-                              <ChoiceBox fx:id="boxTarget" />
-                              <Button onAction="#calculateDistribution" text="calculate" />
-                     </children>
-                  </HBox>
-                  <TextArea fx:id="textDistribution" editable="false" style="-fx-base: transparent;" wrapText="true" VBox.vgrow="ALWAYS">
-                     <VBox.margin>
-                        <Insets right="5.0" />
-                     </VBox.margin></TextArea>
-                    </VBox>
-                    <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
-                  <HBox alignment="CENTER_LEFT" spacing="5.0">
-                     <children>
-                        <Label text="Histogram type:" />
-                         <ChoiceBox fx:id="boxFrequency" value="Frequency"><items><FXCollections fx:factory="observableArrayList"><String fx:value="Frequency" /><String fx:value="Intervale" /></FXCollections></items></ChoiceBox>
-                        <Label text="Bins:" />
-                        <Spinner fx:id="binSpinner" style="-fx-background-color: transparent; -fx-background-radius: 0px;" />
-                         <Spacer />
-                        <Button mnemonicParsing="false" onAction="#cleanGraph" style="-fx-background-color: red;" text="Clear" />
-                     </children>
-                  </HBox>
-                    <ScrollPane fx:id="graphstack" fitToHeight="true" style="-fx-background-color: transparent;" stylesheets="@../../../../css/ScrollHbarStyle.css" SplitPane.resizableWithParent="false" VBox.vgrow="ALWAYS">
-                  <BarChart fx:id="chartDistribution" barGap="2.0" categoryGap="2.0" maxWidth="1.7976931348623157E308" stylesheets="@../../../../css/ChartStyle.css" VBox.vgrow="ALWAYS">
-                    <xAxis>
-                      <CategoryAxis side="BOTTOM" />
-                    </xAxis>
-                    <yAxis>
-                      <NumberAxis side="LEFT" />
-                    </yAxis>
-                  </BarChart>
-                    </ScrollPane>
-                  <padding>
-                     <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                  </padding>
-                    </VBox>
-               <padding>
-                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-               </padding>
-                </SplitPane>
-            </Tab>
-
-            <!-- Modeling -->
-            <Tab text="Modelagem">
-                <SplitPane dividerPositions="0.5" style="-fx-background-color: transparent;" stylesheets="@../../../../css/SplitHorizontal.css">
-                    <items>
-                        <VBox fx:id="boxModel" spacing="10.0">
-                            <Label style="-fx-text-fill:white; -fx-font-weight:700;" text="Treinar modelo preditivo" />
-                            <HBox alignment="CENTER_LEFT" spacing="8"><Label style="-fx-text-fill:#9CA3AF;" text="Alvo:" /><ChoiceBox fx:id="cbTargetColumn" />
-                        <Button mnemonicParsing="false" onAction="#AddColumnTrain" text="Add" /></HBox>
-                          <!--  <HBox spacing="8"><Label style="-fx-text-fill:#9CA3AF;" text="Algoritmo:" /><ComboBox fx:id="comboModelAlgo" value="Linear Regression"><items><FXCollections fx:factory="observableArrayList"><String fx:value="Linear Regression" /><String fx:value="Random Forest" /><String fx:value="XGBoost" /><String fx:value="Logistic Regression" /><String fx:value="Logistic Regression Binomial" /><String fx:value="Logistic Regression Multinomial" /><String fx:value="Random Forest Classification" /></FXCollections></items></ComboBox> -->
-                            <HBox alignment="CENTER_LEFT" spacing="8"><Label style="-fx-text-fill:#9CA3AF;" text="Algoritmo:" />
-                                <ComboBox fx:id="comboModelAlgo" />
-                        <Label text="Evaluate split:" />
-                        <Spinner fx:id="testSpinner" editable="true" /></HBox>
-                     <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="68.0" spacing="8">
-                        <children>
-                           <Label style="-fx-text-fill:#9CA3AF;" text="Learning rate:" />
-                            <Spinner fx:id="learningRateSpinner" editable="true" />
-                        </children>
-                     </HBox>
-                     <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="101.0" spacing="8">
-                        <children>
-                           <Label style="-fx-text-fill:#9CA3AF;" text="batch size (Rows):" />
-                           <Spinner fx:id="batchSpinner" editable="true" />
-                        </children>
-                     </HBox>
-                     <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="146.0" spacing="8">
-                        <children>
-                           <Label style="-fx-text-fill:#9CA3AF;" text="Limit data:" />
-                           <Spinner fx:id="limitSpinner" editable="true" />
-                           <Label layoutX="10.0" layoutY="16.0" style="-fx-text-fill:#9CA3AF;" text="initial offset:" />
-                           <Spinner fx:id="offsetSpinner" editable="true" layoutX="74.0" layoutY="10.0" />
-                        </children>
-                     </HBox>
-                            <HBox alignment="CENTER_LEFT" spacing="8"><Label style="-fx-text-fill:#9CA3AF;" text="Data validation condition:" />
-                        <JFXTextField fx:id="textQueryTest" promptText="Ex: x &gt; 5 or ...." style="-fx-background-color: transparent; -fx-border-color: transparent;" HBox.hgrow="ALWAYS" /></HBox>
-                            <HBox fx:id="boxStart" spacing="8"><Button fx:id="btnTrain" text="Treinar" /><Button fx:id="btnEvaluate" onAction="#evaluateModel" text="Avaliar" /><Button fx:id="btnExportModel" onAction="#exportModel" text="Exportar Modelo" /></HBox>
-   
-                           <VBox spacing="8" VBox.vgrow="ALWAYS">
-                               <Label style="-fx-text-fill:white; -fx-font-weight:700;" text="Resultados" />
-                               <TextArea fx:id="taModelResults" editable="false" prefRowCount="8" style="-fx-base: transparent;" wrapText="true" VBox.vgrow="ALWAYS" />
-                           </VBox>
-                     <padding>
-                        <Insets right="5.0" />
-                     </padding>
-                        </VBox>
-                  <TabPane tabClosingPolicy="UNAVAILABLE">
-                    <tabs>
-                      <Tab text="Train Graph">
-                           <content>
-                              <VBox>
-                                 <children>
-                                    <ToolBar style="-fx-background-color: transparent;">
-                                      <items>
-                                          <Label text="Serie:" />
-                                        <CheckComboBox fx:id="comboSerie" title="" />
-                                      </items>
-                                    </ToolBar>
-                                    <LineChart fx:id="TrainGraph" stylesheets="@../../../../css/ChartStyle.css" title="State of train" verticalGridLinesVisible="false" VBox.vgrow="ALWAYS">
-                                      <xAxis>
-                                        <NumberAxis label="State of model" side="BOTTOM" />
-                                      </xAxis>
-                                      <yAxis>
-                                        <NumberAxis label="Steps" side="LEFT">
-                                             <padding>
-                                                <Insets left="5.0" />
-                                             </padding></NumberAxis>
-                                      </yAxis>
-                                    </LineChart>
-                                 </children>
-                                 <padding>
-                                    <Insets left="5.0" />
-                                 </padding>
-                              </VBox>
-                           </content></Tab>
-                        <Tab text="Evaluate Graph">
-                            <StackPane>
-                                <ScatterChart fx:id="graphModelEvaluation" stylesheets="@../../../../css/ChartStyle.css" title="Model evaluation" verticalGridLinesVisible="false" VBox.vgrow="ALWAYS">
-                                    <xAxis>
-                                        <CategoryAxis label="Predicted" side="BOTTOM" />
-                                    </xAxis>
-                                    <yAxis>
-                                        <CategoryAxis label="Real y" side="LEFT" />
-                                    </yAxis>
-                                </ScatterChart>
-                            </StackPane>
-                        </Tab>
-                        <Tab text="Residual">
-                            <VBox>
-                              <children>
-                                 <ToolBar fx:id="PageGraph" style="-fx-background-color: transparent;">
-                                   <items>
-                                       <Hyperlink onAction="#forwardResidualPage" style="-fx-border-color: #3C3C3C; -fx-border-radius: 3px; -fx-background-color: #1A1A1A;" stylesheets="@../../../../css/Hyper.css" text="&lt;&lt;" />
-                                       <Hyperlink onAction="#nextResidualPage" style="-fx-border-color: #3C3C3C; -fx-border-radius: 3px; -fx-background-color: 3p #1A1A1Ax;" stylesheets="@../../../../css/Hyper.css" text="&gt;&gt;" />
-                                   </items>
-                                 </ToolBar>
-                                 <ScatterChart fx:id="graphModelResidual" stylesheets="@../../../../css/ChartStyle.css" title="Model residual" verticalGridLinesVisible="false" VBox.vgrow="ALWAYS">
-                                   <xAxis>
-                                     <NumberAxis label="Residual" side="BOTTOM" />
-                                   </xAxis>
-                                   <yAxis>
-                                     <NumberAxis label="Real y" side="LEFT" />
-                                   </yAxis>
-                                 </ScatterChart>
-                              </children>
-                              <padding>
-                                 <Insets left="5.0" />
-                              </padding></VBox>
-                        </Tab>
-                      <Tab text="test">
-                              <VBox spacing="5.0">
-                                 <children>
-                                    <FlowPane fx:id="TestBox" VBox.vgrow="ALWAYS">
-                                    <VBox.margin>
-                                       <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                    </VBox.margin></FlowPane>
-                                 <Button mnemonicParsing="false" onAction="#PredictValue" text="Preidict" />
-                                 <TextArea fx:id="textPredictHistory" editable="false" style="-fx-base: transparent;" wrapText="true" />
-                                 </children>
-                              <padding>
-                                 <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                              </padding>
-                              </VBox>
-                      </Tab>
-                    </tabs>
-                  </TabPane>
-                    </items>
-               <padding>
-                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-               </padding>
-                </SplitPane>
-            </Tab>
-         <padding>
-            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-         </padding>
-
+            </tabs>
         </TabPane>
     </center>
 
-    <!-- RIGHT: Action quick panel / history -->
+    <!-- ===== Ações rápidas ===== -->
     <right>
-        <VBox spacing="12" style="-fx-padding: 12; -fx-background-color: #081623;">
-            <Label style="-fx-text-fill: #E6EEF5; -fx-font-weight: bold;" text="Ações Rápidas" />
+        <VBox prefWidth="220.0" spacing="10.0">
+            <padding>
+                <Insets bottom="12.0" left="6.0" right="12.0" top="12.0" />
+            </padding>
+            <children>
+                <Label styleClass="ds-section" text="Quick actions" />
+                <Button fx:id="btnQuickStats" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#computeQuickStats" text="Descriptive statistics" />
+                <Button fx:id="btnDetectAnomalies" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#quickScanOutliers" text="Scan all columns" />
+                <Button fx:id="btnMissingReport" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#quickMissingReport" text="Missing values report" />
 
-            <VBox spacing="8">
-                <Button fx:id="btnAutoImpute" style="-fx-background-color: #3B82F6; -fx-text-fill: white;" text="Imputação Automática" />
-                <Button fx:id="btnDetectAnomalies" style="-fx-background-color: #8B5CF6; -fx-text-fill: white;" text="Detectar Anomalias" />
-                <Button fx:id="btnQuickStats" style="-fx-background-color: #10B981; -fx-text-fill: white;" text="Estatísticas Rápidas" />
-            </VBox>
+                <Separator />
 
-            <Separator style="-fx-background-color: #334155;" />
+                <Label styleClass="ds-section" text="Export" />
+                <HBox spacing="6.0">
+                    <children>
+                        <Button fx:id="btnExportCSV" mnemonicParsing="false" onAction="#handleExportCSV" text="CSV" HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnExportJSON" mnemonicParsing="false" onAction="#handleExportJSON" text="JSON" HBox.hgrow="ALWAYS" />
+                    </children>
+                </HBox>
+                <Label styleClass="ds-hint" text="Exports the table rows, up to the row limit." wrapText="true" />
 
-            <Label style="-fx-text-fill: #9CA3AF;" text="Histórico" />
-            <ListView fx:id="lvHistory" style="-fx-background-color: #1a2435; -fx-text-fill: white;" />
+                <Separator />
 
-            <Separator style="-fx-background-color: #334155;" />
-
-            <Label style="-fx-text-fill: #9CA3AF;" text="Exportar Dados" />
-            <HBox spacing="8">
-                <Button fx:id="btnExportCSV" style="-fx-background-color: #6B7280; -fx-text-fill: white;" text="CSV" />
-                <Button fx:id="btnExportJSON" style="-fx-background-color: #6B7280; -fx-text-fill: white;" text="JSON" />
-            </HBox>
+                <Label styleClass="ds-section" text="History" />
+                <ListView fx:id="lvHistory" VBox.vgrow="ALWAYS" />
+            </children>
         </VBox>
     </right>
 
-    <!-- BOTTOM: status bar -->
+    <!-- ===== Rodapé ===== -->
     <bottom>
-        <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-padding:10; -fx-background-color: linear-gradient(#06121a, #071421);">
-            <Region HBox.hgrow="ALWAYS" />
-            <Label fx:id="lblMemory" style="-fx-text-fill:#9CA3AF; -fx-font-size:11;" text="Memória: --" />
+        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="ds-statusbar">
+            <padding>
+                <Insets bottom="6.0" left="12.0" right="12.0" top="6.0" />
+            </padding>
+            <children>
+                <Label fx:id="lblFooter" styleClass="ds-hint" text="" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="lblMemory" styleClass="ds-hint" text="Memory: --" />
+            </children>
         </HBox>
     </bottom>
-   <padding>
-      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-   </padding>
-   <stylesheets>
-      <URL value="@../../../../css/ds.css" />
-      <URL value="@../../../../css/ContextMenuStyle.css" />
-      <URL value="@../../../../css/ComboboxModern.css" />
-   </stylesheets>
 
 </BorderPane>

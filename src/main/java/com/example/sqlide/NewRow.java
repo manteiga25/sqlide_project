@@ -5,37 +5,59 @@ import com.example.sqlide.DatabaseInterface.TableInterface.TableInterface;
 import com.example.sqlide.Metadata.ColumnMetadata;
 import com.example.sqlide.drivers.SQLite.SQLiteTypes;
 import com.jfoenix.controls.JFXTextField;
-import javafx.fxml.FXML;
-import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.paint.Color;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static com.example.sqlide.popupWindow.handleWindow.ShowError;
-
+/**
+ * Formulário de inserção de uma linha.
+ *
+ * <p>Correções face à versão anterior:</p>
+ * <ul>
+ *   <li>A validação de obrigatoriedade estava invertida nos cinco métodos {@code treat*}:
+ *       {@code if (!meta.NOT_NULL && value.isEmpty())} recusava o campo vazio quando a
+ *       coluna <em>aceitava</em> null, e deixava passar vazio quando a coluna
+ *       <em>exigia</em> valor. Era possível gravar NULL numa coluna NOT NULL e impossível
+ *       deixar em branco uma coluna opcional.</li>
+ *   <li>A verificação de tipo estava comentada, por isso qualquer texto passava para uma
+ *       coluna numérica e o erro só aparecia como exceção SQL.</li>
+ *   <li>{@code treatCalendarTime} formatava o valor depois de um teste que podia deixar
+ *       passar null, rebentando com NullPointerException.</li>
+ *   <li>Colunas com autoincremento pediam valor ao utilizador; agora aparecem marcadas e
+ *       fora de alcance, porque quem as preenche é o motor.</li>
+ *   <li>A moldura vermelha do erro ficava para sempre; agora é limpa a cada validação.</li>
+ * </ul>
+ */
 public class NewRow {
 
     @FXML
-    private FlowPane GridContainer;
+    private GridPane GridContainer;
     @FXML
-    private Label DBInfo;
+    private Label DBInfo, HintLabel, StatusLabel;
+    @FXML
+    private CheckBox KeepOpenCheck;
+    @FXML
+    private Button SaveButton;
 
     private TableInterface ref;
 
     private final ArrayList<Object> WidgetsList = new ArrayList<>();
+
+    /** Mensagem de erro por coluna, mostrada por baixo do campo. */
+    private final LinkedHashMap<String, Label> errorLabels = new LinkedHashMap<>();
 
     private LinkedHashMap<String, ColumnMetadata> type;
 
@@ -44,7 +66,7 @@ public class NewRow {
     private SQLiteTypes routines;
 
     public void NewRowWin(final String DBName, final String Table, final TableInterface ref, final Stage subStage, final LinkedHashMap<String, ColumnMetadata> type, final SQLiteTypes types) {
-        DBInfo.setText("Database: " + DBName + "\n" + "Table: " + Table);
+        DBInfo.setText(DBName + "  ·  " + Table);
         this.ref = ref;
         this.type = type;
         this.routines = types;
@@ -52,48 +74,107 @@ public class NewRow {
         createWidget();
     }
 
+    /** Uma linha da grelha por coluna: etiqueta, campo, tipo e espaço para o erro. */
     private void createWidget() {
-        int column = 0, row = 0;
+        int row = 0;
         for (final String col : type.keySet()) {
-            Object widget = WidgetGenericType(col);
-            Label columnLabel = new Label(col + ":");
-            columnLabel.setTextFill(Color.WHITE);
-            columnLabel.setWrapText(true);
-            HBox columnBox = new HBox(5);
-            columnBox.setAlignment(Pos.CENTER_LEFT);
-            columnBox.setPadding(new Insets(0,0,0,10));
-            columnBox.getChildren().addAll(columnLabel, (Node) widget);
-            GridPane.setHalignment(columnBox, HPos.CENTER);
-            GridContainer.getChildren().add(columnBox);
-       //     Object s = WidgetGenericType(col);
-            WidgetsList.add(widget);
-          //  GridContainer.add((Node) s, ++column, row);
-            ++column;
-            if (column % 2 == 0) {
-                column = 0;
-                row++;
-            }
-        }
+            final ColumnMetadata meta = type.get(col);
+            final Object widget = WidgetGenericType(col);
 
+            final Label columnLabel = new Label(col);
+            columnLabel.getStyleClass().add("column-label");
+            columnLabel.setWrapText(true);
+
+            final HBox labelBox = new HBox(3, columnLabel);
+            labelBox.setAlignment(Pos.TOP_RIGHT);
+            // A etiqueta alinha com a primeira linha do campo, não com o centro da coluna
+            // inteira: como por baixo do campo há o tipo e o espaço do erro, centrá-la
+            // fazia-a descair e as linhas ficavam todas tortas umas em relação às outras.
+            labelBox.setPadding(new Insets(6, 0, 0, 0));
+            if (meta.NOT_NULL && !isAutoGenerated(meta)) {
+                final Label required = new Label("*");
+                required.getStyleClass().add("column-required");
+                labelBox.getChildren().add(required);
+            }
+
+            final Node field = (Node) widget;
+            if (field instanceof Region region) {
+                region.setMaxWidth(Double.MAX_VALUE);
+                // Altura igual em todos os campos: sem isto um DatePicker e um TextField
+                // ficam com alturas diferentes e desencontram as linhas da grelha.
+                region.setMinHeight(28);
+                region.setPrefHeight(28);
+            }
+
+            final Label typeLabel = new Label(describeType(meta));
+            typeLabel.getStyleClass().add("column-type");
+            typeLabel.setWrapText(true);
+
+            final Label errorLabel = new Label();
+            errorLabel.getStyleClass().add("field-error");
+            errorLabel.setWrapText(true);
+            errorLabel.setManaged(false);
+            errorLabel.setVisible(false);
+            errorLabels.put(col, errorLabel);
+
+            final VBox fieldBox = new VBox(2, field, typeLabel, errorLabel);
+            fieldBox.setPadding(new Insets(0, 0, 8, 0));
+            fieldBox.setFillWidth(true);
+
+            GridContainer.add(labelBox, 0, row);
+            GridContainer.add(fieldBox, 1, row);
+            GridPane.setValignment(labelBox, javafx.geometry.VPos.TOP);
+            GridPane.setHgrow(fieldBox, javafx.scene.layout.Priority.ALWAYS);
+
+            WidgetsList.add(widget);
+            row++;
+        }
+    }
+
+    /** Descrição curta do tipo, com o tamanho e a origem do valor quando aplicável. */
+    private String describeType(final ColumnMetadata meta) {
+        final StringBuilder text = new StringBuilder(meta.Type == null ? "" : meta.Type);
+        if (meta.size > 0) text.append('(').append(meta.size).append(')');
+        if (meta.IsPrimaryKey) text.append("  ·  primary key");
+        if (isAutoGenerated(meta)) text.append("  ·  filled by the database");
+        else if (meta.defaultValue != null && !meta.defaultValue.isBlank()) {
+            text.append("  ·  default ").append(meta.defaultValue);
+        }
+        if (meta.foreign != null && meta.foreign.isForeign) {
+            text.append("  ·  references ").append(meta.foreign.tableRef).append('.').append(meta.foreign.columnRef);
+        }
+        return text.toString();
+    }
+
+    /** True para colunas que o motor preenche sozinho e que não devem ser pedidas. */
+    private static boolean isAutoGenerated(final ColumnMetadata meta) {
+        return meta.autoincrement >= 0;
     }
 
     private Object WidgetGenericType(final String column) {
-        Object widget = null;
-        final String Type = type.get(column).Type;
-        if (type.get(column).items != null && type.get(column).Type.equals("ENUM")) {
+        Object widget;
+        final ColumnMetadata meta = type.get(column);
+        final String Type = meta.Type;
+        if (meta.items != null && "ENUM".equals(Type)) {
             widget = createComboBox(column);
         }
-        else if (type.get(column).items != null && type.get(column).Type.equals("SET")) {
+        else if (meta.items != null && "SET".equals(Type)) {
             widget = createCheckComboBox(column);
         }
-        else if (Type.equals("DATETIME")) {
+        else if ("DATETIME".equals(Type)) {
             widget = createCalendarTime(column);
         }
-        else if (Type.equals("DATE")) {
+        else if ("DATE".equals(Type)) {
             widget = createCalendar(column);
         }
         else {
             widget = createTextField(column);
+        }
+
+        // O valor de uma coluna autoincremental vem do motor; o campo fica só a informar.
+        if (isAutoGenerated(meta) && widget instanceof Node node) {
+            node.setDisable(true);
+            node.getStyleClass().add("field-auto");
         }
         return widget;
     }
@@ -101,10 +182,11 @@ public class NewRow {
     private JFXTextField createTextField(final String column) {
         JFXTextField tmpText = new JFXTextField();
         tmpText.setId(column);
-        tmpText.setLabelFloat(true);
         tmpText.setPromptText(type.get(column).Type);
         tmpText.setText(type.get(column).defaultValue == null ? "" : type.get(column).defaultValue);
         tmpText.setStyle("-fx-text-fill: white;");
+        // Escrever limpa o erro anterior, em vez de o deixar até nova gravação.
+        tmpText.textProperty().addListener((_, _, _) -> clearFieldError(column, tmpText));
         return tmpText;
     }
 
@@ -112,7 +194,9 @@ public class NewRow {
         ComboBox<String> box = new ComboBox<>();
         box.setId(column);
         box.getItems().addAll(type.get(column).items);
-        box.setValue(type.get(column).defaultValue != null ? type.get(column).defaultValue : "");
+        final String defaultValue = type.get(column).defaultValue;
+        if (defaultValue != null && !defaultValue.isEmpty()) box.setValue(defaultValue);
+        box.valueProperty().addListener((_, _, _) -> clearFieldError(column, box));
         return box;
     }
 
@@ -120,9 +204,11 @@ public class NewRow {
         CheckComboBox<String> box = new CheckComboBox<>();
         box.setId(column);
         box.getItems().addAll(type.get(column).items);
-        if (type.get(column).defaultValue != null && !type.get(column).defaultValue.isEmpty()) {
-            List<String> currentValues = Arrays.asList(type.get(column).defaultValue.split(","));
-            currentValues.forEach(value -> box.getCheckModel().check(value));
+        final String defaultValue = type.get(column).defaultValue;
+        if (defaultValue != null && !defaultValue.isEmpty()) {
+            for (String value : defaultValue.split(",")) {
+                if (box.getItems().contains(value)) box.getCheckModel().check(value);
+            }
         }
         return box;
     }
@@ -133,6 +219,7 @@ public class NewRow {
         try {
             calendar.setValue(LocalDate.parse(type.get(column).defaultValue));
         } catch (Exception _) {
+            // Sem valor por omissão válido o campo fica vazio, que é NULL.
         }
         return calendar;
     }
@@ -147,116 +234,190 @@ public class NewRow {
         return calendar;
     }
 
+    // ==== Gravação ====
+
     @FXML
     private void addData() {
-        HashMap<String, String> data = new HashMap<>();
+        clearAllErrors();
+
+        final HashMap<String, String> data = new HashMap<>();
+        boolean valid = true;
+        Node firstInvalid = null;
+
+        // Valida tudo antes de desistir, para o utilizador ver todos os problemas de uma vez
+        // em vez de um diálogo de cada vez.
         for (final Object widget : WidgetsList) {
-            switch (widget) {
-                case JFXTextField jfxTextField -> {
-                    if (!treatTextField(jfxTextField, data)) {
-                        return;
-                    }
-                }
-                case DateTimePicker dateTimePicker -> {
-                    if (!treatCalendarTime(dateTimePicker, data)) {
-                        return;
-                    }
-                }
-                case DatePicker datePicker -> {
-                    if (!treatCalendar(datePicker, data)) {
-                        return;
-                    }
-                }
-                case CheckComboBox<?> _ -> {
-                    if (!treatCheckBox((CheckComboBox<String>) widget, data)) {
-                        return;
-                    }
-                }
-                case null, default -> {
-                    if (!treatComboBox((ComboBox<String>) widget, data)) {
-                        return;
-                    }
-                }
+            final boolean ok = switch (widget) {
+                case JFXTextField jfxTextField -> treatTextField(jfxTextField, data);
+                case DateTimePicker dateTimePicker -> treatCalendarTime(dateTimePicker, data);
+                case DatePicker datePicker -> treatCalendar(datePicker, data);
+                case CheckComboBox<?> _ -> treatCheckBox((CheckComboBox<String>) widget, data);
+                case null -> true;
+                default -> treatComboBox((ComboBox<String>) widget, data);
+            };
+            if (!ok) {
+                valid = false;
+                if (firstInvalid == null && widget instanceof Node node) firstInvalid = node;
             }
         }
-        if (ref.insertData(data)) {
-            freeText();
+
+        if (!valid) {
+            StatusLabel.getStyleClass().removeAll("row-hint");
+            StatusLabel.getStyleClass().add("field-error");
+            StatusLabel.setText("Fix the highlighted fields before inserting.");
+            if (firstInvalid != null) firstInvalid.requestFocus();
+            return;
+        }
+
+        SaveButton.setDisable(true);
+        try {
+            if (ref.insertData(data)) {
+                StatusLabel.getStyleClass().removeAll("field-error");
+                StatusLabel.getStyleClass().add("row-hint");
+                StatusLabel.setText("Row inserted.");
+                if (KeepOpenCheck.isSelected()) freeText();
+                else window.close();
+            } else {
+                StatusLabel.getStyleClass().removeAll("row-hint");
+                StatusLabel.getStyleClass().add("field-error");
+                StatusLabel.setText("The database rejected the row. Check the console log for details.");
+            }
+        } finally {
+            SaveButton.setDisable(false);
         }
     }
 
+    /**
+     * Testa obrigatoriedade e tipo de um valor.
+     *
+     * @return null se estiver bem, ou a razão da recusa
+     */
+    private String validate(final ColumnMetadata meta, final String value) {
+        final boolean empty = value == null || value.isEmpty();
+
+        // Vazio numa coluna obrigatória é erro; numa coluna opcional é NULL, e é válido.
+        if (empty) {
+            return meta.NOT_NULL && !isAutoGenerated(meta) ? "This column cannot be empty." : null;
+        }
+
+        // A verificação de tipo estava comentada; sem ela qualquer texto entrava numa
+        // coluna numérica e o erro só surgia como exceção SQL depois do INSERT.
+        try {
+            if (!routines.checkValue(meta.Type, value, meta.size, !meta.NOT_NULL)) {
+                final String reason = routines.getException();
+                return reason == null || reason.isBlank()
+                        ? "Not a valid " + meta.Type + " value." : reason;
+            }
+        } catch (Exception e) {
+            return "Could not validate the value: " + e.getMessage();
+        }
+        return null;
+    }
+
     private boolean treatTextField(JFXTextField widget, HashMap<String, String> data) {
-        final String value = widget.getText();
         final String columnName = widget.getId();
         final ColumnMetadata meta = type.get(columnName);
-     //   if (!routines.checkValue(meta.Type, value, meta.size, !meta.NOT_NULL)) {
-        if (!meta.NOT_NULL && value.isEmpty()) {
-            System.out.println(routines.getException());
-            widget.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-            widget.requestFocus();
-            ShowError("Invalid data", "Please insert data on column " + columnName + ".");
-            return false;
-        }
-        data.put(columnName, value);
+
+        if (isAutoGenerated(meta)) return true; // preenchido pelo motor
+
+        final String value = widget.getText();
+        final String problem = validate(meta, value);
+        if (problem != null) return markInvalid(columnName, widget, problem);
+
+        // Vazio grava NULL; a lista de dados não leva a coluna de todo.
+        if (value != null && !value.isEmpty()) data.put(columnName, value);
         return true;
     }
 
     private boolean treatComboBox(ComboBox<String> widget, HashMap<String, String> data) {
-        final String value = widget.getValue();
         final String columnName = widget.getId();
         final ColumnMetadata meta = type.get(columnName);
-        if ((!meta.NOT_NULL && value == null)) {
-            widget.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-            widget.requestFocus();
-            ShowError("Invalid data", "Please insert data on column " + columnName + ".\n" + routines.getException());
-            return false;
+        final String value = widget.getValue();
+
+        if (meta.NOT_NULL && (value == null || value.isEmpty())) {
+            return markInvalid(columnName, widget, "Choose a value.");
         }
-        data.put(columnName, value);
+        if (value != null && !value.isEmpty()) data.put(columnName, value);
         return true;
     }
 
     private boolean treatCheckBox(CheckComboBox<String> widget, HashMap<String, String> data) {
-        final List<String> value = widget.checkModelProperty().getValue().getCheckedItems();
         final String columnName = widget.getId();
         final ColumnMetadata meta = type.get(columnName);
-        if (!meta.NOT_NULL && (value == null || value.isEmpty())) {
-            widget.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-            widget.requestFocus();
-            ShowError("Invalid data", "Please insert data on column " + columnName + ".\n" + routines.getException());
-            return false;
+        final List<String> value = widget.getCheckModel().getCheckedItems();
+
+        if (meta.NOT_NULL && (value == null || value.isEmpty())) {
+            return markInvalid(columnName, widget, "Choose at least one option.");
         }
-        data.put(columnName, String.join(",", value));
+        if (value != null && !value.isEmpty()) data.put(columnName, String.join(",", value));
         return true;
     }
 
     private boolean treatCalendarTime(DateTimePicker widget, HashMap<String, String> data) {
-        final LocalDateTime value = widget.getDateTimeValue();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         final String columnName = widget.getId();
         final ColumnMetadata meta = type.get(columnName);
-        if ((!meta.NOT_NULL && value == null)) {
-            widget.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-            widget.requestFocus();
-            ShowError("Invalid data", "Please insert data on column " + columnName + ".\n" + routines.getException());
-            return false;
+        final LocalDateTime value = widget.getDateTimeValue();
+
+        if (value == null) {
+            // O format() vinha antes desta verificação e rebentava com NPE.
+            return !meta.NOT_NULL || markInvalid(columnName, widget, "Pick a date and time.");
         }
-        data.put(columnName, value.format(formatter));
+
+        data.put(columnName, value.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         return true;
     }
 
     private boolean treatCalendar(DatePicker widget, HashMap<String, String> data) {
-        final LocalDate value = widget.getValue();
         final String columnName = widget.getId();
         final ColumnMetadata meta = type.get(columnName);
-        if ((!meta.NOT_NULL && value == null)) {
-            widget.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-            widget.requestFocus();
-            ShowError("Invalid data", "Please insert data on column " + columnName + ".\n" + routines.getException());
-            return false;
+        final LocalDate value = widget.getValue();
+
+        if (value == null) {
+            return !meta.NOT_NULL || markInvalid(columnName, widget, "Pick a date.");
         }
+
         data.put(columnName, value.toString());
         return true;
     }
 
+    // ==== Estado de erro ====
+
+    /** Marca o campo e escreve a razão por baixo dele. Devolve sempre false, para encadear. */
+    private boolean markInvalid(final String column, final Node widget, final String reason) {
+        if (!widget.getStyleClass().contains("field-invalid")) widget.getStyleClass().add("field-invalid");
+        final Label error = errorLabels.get(column);
+        if (error != null) {
+            error.setText(reason);
+            error.setManaged(true);
+            error.setVisible(true);
+        }
+        return false;
+    }
+
+    private void clearFieldError(final String column, final Node widget) {
+        widget.getStyleClass().remove("field-invalid");
+        final Label error = errorLabels.get(column);
+        if (error != null) {
+            error.setText("");
+            error.setManaged(false);
+            error.setVisible(false);
+        }
+    }
+
+    private void clearAllErrors() {
+        StatusLabel.setText("");
+        for (final Object widget : WidgetsList) {
+            if (widget instanceof Node node && node.getId() != null) clearFieldError(node.getId(), node);
+        }
+    }
+
+    @FXML
+    private void clearForm() {
+        clearAllErrors();
+        freeText();
+    }
+
+    /** Repõe os campos nos valores por omissão da coluna. */
     private void freeText() {
         for (final Object widget : WidgetsList) {
             switch (widget) {
@@ -266,41 +427,53 @@ public class NewRow {
                 }
                 case DateTimePicker w -> {
                     final ColumnMetadata meta = type.get(w.getId());
-                    LocalDateTime date;
-                    if (meta != null && meta.defaultValue != null) {
-                        date = LocalDateTime.from(LocalTime.parse(meta.defaultValue));
-                    } else {
-                        date = LocalDateTime.now();
-                    }
-                    w.setDateTimeValue(date);
-                    // w.setDateTimeValue(date);
+                    // O código anterior fazia LocalDateTime.from(LocalTime.parse(...)),
+                    // que lança DateTimeException por não haver data numa hora.
+                    w.setDateTimeValue(parseDateTimeOrNow(meta));
                 }
                 case DatePicker w -> {
                     final ColumnMetadata meta = type.get(w.getId());
-                    LocalDate date;
-                    if (meta != null && !meta.defaultValue.isEmpty()) {
-                        date = LocalDate.parse(meta.defaultValue);
-                    } else {
-                        date = LocalDate.now();
-                    }
-                    w.setValue(date);
-                    // w.setDateTimeValue(date);
+                    w.setValue(parseDateOrNull(meta));
                 }
                 case CheckComboBox<?> _ -> {
                     CheckComboBox<String> w = (CheckComboBox<String>) widget;
                     final ColumnMetadata meta = type.get(w.getId());
                     w.getCheckModel().clearChecks();
-                    if (!meta.defaultValue.isEmpty()) {
-                        List<String> currentValues = Arrays.asList(meta.defaultValue.split(","));
-                        currentValues.forEach(value -> w.getCheckModel().check(value));
+                    // defaultValue podia ser null e o isEmpty() rebentava com NPE.
+                    if (meta.defaultValue != null && !meta.defaultValue.isEmpty()) {
+                        for (String value : meta.defaultValue.split(",")) {
+                            if (w.getItems().contains(value)) w.getCheckModel().check(value);
+                        }
                     }
                 }
                 case null, default -> {
                     ComboBox<String> box = (ComboBox<String>) widget;
                     final ColumnMetadata meta = type.get(box.getId());
-                    box.setValue(meta.defaultValue);
+                    box.setValue(meta.defaultValue == null || meta.defaultValue.isEmpty() ? null : meta.defaultValue);
                 }
             }
+        }
+    }
+
+    private static LocalDateTime parseDateTimeOrNow(final ColumnMetadata meta) {
+        if (meta == null || meta.defaultValue == null || meta.defaultValue.isBlank()) return LocalDateTime.now();
+        try {
+            return LocalDateTime.parse(meta.defaultValue.replace(' ', 'T'));
+        } catch (Exception _) {
+            try {
+                return LocalDate.parse(meta.defaultValue).atStartOfDay();
+            } catch (Exception _) {
+                return LocalDateTime.now();
+            }
+        }
+    }
+
+    private static LocalDate parseDateOrNull(final ColumnMetadata meta) {
+        if (meta == null || meta.defaultValue == null || meta.defaultValue.isBlank()) return null;
+        try {
+            return LocalDate.parse(meta.defaultValue);
+        } catch (Exception _) {
+            return null;
         }
     }
 

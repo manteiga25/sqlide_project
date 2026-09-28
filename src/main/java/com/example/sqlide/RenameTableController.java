@@ -31,10 +31,17 @@ public class RenameTableController {
 
     @FXML
     private void save() {
-        final String name = NameField.getText();
+        final String name = NameField.getText() == null ? "" : NameField.getText().trim();
 
-        if (name == null || name.isEmpty() || name.equals(oldName)) {
-            ShowError("Invalid", "You need to write a name for your table.");
+        if (name.isEmpty() || name.equals(oldName)) {
+            ShowError("Invalid", "You need to write a new name for your table.");
+            NameField.requestFocus();
+            return;
+        }
+
+        if (!name.matches("[\\p{L}_][\\p{L}\\p{N}_ ]*")) {
+            ShowError("Invalid name", "Use letters (accents are fine), digits, spaces and underscore, starting with a letter.");
+            NameField.requestFocus();
             return;
         }
 
@@ -43,9 +50,19 @@ public class RenameTableController {
         } else {
           //  tableCol.setText(name);
             this.name.set(name);
+            // Sem isto, um segundo rename na mesma janela usava o nome original.
+            oldName = name;
             ShowSucess("Success", "Success to switch name.");
+            close();
         }
 
+    }
+
+    @FXML
+    private void close() {
+        if (NameField.getScene() != null && NameField.getScene().getWindow() != null) {
+            NameField.getScene().getWindow().hide();
+        }
     }
 
 }

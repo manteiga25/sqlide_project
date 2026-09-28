@@ -18,6 +18,7 @@ import com.example.sqlide.ScriptLayout.SearchScriptController;
 import com.example.sqlide.Task.TaskManager;
 import com.example.sqlide.TriggerLayout.EditTriggerController;
 import com.example.sqlide.TriggerLayout.TriggerController;
+import com.example.sqlide.drivers.Access.MS_accessDB;
 import com.example.sqlide.drivers.SQLite.SQLiteDB;
 import com.example.sqlide.drivers.model.DataBase;
 import com.example.sqlide.Editor.EditorController;
@@ -460,6 +461,20 @@ public class mainController implements requestInterface, NotificationInterface, 
         for (final DataBase dataBase : DatabasesOpened) if (dataBase.getUrl().equals(db.getUrl())) return;
 
         renderDatabase(db, DBName);
+
+    }
+
+    public void openDBAccess(String absolutePath, String name) {
+        DataBase db = new MS_accessDB();
+        if (!db.connect(absolutePath)) {
+            ShowError("Error SQL", "Error to open Database " + absolutePath);
+            System.err.println(db.GetException());
+            return;
+        }
+
+        for (final DataBase dataBase : DatabasesOpened) if (dataBase.getUrl().equals(db.getUrl())) return;
+
+        renderDatabase(db, name);
 
     }
 
@@ -1101,6 +1116,7 @@ public class mainController implements requestInterface, NotificationInterface, 
             Parent root = loader.load();
 
             DatabaseConf secondaryController = loader.getController();
+            secondaryController.setDatabase(DatabaseOpened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()), DBopened.get(ContainerForDB.getSelectionModel().getSelectedItem().getId()).getTables().keySet().stream().toList());
 
             // Criar um novo Stage para a subjanela
             Stage subStage = new Stage();
@@ -1117,6 +1133,31 @@ public class mainController implements requestInterface, NotificationInterface, 
             ShowError("Error to load", "Error tom load stage.\n" + e.getMessage());
         }
 
+    }
+
+    /**
+     * Definições do assistente: provedor, modelo e chave.
+     *
+     * <p>Vive no menu, não dentro da conversa — escolher o modelo é configuração da
+     * aplicação, não parte de um diálogo.</p>
+     */
+    /** Catálogo de funções, agregados e vistas da base de dados selecionada. */
+    @FXML
+    public void OpenRoutineCatalog() {
+        final DatabaseInterface openDB = DBopened.get(currentDB.get());
+        if (openDB == null) {
+            ShowInformation("No database", "Open a database first.");
+            return;
+        }
+        com.example.sqlide.Function.RoutineCatalogController.open(
+                BorderContainer.getScene() == null ? null : BorderContainer.getScene().getWindow(),
+                openDB.getRoutines(), false);
+    }
+
+    @FXML
+    public void OpenAssistantSettings() {
+        com.example.sqlide.Assistant.AssistantSettingsController.open(
+                BorderContainer.getScene() == null ? null : BorderContainer.getScene().getWindow());
     }
 
     @FXML

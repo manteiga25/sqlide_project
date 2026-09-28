@@ -1,11 +1,147 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.net.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.DatabaseInterface.ColumnMetadataController">
-   <children>
-      <Label layoutX="33.0" layoutY="43.0" text="Column Name:" />
-      <TextField fx:id="ColumnNameText" layoutX="124.0" layoutY="40.0" />
-   </children>
-</AnchorPane>
+<!-- Gestão de índices e restrições de uma tabela já criada. Só VBox/HBox/GridPane com
+     hgrow/vgrow: a janela acompanha o redimensionamento. -->
+<VBox minHeight="420.0" minWidth="560.0" prefHeight="580.0" prefWidth="720.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.DatabaseInterface.ColumnMetadataController">
+
+    <stylesheets>
+        <URL value="@../../../css/ContextMenuStyle.css" />
+        <URL value="@../../../css/newRow.css" />
+        <URL value="@../../../css/ListViewStyle.css" />
+    </stylesheets>
+
+    <children>
+
+        <VBox spacing="2.0" styleClass="row-header">
+            <padding>
+                <Insets bottom="10.0" left="16.0" right="16.0" top="12.0" />
+            </padding>
+            <children>
+                <Label fx:id="TitleLabel" styleClass="row-title" text="Table tools" />
+                <Label fx:id="EngineLabel" styleClass="row-hint" wrapText="true" />
+            </children>
+        </VBox>
+
+        <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+            <tabs>
+
+                <Tab text="Indexes">
+                    <VBox spacing="10.0">
+                        <padding>
+                            <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
+                        </padding>
+                        <children>
+                            <Label styleClass="column-label" text="Existing indexes" />
+                            <ListView fx:id="IndexList" VBox.vgrow="ALWAYS" />
+
+                            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                <children>
+                                    <Region HBox.hgrow="ALWAYS" />
+                                    <Button mnemonicParsing="false" onAction="#reloadIndexes" text="Reload" />
+                                    <Button fx:id="DropIndexButton" disable="true" mnemonicParsing="false" onAction="#dropIndex" text="Drop index" />
+                                </children>
+                            </HBox>
+
+                            <Separator />
+
+                            <Label styleClass="column-label" text="New index" />
+                            <GridPane hgap="10.0" vgap="6.0">
+                                <columnConstraints>
+                                    <ColumnConstraints halignment="RIGHT" minWidth="70.0" />
+                                    <ColumnConstraints hgrow="ALWAYS" />
+                                </columnConstraints>
+                                <rowConstraints>
+                                    <RowConstraints />
+                                    <RowConstraints />
+                                </rowConstraints>
+                                <children>
+                                    <Label styleClass="column-label" text="Name" GridPane.rowIndex="0" />
+                                    <TextField fx:id="IndexNameField" promptText="leave empty to generate one" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                    <Label styleClass="column-label" text="Mode" GridPane.rowIndex="1" />
+                                    <ChoiceBox fx:id="IndexModeBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                </children>
+                            </GridPane>
+
+                            <Label styleClass="column-label" text="Columns (Ctrl+click for several)" />
+                            <ListView fx:id="IndexColumnsList" prefHeight="110.0" />
+
+                            <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                                <children>
+                                    <Label fx:id="IndexStatusLabel" styleClass="row-hint" HBox.hgrow="ALWAYS" wrapText="true" />
+                                    <Region HBox.hgrow="ALWAYS" />
+                                    <Button mnemonicParsing="false" onAction="#createIndex" styleClass="row-primary" text="Create index" />
+                                </children>
+                            </HBox>
+                        </children>
+                    </VBox>
+                </Tab>
+
+                <Tab text="Check constraints">
+                    <VBox spacing="10.0">
+                        <padding>
+                            <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
+                        </padding>
+                        <children>
+                            <Label styleClass="column-label" text="Existing checks" />
+                            <ListView fx:id="CheckList" VBox.vgrow="ALWAYS" />
+
+                            <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                <children>
+                                    <Region HBox.hgrow="ALWAYS" />
+                                    <Button mnemonicParsing="false" onAction="#reloadChecks" text="Reload" />
+                                    <Button fx:id="DropCheckButton" disable="true" mnemonicParsing="false" onAction="#dropCheck" text="Drop check" />
+                                </children>
+                            </HBox>
+
+                            <Separator />
+
+                            <Label styleClass="column-label" text="New check" />
+                            <GridPane hgap="10.0" vgap="6.0">
+                                <columnConstraints>
+                                    <ColumnConstraints halignment="RIGHT" minWidth="80.0" />
+                                    <ColumnConstraints hgrow="ALWAYS" />
+                                </columnConstraints>
+                                <rowConstraints>
+                                    <RowConstraints />
+                                    <RowConstraints />
+                                </rowConstraints>
+                                <children>
+                                    <Label styleClass="column-label" text="Name" GridPane.rowIndex="0" />
+                                    <TextField fx:id="CheckNameField" promptText="constraint name" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                    <Label styleClass="column-label" text="Expression" GridPane.rowIndex="1" />
+                                    <TextField fx:id="CheckExpressionField" promptText="age &gt; 0 AND age &lt; 150" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                </children>
+                            </GridPane>
+
+                            <Label fx:id="CheckWarningLabel" styleClass="row-hint" wrapText="true" />
+
+                            <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                                <children>
+                                    <Label fx:id="CheckStatusLabel" styleClass="row-hint" HBox.hgrow="ALWAYS" wrapText="true" />
+                                    <Region HBox.hgrow="ALWAYS" />
+                                    <Button mnemonicParsing="false" onAction="#createCheck" styleClass="row-primary" text="Add check" />
+                                </children>
+                            </HBox>
+                        </children>
+                    </VBox>
+                </Tab>
+            </tabs>
+        </TabPane>
+
+        <HBox alignment="CENTER_RIGHT" spacing="10.0" styleClass="row-footer">
+            <padding>
+                <Insets bottom="10.0" left="16.0" right="16.0" top="10.0" />
+            </padding>
+            <children>
+                <Button mnemonicParsing="false" onAction="#close" text="Close" />
+            </children>
+        </HBox>
+    </children>
+</VBox>

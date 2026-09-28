@@ -37,8 +37,20 @@ public class LabelEncoder {
 
     public String[] decode(int[] tokens) {
         return Arrays.stream(tokens)
-                .mapToObj(decoder::get)
+                .mapToObj(token -> decoder.getOrDefault(token, ""))
                 .toArray(String[]::new);
+    }
+
+    /** Número de classes distintas vistas até agora. */
+    public int size() {
+        return encoder.size();
+    }
+
+    /** Classes por ordem de codificação, para legendas e matrizes de confusão. */
+    public List<String> classes() {
+        return java.util.stream.IntStream.range(0, encoder.size())
+                .mapToObj(token -> decoder.getOrDefault(token, ""))
+                .toList();
     }
 
     public void flush() {

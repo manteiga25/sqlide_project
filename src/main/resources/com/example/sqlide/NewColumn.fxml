@@ -83,19 +83,19 @@
                         <Font name="Arial" size="12.0" />
                     </font>
                 </Label>
-                <Label text="Decimal P1:" textFill="WHITE" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                <Label text="Integer digits:" textFill="WHITE" GridPane.columnIndex="0" GridPane.rowIndex="1">
                     <font>
                         <Font name="Arial" size="12.0" />
                     </font>
                 </Label>
-                <Label text="Decimal P2:" textFill="WHITE" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                <Label text="Decimal digits:" textFill="WHITE" GridPane.columnIndex="0" GridPane.rowIndex="2">
                     <font>
                         <Font name="Arial" size="12.0" />
                     </font>
                 </Label>
                 <JFXTextField fx:id="text1" disable="true" promptText="Ex:255" style="-fx-text-fill: white; -fx-prompt-text-fill: white;" unFocusColor="WHITE" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                <JFXTextField fx:id="text2" disable="true" promptText="Ex:4" style="-fx-text-fill: white; -fx-prompt-text-fill: white;" unFocusColor="WHITE" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                <JFXTextField fx:id="text3" disable="true" promptText="Ex:6" style="-fx-text-fill: white; -fx-prompt-text-fill: white;" unFocusColor="WHITE" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                <JFXTextField fx:id="text2" disable="true" promptText="Ex:8" style="-fx-text-fill: white; -fx-prompt-text-fill: white;" unFocusColor="WHITE" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                <JFXTextField fx:id="text3" disable="true" promptText="Ex:2" style="-fx-text-fill: white; -fx-prompt-text-fill: white;" unFocusColor="WHITE" GridPane.columnIndex="1" GridPane.rowIndex="2" />
             </GridPane>
         </VBox>
     </HBox>
@@ -210,13 +210,18 @@
             <JFXTextField fx:id="WordBox" disable="true" promptText="value1,value2,..." style="-fx-text-fill: white;" unFocusColor="WHITE" HBox.hgrow="ALWAYS" />
             <JFXButton fx:id="AddButton" disable="true" mnemonicParsing="false" onAction="#addWord" style="-fx-background-color: #3574F0;" text="Add" textFill="WHITE" />
             <JFXButton fx:id="EditList" disable="true" mnemonicParsing="false" onAction="#EditSet" style="-fx-background-color: #3574F0;" text="Edit" textFill="WHITE" />
-            <Label text="Set Name:" textFill="WHITE">
+            <Label text="Type name:" textFill="WHITE">
                 <font>
                     <Font name="Arial" size="12.0" />
                 </font>
             </Label>
-            <JFXTextField fx:id="SetName" disable="true" style="-fx-text-fill: white;" unFocusColor="WHITE" />
+            <JFXTextField fx:id="SetName" disable="true" promptText="PostgreSQL enum" style="-fx-text-fill: white; -fx-prompt-text-fill: #bcbcbc;" unFocusColor="WHITE" />
         </HBox>
+        <Label fx:id="ItemsLabel" style="-fx-text-fill: #bcbcbc;" text="No values yet." wrapText="true">
+            <font>
+                <Font name="Arial" size="11.0" />
+            </font>
+        </Label>
     </VBox>
 
     <Pane VBox.vgrow="ALWAYS" /> <!-- Spacer -->
@@ -228,7 +233,7 @@
                 <Font name="Arial" size="12.0" />
             </font>
         </JFXButton>
-        <JFXButton mnemonicParsing="false" onAction="#createColumn" style="-fx-background-color: #3574F0;" text="Create" textFill="WHITE">
+        <JFXButton fx:id="CreateButton" mnemonicParsing="false" onAction="#createColumn" style="-fx-background-color: #3574F0;" text="Create" textFill="WHITE">
             <font>
                 <Font name="Arial" size="12.0" />
             </font>

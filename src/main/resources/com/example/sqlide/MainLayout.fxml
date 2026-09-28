@@ -32,6 +32,7 @@
                                 </items>
                             </Menu>
                             <MenuItem mnemonicParsing="false" onAction="#OpenAtributesWin" text="Database Atributes" />
+                            <MenuItem mnemonicParsing="false" onAction="#OpenRoutineCatalog" text="Functions and Views" />
                             <Menu mnemonicParsing="false" text="Fetch size">
                                 <items>
                                     <MenuItem mnemonicParsing="false" onAction="#SwitchFetch" text="100" />
@@ -53,6 +54,11 @@
                             <MenuItem mnemonicParsing="false" onAction="#initEditEventWindow" text="Edit Event" />
                      <MenuItem mnemonicParsing="false" onAction="#initFunctionWindow" text="Functions" />
                      <MenuItem mnemonicParsing="false" onAction="#initProcedureWindow" text="Procedure" />
+                        </items>
+                    </Menu>
+                    <Menu mnemonicParsing="false" text="Assistant ▼">
+                        <items>
+                            <MenuItem mnemonicParsing="false" onAction="#OpenAssistantSettings" text="Model and provider" />
                         </items>
                     </Menu>
                 </menus>

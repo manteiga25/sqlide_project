@@ -9,7 +9,8 @@ import java.util.List;
 public class SQLiteInfo extends DatabaseInfo {
 
     public SQLiteInfo() {
-        super.indexModes = new String[]{""};
+        // O SQLite só distingue índice normal de UNIQUE; não tem métodos de índice.
+        super.indexModes = new String[]{"", "UNIQUE"};
         super.foreignModes = new String[]{"CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"};
         super.sqlType = SQLTypes.SQLITE;
         super.typesOfDB = new SQLiteTypesList();

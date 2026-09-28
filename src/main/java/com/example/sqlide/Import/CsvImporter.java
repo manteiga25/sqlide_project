@@ -1,5 +1,6 @@
 package com.example.sqlide.Import;
 
+import ai.onnxruntime.OnnxJavaType;
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty; // Added for progress
@@ -12,17 +13,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap; // Keep for ordered maps if needed by inserter
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CsvImporter implements FileImporter {
 
-    private List<String> errors = new ArrayList<>();
-    private DoubleProperty progress = new SimpleDoubleProperty(0.0); // Use DoubleProperty
+    private final List<String> errors = new ArrayList<>();
+    private final DoubleProperty progress = new SimpleDoubleProperty(0.0); // Use DoubleProperty
 
     // Define a flexible CSV format, assuming header is present
     private CSVFormat getCsvFormat(boolean withHeader) {
@@ -148,149 +146,25 @@ public class CsvImporter implements FileImporter {
             throw new IllegalArgumentException("Target table name must be specified.");
         }
 
-        List<String> sourceCsvHeaders;
-        try {
-            sourceCsvHeaders = getColumnHeaders(file, null); // Get actual headers from CSV
-            if (sourceCsvHeaders.isEmpty()) {
-                throw new IllegalArgumentException("CSV file has no headers or failed to read them.");
-            }
-        } catch (IOException e) {
-            errors.add("Failed to read CSV headers: " + e.getMessage());
-            throw e;
-        }
-        
-        // Determine the actual list of headers to use for insertion based on mapping
-        // And the list of target column names for the DB
-        List<String> finalTargetDbColumnNames = new ArrayList<>();
-        Map<String, String> effectiveColumnMapping = new HashMap<>(); // sourceHeader -> targetHeader
+        ArrayList<LinkedHashMap<String, String>> data = new ArrayList<>();
 
-        if (columnMapping == null || columnMapping.isEmpty()) {
-            // No mapping provided, assume direct 1:1, source headers are target headers
-            for (String header : sourceCsvHeaders) {
-                effectiveColumnMapping.put(header, header);
-                finalTargetDbColumnNames.add(header);
-            }
-        } else {
-            // Mapping provided. Only include mapped columns.
-            // Order of finalTargetDbColumnNames should ideally match sourceCsvHeaders for clarity,
-            // or a specific order defined by columnMapping's iteration (LinkedHashMap if order matters).
-            // For safety, let's iterate sourceCsvHeaders to maintain their order for columns that are mapped.
-            for (String srcHeader : columnMapping.keySet()) {
-              //  if (columnMapping.containsKey(srcHeader)) {
-                    String targetHeader = srcHeader;
-                    if (targetHeader != null && !targetHeader.trim().isEmpty() && !targetHeader.equalsIgnoreCase("(Skip Import)")) { // Handle skip
-                        effectiveColumnMapping.put(srcHeader, targetHeader);
-                        finalTargetDbColumnNames.add(targetHeader);
-                    }
-                //}
+        try (Reader reader = new FileReader(file);
+        CSVParser parser = new CSVParser(reader, getCsvFormat(true))) {
+            for (CSVRecord line : parser) {
+                LinkedHashMap<String, String> data_map = new LinkedHashMap<>();
+                Map<String, String> line_map = line.toMap();
+                for (String key : columnMapping.keySet()) {
+                    data_map.put(key, line_map.get(columnMapping.get(key)));
+                }
+                data.add(data_map);
             }
         }
 
-        if (finalTargetDbColumnNames.isEmpty()) {
-            throw new IllegalArgumentException("No columns selected for import after applying column mapping.");
-        }
+        if (!inserter.insertData(targetTableName, data)) throw new SQLException(inserter.getException());
 
+        this.progress.set(1.0);
 
-        // CREATE TABLE logic is deferred. The importer assumes the table exists or will be
-        // created by the controller/caller with columns matching finalTargetDbColumnNames.
-        // If createNewTable is true, the controller is responsible for DDL.
-        // This CsvImporter will not execute CREATE TABLE statements directly.
-        // It will, however, prepare data for the columns specified in finalTargetDbColumnNames.
-
-        long totalRecordsForProgress = 0;
-        try (Reader counterReader = new FileReader(file);
-             CSVParser counterParser = new CSVParser(counterReader, getCsvFormat(true))) { // true to skip header
-            for (CSVRecord ignored : counterParser) {
-                totalRecordsForProgress++;
-            }
-        } catch (Exception e) {
-            errors.add("Could not count records for progress: " + e.getMessage());
-            // continue without precise progress if this fails
-        }
-
-
-        long recordsProcessedCount = 0;
-        ArrayList<LinkedHashMap<String, String>> batchData = new ArrayList<>();
-
-        try (Reader dataReader = new FileReader(file);
-             CSVParser dataParser = new CSVParser(dataReader, getCsvFormat(true))) { // true to skip header for data reading
-
-            for (CSVRecord record : dataParser) {
-                if (!record.isConsistent()) {
-                    errors.add(String.format("Line %d (approx): Record field count (%d) is inconsistent with CSV header count (%d). Skipping. Record: %s",
-                            dataParser.getCurrentLineNumber(), record.size(), sourceCsvHeaders.size(), record.toMap()));
-                    continue;
-                }
-
-                LinkedHashMap<String, String> rowDataForDb = new LinkedHashMap<>(); // Use LinkedHashMap to preserve order if inserter cares
-                boolean validRow = true;
-                for (String targetDbColName : finalTargetDbColumnNames) {
-                    String sourceCsvHeader = null;
-                    // Find which sourceCsvHeader maps to this targetDbColName
-                    for (Map.Entry<String, String> entry : effectiveColumnMapping.entrySet()) {
-                        if (entry.getValue().equals(targetDbColName)) {
-                            sourceCsvHeader = entry.getKey();
-                            break;
-                        }
-                    }
-
-                    if (sourceCsvHeader != null && record.isMapped(sourceCsvHeader)) {
-                        rowDataForDb.put(targetDbColName, record.get(sourceCsvHeader));
-                    } else if (sourceCsvHeader != null) { // Mapped but value not present in record (should be rare with isConsistent)
-                         rowDataForDb.put(targetDbColName, null); // Or empty string
-                         errors.add(String.format("Line %d: Column '%s' (mapped to '%s') present in header but not in record. Using NULL.", dataParser.getCurrentLineNumber(), sourceCsvHeader, targetDbColName));
-                    }
-                    else {
-                        // This case should ideally not be reached if finalTargetDbColumnNames is derived correctly from effectiveColumnMapping
-                        errors.add(String.format("Logic error: Target DB column '%s' has no corresponding source CSV header in mapping. Skipping value for this column.", targetDbColName));
-                        // Potentially set to null or skip row, for now, it will be missing from rowDataForDb for this key
-                    }
-                }
-                
-                if (rowDataForDb.size() != finalTargetDbColumnNames.size()){
-                     errors.add(String.format("Line %d: Row data size (%d) does not match target column count (%d) after mapping. Skipping row.", dataParser.getCurrentLineNumber(), rowDataForDb.size(), finalTargetDbColumnNames.size()));
-                     continue; // Skip this row
-                }
-
-
-                if (!rowDataForDb.isEmpty()) {
-                    batchData.add(rowDataForDb);
-                }
-
-                recordsProcessedCount++;
-
-                if (batchData.size() >= bufferSize) {
-                    if (!inserter.insertData(targetTableName, batchData)) {
-                        errors.add("Failed to insert batch of data into " + targetTableName + ". Error: " + inserter.getException());
-                        // Decide if to stop or continue. For now, continue.
-                    }
-                    batchData.clear();
-                }
-
-                if (totalRecordsForProgress > 0) {
-                    this.progress.set((double) recordsProcessedCount / totalRecordsForProgress);
-                }
-            }
-
-            // Insert any remaining data in the last batch
-            if (!batchData.isEmpty()) {
-                if (!inserter.insertData(targetTableName, batchData)) {
-                    errors.add("Failed to insert final batch of data into " + targetTableName + ". Error: " + inserter.getException());
-                }
-                batchData.clear();
-            }
-
-        } catch (Exception e) {
-            errors.add("Critical error during CSV data processing: " + e.getMessage());
-            throw new IOException("Error processing CSV data: " + e.getMessage(), e);
-        }
-
-        this.progress.set(1.0); // Mark as complete
-        if (errors.isEmpty()) {
-            return String.format("Successfully imported %d records from CSV into %s.", recordsProcessedCount, targetTableName);
-        } else {
-            return String.format("Imported %d records from CSV into %s with %d errors/warnings. Check status messages.", recordsProcessedCount, targetTableName, errors.size());
-        }
+        return sourceTableNameIgnored;
     }
 
     @Override

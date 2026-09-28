@@ -4,14 +4,27 @@
     -fx-border-width: 1.5px;
     -fx-border-color: #3574F0;
     -fx-background-color: transparent;
+    -fx-text-fill: #C8D6EE;
+    -fx-padding: 3 10 3 10;
+    -fx-font-size: 11px;
+    -fx-cursor: hand;
 }
 
+/* Estado ligado, aplicado pelo controlador via setId("sel"). */
 #sel {
     -fx-background-color: #388EF4;
+    -fx-text-fill: white;
 }
 
 .button:hover {
     -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.5), 10, 0, 0, 0);
+}
+
+/* O interruptor de raciocínio fica assim nos provedores que não o suportam. */
+.button:disabled {
+    -fx-opacity: 0.4;
+    -fx-border-color: #5A5A5A;
+    -fx-cursor: default;
 }
 
 .tooltip {

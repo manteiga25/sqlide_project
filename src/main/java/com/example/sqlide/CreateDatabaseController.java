@@ -1,5 +1,6 @@
 package com.example.sqlide;
 
+import com.example.sqlide.drivers.Access.MS_accessDB;
 import com.example.sqlide.drivers.MySQL.MySQLDB;
 import com.example.sqlide.drivers.PostegreSQL.PostreSQLDB;
 import com.example.sqlide.drivers.model.DataBase;
@@ -104,6 +105,23 @@ public class CreateDatabaseController {
                 }
                 closeWindow();
                 break;
+            case 3:
+                try {
+                    // Carrega o arquivo FXML
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("CreateMS_accessDb.fxml"));
+                    Parent root = loader.load();
+                    MS_accessController secondaryController = loader.getController();
+                    Stage subStage = new Stage();
+                    subStage.setTitle("Create MS Access DB");
+                    subStage.setScene(new Scene(root));
+                    secondaryController.initWin(context, subStage);
+                    subStage.initModality(Modality.APPLICATION_MODAL);
+                    subStage.show();
+                } catch (Exception e) {
+                    ShowError("Error to load", "Error to load stage.\n" + e.getMessage());
+                }
+                closeWindow();
+                break;
             default:
                 loadCreateDatabaseServer(cellRef);
                 closeWindow();
@@ -126,6 +144,8 @@ public class CreateDatabaseController {
                 dataBase = new MySQLDB();
             } else if (dbIndex == 2) {
                 dataBase = new PostreSQLDB();
+            } else if (dbIndex == 3) {
+                dataBase = new MS_accessDB();
             }
 
             // Criar um novo Stage para a subjanela

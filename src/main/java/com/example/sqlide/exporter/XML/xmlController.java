@@ -104,6 +104,7 @@ public class xmlController implements loadingInterface, NotificationInterface {
             subStage.setTitle("Send email");
             subStage.setScene(new Scene(root));
             secondaryController.setStage(subStage);
+            if (db != null) secondaryController.setDialect(db.getSQLType());
             secondaryController.setTables(TablesAndColumnsNames);
 
             subStage.showingProperty().addListener(_->{
@@ -243,7 +244,8 @@ public class xmlController implements loadingInterface, NotificationInterface {
                 xml.createTableChild(sheetName);
                 final ArrayList<String> columns = TablesAndColumnsNames.get(sheetName);
                 final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
-                if (RowBox.isSelected() && !hasPrimeKey) {
+                // O MySQL e o Access não têm rowid: acrescentava-se uma coluna sem nome.
+                if (RowBox.isSelected() && !hasPrimeKey && cursor.hasRowId()) {
                     xml.setRow(true);
                     columns.addFirst(cursor.getRowId());
                 }
@@ -287,7 +289,8 @@ public class xmlController implements loadingInterface, NotificationInterface {
                 xml.createTableChild(sheetName);
                 final ArrayList<String> columns = cursor.getColumnsName(sheetName);
                 final boolean hasPrimeKey = cursor.TableHasPrimeKey(sheetName);
-                if (RowBox.isSelected() && !hasPrimeKey) {
+                // O MySQL e o Access não têm rowid: acrescentava-se uma coluna sem nome.
+                if (RowBox.isSelected() && !hasPrimeKey && cursor.hasRowId()) {
                     xml.setRow(true);
                     columns.addFirst(cursor.getRowId());
                 }

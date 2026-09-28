@@ -46,7 +46,27 @@
                   <Font name="JetBrains Mono Medium" size="12.0" />
                </font>
             </Label>
-            <JFXTextField fx:id="PasswordField" layoutX="71.0" layoutY="15.0" promptText="password...." style="-fx-text-fill: white;" />
+            <PasswordField fx:id="PasswordField" promptText="password...." style="-fx-text-fill: white; -fx-background-color: transparent;" />
+         </children>
+         <padding>
+            <Insets left="5.0" right="5.0" top="5.0" />
+         </padding>
+      </HBox>
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
+         <children>
+            <Label text="SMTP host:" textFill="#f2f2f2">
+               <font>
+                  <Font name="JetBrains Mono Medium" size="12.0" />
+               </font>
+            </Label>
+            <JFXTextField fx:id="HostField" promptText="smtp.gmail.com" style="-fx-text-fill: white;" HBox.hgrow="ALWAYS" />
+            <Label text="Port:" textFill="#f2f2f2">
+               <font>
+                  <Font name="JetBrains Mono Medium" size="12.0" />
+               </font>
+            </Label>
+            <JFXTextField fx:id="PortField" prefWidth="70.0" promptText="587" style="-fx-text-fill: white;" />
+            <ChoiceBox fx:id="SecurityBox" prefWidth="130.0" stylesheets="@../../../../css/ChoiceBoxModern.css" />
          </children>
          <padding>
             <Insets left="5.0" right="5.0" top="5.0" />

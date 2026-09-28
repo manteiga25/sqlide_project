@@ -43,7 +43,17 @@ module com.example.sqlide {
     requires smile.core;
     requires smile.plot;
     requires javafx.base;
-    requires com.example.sqlide;
+    requires com.microsoft.onnxruntime;
+    requires com.sun.jna.platform;
+    requires com.google.protobuf;
+
+    // Assistente: automodules do LangChain4j (nomes derivados do ficheiro jar)
+    requires langchain4j;
+    requires langchain4j.core;
+    requires langchain4j.anthropic;
+    requires langchain4j.open.ai;
+    requires langchain4j.google.ai.gemini;
+    requires langchain4j.ollama;
 
     opens com.example.sqlide to javafx.fxml;
     opens com.example.sqlide.exporter.Excel to javafx.fxml;
@@ -67,6 +77,8 @@ module com.example.sqlide {
     opens com.example.sqlide.Editor to javafx.fxml;
     opens com.example.sqlide.AdvancedSearch to javafx.fxml;
     opens com.example.sqlide.Assistant to javafx.fxml;
+    // O LangChain4j cria proxies dinâmicos e lê as @Tool por reflexão.
+    opens com.example.sqlide.Assistant.llm to javafx.fxml, langchain4j, langchain4j.core;
     opens com.example.sqlide.Notification to javafx.fxml;
     opens com.example.sqlide.Console to javafx.fxml;
     opens com.example.sqlide.Email to javafx.fxml;
@@ -104,6 +116,7 @@ module com.example.sqlide {
     exports com.example.sqlide.Editor;
     exports com.example.sqlide.AdvancedSearch;
     exports com.example.sqlide.Assistant;
+    exports com.example.sqlide.Assistant.llm;
     exports com.example.sqlide.Notification;
     exports com.example.sqlide.Console;
     exports com.example.sqlide.Email;

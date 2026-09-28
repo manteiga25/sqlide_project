@@ -86,6 +86,19 @@ public class OpenDatabaseController {
                 }
                 closeWindow();
                 break;
+            case 3:
+                FileChooser selectFileWindow_ = new FileChooser();
+                selectFileWindow_.getExtensionFilters().addAll(
+                        new FileChooser.ExtensionFilter("Database SQL", "*.db"),
+                        new FileChooser.ExtensionFilter("script SQL", "*.sql"));
+
+                final File selectedFile_ = selectFileWindow_.showOpenDialog(stage);
+                if (selectedFile_ != null) {
+                    System.out.println("opening with db access");
+                    context.openDBAccess(selectedFile_.getAbsolutePath(), selectedFile_.getName());
+                }
+                closeWindow();
+                break;
             default:
                 try {
                     // Carrega o arquivo FXML

@@ -1,22 +1,24 @@
 package com.example.sqlide.Import;
 
 import com.example.sqlide.drivers.model.Interfaces.DatabaseInserterInterface;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.sql.SQLException;
 import java.util.*;
 
 public class JsonImporter implements FileImporter {
 
-    private List<String> errors = new ArrayList<>();
-    private DoubleProperty progress = new SimpleDoubleProperty(0.0);
+    private final List<String> errors = new ArrayList<>();
+    private final DoubleProperty progress = new SimpleDoubleProperty(0.0);
     private JSONObject rootObject; // Store parsed JSON for the current file
     private File lastOpenedFile;   // To check if rootObject is for the current file
 
@@ -36,7 +38,8 @@ public class JsonImporter implements FileImporter {
         if (file == null || !file.exists() || !file.canRead()) {
             throw new IOException("File is null, does not exist, or cannot be read: " + (file != null ? file.getName() : "null"));
         }
-        if (!file.getName().toLowerCase().endsWith(".json")) {
+        final boolean jsonValid = file.getName().toLowerCase().endsWith(".json");
+        if (!jsonValid) {
             throw new IllegalArgumentException("Invalid file format. Only JSON files are supported.");
         }
 
@@ -47,7 +50,7 @@ public class JsonImporter implements FileImporter {
             } else if (jsonValue instanceof JSONArray) {
                 // If root is an array, wrap it in a JSONObject with a synthetic table name based on filename
                 this.rootObject = new JSONObject();
-                String syntheticTableName = file.getName().toLowerCase().endsWith(".json")
+                String syntheticTableName = jsonValid
                         ? file.getName().substring(0, file.getName().length() - 5)
                         : file.getName();
                 this.rootObject.put(syntheticTableName, jsonValue);
@@ -176,119 +179,66 @@ public class JsonImporter implements FileImporter {
             throw new IllegalArgumentException("Target table name must be specified.");
         }
 
-        JSONObject tablesContainer = getTablesContainerObject(file);
-        Object tableDataObj = tablesContainer.opt(sourceTableName);
-        if (!(tableDataObj instanceof JSONArray)) {
-            throw new IllegalArgumentException("Source table '" + sourceTableName + "' not found or is not an array in JSON.");
-        }
-        JSONArray recordsArray = (JSONArray) tableDataObj;
+        ArrayList<LinkedHashMap<String, String>> data = new ArrayList<>();
 
-        if (recordsArray.isEmpty()) {
-            this.progress.set(1.0);
-            return "No records found in JSON table '" + sourceTableName + "' to import.";
-        }
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonFactory jsonFactory = objectMapper.getFactory();
 
-        List<String> sourceJsonKeys = getColumnHeaders(file, sourceTableName); // These are all unique keys from scan
-        if (sourceJsonKeys.isEmpty()) {
-            throw new IllegalArgumentException("Could not determine column headers from JSON table '" + sourceTableName + "'. The array might be empty or contain non-object items.");
-        }
+        try (final InputStream inputStream = new FileInputStream(file);
+             JsonParser jsonParser = jsonFactory.createParser(inputStream)) {
 
-        List<String> finalTargetDbColumnNames = new ArrayList<>();
-        Map<String, String> effectiveColumnMapping = new HashMap<>(); // sourceJsonKey -> targetHeader
+            JsonToken token;
 
-        if (columnMapping == null || columnMapping.isEmpty()) {
-            for (String key : sourceJsonKeys) {
-                effectiveColumnMapping.put(key, key);
-                finalTargetDbColumnNames.add(key);
-            }
-        } else {
-            for (String srcKey : sourceJsonKeys) {
-                if (columnMapping.containsKey(srcKey)) {
-                    String targetHeader = columnMapping.get(srcKey);
-                    if (targetHeader != null && !targetHeader.trim().isEmpty() && !targetHeader.equalsIgnoreCase("(Skip Import)")) {
-                        effectiveColumnMapping.put(srcKey, targetHeader);
-                        finalTargetDbColumnNames.add(targetHeader);
+            do {
+                token = jsonParser.nextToken();
+            } while (token != JsonToken.START_ARRAY || !jsonParser.currentName().equals(sourceTableName));
+
+            do {
+                token = jsonParser.nextToken();
+
+                if (token == JsonToken.END_ARRAY) break;
+
+                if (token == JsonToken.START_OBJECT) {
+                    LinkedHashMap<String, String> map = new LinkedHashMap<>();
+
+                    while ((token = jsonParser.nextToken()) != JsonToken.END_OBJECT) {
+                        if (token == JsonToken.FIELD_NAME) {
+                            String fieldName = jsonParser.currentName();
+
+                            if (columnMapping.containsValue(fieldName)) {
+                                // Avança para o valor do campo
+                                token = jsonParser.nextToken();
+                                String value = (token == JsonToken.VALUE_NULL) ? null : jsonParser.getValueAsString();
+
+                                map.put(getKeyByValue(columnMapping, fieldName), value);
+                            }
+                        }
                     }
+
+                    data.add(map);
+
                 }
-            }
+            } while (token != JsonToken.END_ARRAY);
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        if (finalTargetDbColumnNames.isEmpty()) {
-            throw new IllegalArgumentException("No columns selected for import after applying column mapping for JSON table '" + sourceTableName + "'.");
-        }
+        this.progress.set(1);
 
-        // CREATE TABLE logic is deferred (as with CsvImporter). Controller handles DDL.
+        if (!inserter.insertData(targetTableName, data)) throw new SQLException(inserter.getException());
 
-        long recordsProcessedCount = 0;
-        ArrayList<HashMap<String, String>> batchData = new ArrayList<>();
-        long totalRecords = recordsArray.length();
+        return sourceTableName;
+    }
 
-        for (int i = 0; i < totalRecords; i++) {
-            Object item = recordsArray.opt(i);
-            if (!(item instanceof JSONObject jsonObject)) {
-                errors.add(String.format("Record %d in JSON table '%s' is not a JSON object. Skipping.", i + 1, sourceTableName));
-                recordsProcessedCount++; // Count as processed for progress calculation
-                if (totalRecords > 0) this.progress.set((double) recordsProcessedCount / totalRecords);
-                continue;
-            }
-
-            HashMap<String, String> rowDataForDb = new LinkedHashMap<>();
-            for (String targetDbColName : finalTargetDbColumnNames) {
-                String sourceJsonKey = null;
-                for (Map.Entry<String, String> entry : effectiveColumnMapping.entrySet()) {
-                    if (entry.getValue().equals(targetDbColName)) {
-                        sourceJsonKey = entry.getKey();
-                        break;
-                    }
-                }
-
-                if (sourceJsonKey != null) {
-                    // optString will return empty string for null or if key not found.
-                    // If key not found, it means sourceJsonKey was in headers but not this specific object.
-                    // Using null for missing values is often preferred for databases.
-                    if (jsonObject.has(sourceJsonKey)) {
-                        rowDataForDb.put(targetDbColName, jsonObject.optString(sourceJsonKey, null));
-                    } else {
-                        rowDataForDb.put(targetDbColName, null); // Key not in this specific object
-                    }
-                } else {
-                     // Should not happen if finalTargetDbColumnNames is built from effectiveColumnMapping keys
-                    errors.add("Logic error: Target DB column '" + targetDbColName + "' has no source JSON key. Setting to NULL.");
-                    rowDataForDb.put(targetDbColName, null);
-                }
-            }
-            
-            if (rowDataForDb.size() != finalTargetDbColumnNames.size()){
-                 errors.add(String.format("Line %d: Row data size (%d) does not match target column count (%d) after mapping. Skipping row.", i+1, rowDataForDb.size(), finalTargetDbColumnNames.size()));
-                 recordsProcessedCount++;
-                 if (totalRecords > 0) this.progress.set((double) recordsProcessedCount / totalRecords);
-                 continue; 
-            }
-
-            if (!rowDataForDb.isEmpty()) {
-                batchData.add(rowDataForDb);
-            }
-            recordsProcessedCount++;
-
-            if (batchData.size() >= bufferSize || recordsProcessedCount == totalRecords) {
-                if (!batchData.isEmpty()) {
-                    if (!inserter.insertData(targetTableName, batchData)) {
-                        errors.add("Failed to insert batch of JSON data into " + targetTableName + ". Error: " + inserter.getException());
-                    }
-                    batchData.clear();
-                }
-            }
-            if (totalRecords > 0) {
-                this.progress.set((double) recordsProcessedCount / totalRecords);
+    // stupid code yh
+    public static <K, V> K getKeyByValue(Map<K, V> map, V value) {
+        for (Map.Entry<K, V> entry : map.entrySet()) {
+            if (entry.getValue().equals(value)) {
+                return entry.getKey();
             }
         }
-
-        this.progress.set(1.0);
-        if (errors.isEmpty()) {
-            return String.format("Successfully imported %d records from JSON table '%s' into %s.", recordsProcessedCount, sourceTableName, targetTableName);
-        } else {
-            return String.format("Imported %d records from JSON table '%s' into %s with %d errors/warnings. Check status messages.", recordsProcessedCount, sourceTableName, targetTableName, errors.size());
-        }
+        return null;
     }
 
     @Override

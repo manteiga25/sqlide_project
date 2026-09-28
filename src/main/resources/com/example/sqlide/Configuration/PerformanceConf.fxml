@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import java.net.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane stylesheets="@../../../../css/ScrollContainerStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Configuration.PerformanceConf">
+
+    <GridPane fx:id="Container" hgap="5.0" vgap="5.0">
+      <children>
+         <Label text="Synchronization:" textFill="WHITESMOKE" />
+         <ChoiceBox fx:id="syncBox" prefWidth="150.0" GridPane.columnIndex="1" />
+         <Label text="Threads:" textFill="WHITESMOKE" GridPane.columnIndex="2" />
+         <Spinner fx:id="threadSpinner" GridPane.columnIndex="3" />
+         <Label text="Auto Vacuum:" textFill="WHITESMOKE" GridPane.rowIndex="2" />
+         <ChoiceBox fx:id="vacuumBox" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+         <Label text="Automatic index:" textFill="WHITESMOKE" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+         <JFXCheckBox fx:id="indexCheck" mnemonicParsing="false" GridPane.columnIndex="3" GridPane.rowIndex="2" />
+         <Label text="Lock mode:" textFill="WHITESMOKE" GridPane.rowIndex="1" />
+         <ChoiceBox fx:id="lockBox" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+         <Label text="Optimize:" textFill="WHITESMOKE" GridPane.rowIndex="3" />
+         <ChoiceBox fx:id="optimizeBox" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+         <Button mnemonicParsing="false" onAction="#optimize" text="Optimize" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+      </children>
+      <columnConstraints>
+         <ColumnConstraints />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+      </columnConstraints>
+      <rowConstraints>
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints minHeight="10.0" prefHeight="30.0" />
+         <RowConstraints minHeight="10.0" prefHeight="30.0" />
+      </rowConstraints>
+      <padding>
+         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+      </padding>
+      <stylesheets>
+         <URL value="@../../../../css/CheckBox.css" />
+         <URL value="@../../../../css/ChoiceBoxModern.css" />
+         <URL value="@../../../../css/SpinnerStyle.css" />
+      </stylesheets></GridPane>
+
+</ScrollPane>

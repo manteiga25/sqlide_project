@@ -199,7 +199,8 @@ public class SQLiteTypes extends TypesModel {
             }
             case "DATE" -> System.out.println("Tipo DATE");
             case "DATETIME" -> System.out.println("Tipo DATETIME");
-            default -> { return size != 0 && checkCharOverflow(size, Value); }
+            // Tamanho 0 é "sem limite declarado" (TEXT, VARCHAR sem tamanho): antes recusava tudo.
+            default -> { return size <= 0 || Value == null || checkCharOverflow(size, Value); }
         }
         return true;
     }

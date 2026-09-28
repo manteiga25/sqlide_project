@@ -4,6 +4,6 @@ public enum SQLTypes {
 
     SQLITE,
     MYSQL,
-    POSTGRESQL;
+    POSTGRESQL, MS_ACCESS;
 
 }

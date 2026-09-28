@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox minHeight="360.0" minWidth="620.0" prefHeight="560.0" prefWidth="880.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Function.RoutineCatalogController">
+
+    <stylesheets>
+        <URL value="@../../../../css/ContextMenuStyle.css" />
+        <URL value="@../../../../css/TreeViewStyle.css" />
+        <URL value="@../../../../css/ListViewStyle.css" />
+        <URL value="@../../../../css/TextFieldModernStyle.css" />
+    </stylesheets>
+
+    <children>
+
+        <HBox alignment="CENTER_LEFT" spacing="8.0" style="-fx-background-color: #3C3C3C;">
+            <padding>
+                <Insets bottom="8.0" left="12.0" right="12.0" top="8.0" />
+            </padding>
+            <children>
+                <Label style="-fx-text-fill: #FFFFFF; -fx-font-size: 14px; -fx-font-weight: bold;" text="Functions and views" />
+                <Label fx:id="countLabel" style="-fx-text-fill: #9A9A9A; -fx-font-size: 11px;" />
+                <Region HBox.hgrow="ALWAYS" />
+                <TextField fx:id="searchField" prefWidth="220.0" promptText="Filter by name..." />
+                <CheckBox fx:id="onlyUserCheck" onAction="#applyFilter" text="Only mine" textFill="#E0E0E0" />
+            </children>
+        </HBox>
+
+        <SplitPane dividerPositions="0.42" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
+            <items>
+
+                <VBox>
+                    <children>
+                        <TreeView fx:id="routineTree" showRoot="false" VBox.vgrow="ALWAYS" />
+                    </children>
+                </VBox>
+
+                <VBox spacing="10.0">
+                    <padding>
+                        <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+                    </padding>
+                    <children>
+                        <Label fx:id="nameLabel" style="-fx-text-fill: #FFFFFF; -fx-font-size: 15px; -fx-font-weight: bold;" wrapText="true" />
+                        <Label fx:id="kindLabel" style="-fx-text-fill: #3574F0; -fx-font-size: 11px;" />
+
+                        <Separator />
+
+                        <Label style="-fx-text-fill: #9A9A9A; -fx-font-size: 11px;" text="Signature" />
+                        <TextArea fx:id="signatureArea" editable="false" prefRowCount="3" style="-fx-control-inner-background: #262626; -fx-text-fill: #D6D6D6;" wrapText="true" />
+
+                        <Label style="-fx-text-fill: #9A9A9A; -fx-font-size: 11px;" text="Returns" />
+                        <Label fx:id="returnLabel" style="-fx-text-fill: #E0E0E0;" wrapText="true" />
+
+                        <Label style="-fx-text-fill: #9A9A9A; -fx-font-size: 11px;" text="Description" />
+                        <TextArea fx:id="commentArea" editable="false" style="-fx-control-inner-background: #262626; -fx-text-fill: #D6D6D6;" wrapText="true" VBox.vgrow="ALWAYS" />
+
+                        <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                            <children>
+                                <Button fx:id="copyButton" mnemonicParsing="false" onAction="#copyCall" text="Copy call" />
+                                <Button fx:id="useButton" mnemonicParsing="false" onAction="#useSelected" style="-fx-background-color: #3574F0; -fx-text-fill: white;" text="Use" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+            </items>
+        </SplitPane>
+    </children>
+</VBox>

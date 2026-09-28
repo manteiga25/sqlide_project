@@ -1,0 +1,36 @@
+.tree-view {
+    -fx-background-color: #2C2C2C;
+    -fx-control-inner-background: #2C2C2C;
+    -fx-cell-hover-color: #334B6C;   /* azul escuro suave para hover */
+    -fx-padding: 5;
+    -fx-border-radius: 4;
+}
+
+.tree-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-padding: 4 8 4 8;
+}
+
+/* Hover sobre os itens */
+.tree-cell:hover {
+    -fx-background-color: #334B6C;   /* azul escuro */
+    -fx-text-fill: #FFFFFF;          /* texto branco quando hover */
+}
+
+/* Item selecionado */
+.tree-cell:selected {
+    -fx-background-color: #1E5AA8;   /* azul médio de seleção */
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
+}
+
+/* Foco na TreeView */
+.tree-view:focused {
+    -fx-border-color: #2E86DE;       /* azul brilhante ao focar */
+}
+
+/* Expander (seta de expandir) */
+.tree-disclosure-node .arrow {
+    -fx-background-color: #72A7FF;   /* azul claro para o ícone */
+}

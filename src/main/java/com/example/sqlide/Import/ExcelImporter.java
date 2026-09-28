@@ -10,10 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ExcelImporter implements FileImporter {
 
@@ -21,36 +18,15 @@ public class ExcelImporter implements FileImporter {
     private DoubleProperty progress = new SimpleDoubleProperty();
 
     public ExcelImporter() {
-        IOUtils.setByteArrayMaxOverride(1_000_000_000); // 1000 MB
+        IOUtils.setByteArrayMaxOverride(Integer.MAX_VALUE); // 1000 MB
     }
 
     @Override
     public void openFile(File file) throws IOException, IllegalArgumentException {
-        this.errors.clear();
-        this.progress.set(0);
-        if (file == null || !file.exists() || !file.canRead()) {
-            throw new IOException("File is null, does not exist, or cannot be read: " + (file != null ? file.getName() : "null"));
-        }
-        String fileName = file.getName().toLowerCase();
-        if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
-            throw new IllegalArgumentException("Invalid file format. Only Excel files (.xlsx, .xls) are supported.");
-        }
-
-        // Basic validation by trying to open the workbook
-        try (FileInputStream fis = new FileInputStream(file);
-             Workbook workbook = WorkbookFactory.create(fis)) {
-            if (workbook.getNumberOfSheets() == 0) {
-                // Consider if a workbook with no sheets is an error or just an empty import.
-                // For now, let's assume it's not an error to open, but getDetectedTableNames will be empty.
-            }
-        } catch (Exception e) {
-            throw new IOException("Failed to open or parse Excel file: " + e.getMessage(), e);
-        }
     }
 
     @Override
     public List<Map<String, String>> previewData(File file, String tableName) throws IOException {
-      //  openFile(file); // Validate
         List<Map<String, String>> previewRows = new ArrayList<>();
 
         try (FileInputStream fis = new FileInputStream(file);
@@ -119,7 +95,6 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public List<String> getDetectedTableNames(File file) throws IOException {
-     //   openFile(file); // Validate
         List<String> sheetNames = new ArrayList<>();
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
@@ -144,9 +119,6 @@ public class ExcelImporter implements FileImporter {
             String headerValue = dataFormatter.formatCellValue(cell).trim();
             if (!headerValue.isEmpty()) {
                 headers.add(headerValue);
-            } else {
-                // Optional: handle empty header cells, e.g., by skipping or using a placeholder
-                // For now, we only add non-empty headers. If all are empty, this results in empty list.
             }
         }
         return headers;
@@ -155,7 +127,6 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public List<String> getColumnHeaders(File file, String tableName) throws IOException, IllegalArgumentException {
-     //   openFile(file); // Validate
         try (FileInputStream fis = new FileInputStream(file);
              Workbook workbook = WorkbookFactory.create(fis)) {
             Sheet sheet = workbook.getSheet(tableName);
@@ -178,11 +149,8 @@ public class ExcelImporter implements FileImporter {
 
     @Override
     public String importData(File file, String sourceTableName, DatabaseInserterInterface inserter, final int buffer, String targetTableName, boolean createNewTable, Map<String, String> columnMapping) throws IOException, IllegalArgumentException, SQLException {
-     //   openFile(file); // Validate
         errors.clear();
         progress.set(0);
-
-        System.out.println("target " + columnMapping);
 
         long totalRowsProcessed = 0;
         try (FileInputStream fis = new FileInputStream(file);
@@ -198,13 +166,13 @@ public class ExcelImporter implements FileImporter {
 
             // Iterate and count rows for now
             int counter = 0;
-            final ArrayList<HashMap<String, String>> data = new ArrayList<>();
+            final ArrayList<LinkedHashMap<String, String>> data = new ArrayList<>();
             for (Row row : sheet) {
                 // Skip header, assuming it's the first row if getColumnHeaders found some
                 if (row.getRowNum() == 0 && !getColumnHeaders(file, sourceTableName).isEmpty()) continue;
                 final HashMap<String, String> RawMap = new HashMap<>();
                 for (int cellIndex = 0; cellIndex < headers.size(); cellIndex++) {RawMap.put(headers.get(cellIndex), getCellValue(row.getCell(cellIndex)));}
-                final HashMap<String, String> map = new HashMap<>();
+                final LinkedHashMap<String, String> map = new LinkedHashMap<>();
                 for (final String key : columnMapping.keySet()) {map.put(key, RawMap.get(columnMapping.get(key)));}
                 data.add(map);
                 totalRowsProcessed++;
@@ -227,6 +195,7 @@ public class ExcelImporter implements FileImporter {
         }
 
         progress.set(1.0);
+
         return String.format("Successfully processed %d rows from sheet '%s' in %s into %s (actual import pending implementation).",
                 totalRowsProcessed, sourceTableName, file.getName(), targetTableName);
     }

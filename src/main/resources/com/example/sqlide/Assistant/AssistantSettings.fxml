@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- Tudo em VBox/HBox com hgrow/vgrow e maxWidth infinito: a janela pode ser
+     redimensionada à vontade que os campos acompanham. Sem Pane nem AnchorPane. -->
+<VBox minHeight="380.0" minWidth="420.0" prefHeight="640.0" prefWidth="560.0" styleClass="settings-root" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Assistant.AssistantSettingsController">
+
+    <stylesheets>
+        <URL value="@../../../../css/Assistant/settings.css" />
+    </stylesheets>
+
+    <children>
+
+        <VBox spacing="2.0" styleClass="settings-header">
+            <padding>
+                <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
+            </padding>
+            <children>
+                <Label styleClass="settings-title" text="Assistant" />
+                <Label styleClass="settings-subtitle" text="Choose which model answers you, and what it is allowed to do." wrapText="true" />
+            </children>
+        </VBox>
+
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+            <content>
+                <VBox spacing="12.0">
+                    <padding>
+                        <Insets bottom="16.0" left="16.0" right="16.0" top="14.0" />
+                    </padding>
+                    <children>
+
+                        <VBox spacing="10.0" styleClass="settings-section">
+                            <padding>
+                                <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+                            </padding>
+                            <children>
+                                <Label styleClass="settings-section-title" text="Provider" />
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Label minWidth="78.0" styleClass="settings-label" text="Provider" />
+                                        <ChoiceBox fx:id="providerBox" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Label minWidth="78.0" styleClass="settings-label" text="Model" />
+                                        <ComboBox fx:id="modelBox" editable="true" maxWidth="1.7976931348623157E308" promptText="type or pick a model" HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="refreshModelsButton" mnemonicParsing="false" onAction="#refreshModels" text="Detect" />
+                                    </children>
+                                </HBox>
+                                <Label fx:id="modelsHintLabel" styleClass="settings-hint" text="Detect asks the provider which models it has available." wrapText="true" />
+
+                                <HBox fx:id="apiKeyRow" alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Label minWidth="78.0" styleClass="settings-label" text="API key" />
+                                        <PasswordField fx:id="apiKeyField" maxWidth="1.7976931348623157E308" promptText="paste your key" HBox.hgrow="ALWAYS" />
+                                        <TextField fx:id="apiKeyPlainField" managed="false" maxWidth="1.7976931348623157E308" promptText="paste your key" visible="false" HBox.hgrow="ALWAYS" />
+                                        <ToggleButton fx:id="revealKeyButton" mnemonicParsing="false" text="Show" />
+                                    </children>
+                                </HBox>
+
+                                <HBox fx:id="baseUrlRow" alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Label minWidth="78.0" styleClass="settings-label" text="Server" />
+                                        <TextField fx:id="baseUrlField" maxWidth="1.7976931348623157E308" promptText="http://localhost:11434" HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="10.0" styleClass="settings-section">
+                            <padding>
+                                <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+                            </padding>
+                            <children>
+                                <Label styleClass="settings-section-title" text="What the assistant can do" />
+
+                                <VBox spacing="4.0">
+                                    <children>
+                                        <CheckBox fx:id="toolsCheck" text="Read and change the open database" />
+                                        <Label styleClass="settings-hint" text="Lets it inspect the schema, run queries and, when you ask, create tables or insert rows." wrapText="true" />
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="4.0">
+                                    <children>
+                                        <CheckBox fx:id="webSearchCheck" text="Search the web" />
+                                        <Label styleClass="settings-hint" text="Adds a search tool. Works with every provider, local models included." wrapText="true" />
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="4.0">
+                                    <children>
+                                        <CheckBox fx:id="thinkingCheck" text="Think before answering" />
+                                        <Label fx:id="thinkingHintLabel" styleClass="settings-hint" text="Extended reasoning. Supported by Claude and by Ollama models built for it." wrapText="true" />
+                                        <HBox fx:id="thinkingBudgetRow" alignment="CENTER_LEFT" spacing="10.0">
+                                            <padding>
+                                                <Insets left="22.0" top="2.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="settings-label" text="Thinking budget" />
+                                                <Spinner fx:id="thinkingBudgetSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="10.0" styleClass="settings-section">
+                            <padding>
+                                <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+                            </padding>
+                            <children>
+                                <Label styleClass="settings-section-title" text="Generation" />
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Label minWidth="90.0" styleClass="settings-label" text="Temperature" />
+                                        <Spinner fx:id="temperatureSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Label minWidth="90.0" styleClass="settings-label" text="Max tokens" />
+                                        <Spinner fx:id="maxTokensSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+                                        <Label minWidth="90.0" styleClass="settings-label" text="Timeout (s)" />
+                                        <Spinner fx:id="timeoutSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
+                        <Label fx:id="storagePathLabel" styleClass="settings-hint" wrapText="true" />
+
+                    </children>
+                </VBox>
+            </content>
+        </ScrollPane>
+
+        <VBox spacing="8.0" styleClass="settings-footer">
+            <padding>
+                <Insets bottom="12.0" left="16.0" right="16.0" top="10.0" />
+            </padding>
+            <children>
+                <Label fx:id="statusLabel" styleClass="settings-hint" wrapText="true" />
+                <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                    <children>
+                        <Button fx:id="testButton" mnemonicParsing="false" onAction="#testConnection" text="Test" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button mnemonicParsing="false" onAction="#cancel" text="Cancel" />
+                        <Button fx:id="saveButton" defaultButton="true" mnemonicParsing="false" onAction="#save" styleClass="settings-primary" text="Save" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+
+    </children>
+</VBox>

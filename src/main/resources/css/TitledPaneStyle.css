@@ -1,0 +1,36 @@
+.titled-pane {
+    -fx-background-color: #2C2C2C;
+    -fx-text-fill: white; /* azul claro no texto */
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 5;
+}
+
+/* Cabeçalho do TitledPane */
+.titled-pane > .title {
+    -fx-background-color: #1C1C1C;
+    -fx-text-fill: #AFCBFF;
+    -fx-font-weight: bold;
+    -fx-padding: 6 10 6 10;
+    -fx-border-radius: 4 4 0 0;
+    -fx-background-radius: 4 4 0 0;
+}
+
+/* Hover no cabeçalho */
+.titled-pane > .title:hover {
+    -fx-background-color: #334B6C; /* azul mais escuro */
+    -fx-text-fill: #FFFFFF;
+}
+
+/* Botão de expandir/recolher (disclosure node) */
+.titled-pane > .title > .arrow-button .arrow {
+    -fx-background-color: #72A7FF; /* azul claro */
+}
+
+/* Conteúdo interno */
+.titled-pane > *.content {
+    -fx-background-color: #2C2C2C;
+    -fx-padding: 8;
+    -fx-text-fill: #E0E8FF;
+}

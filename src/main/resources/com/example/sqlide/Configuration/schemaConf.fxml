@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.*?>
+<?import java.net.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane stylesheets="@../../../../css/ScrollContainerStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Configuration.schemaConf">
+            <GridPane fx:id="Container" hgap="5.0" vgap="5.0">
+                <columnConstraints>
+                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                </rowConstraints>
+                <children>
+                    <Label text="Application ID:" textFill="WHITESMOKE" />
+                    <TextField fx:id="IdField" GridPane.columnIndex="1" />
+                    <Label text="Encoding:" textFill="WHITESMOKE" GridPane.rowIndex="1" />
+                    <ChoiceBox fx:id="encodingBox" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+         <Label text="Foreign:" textFill="WHITESMOKE" GridPane.rowIndex="2" />
+         <JFXCheckBox fx:id="foreignCheck" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+         <Label text="Ingonre Check constraint:" textFill="WHITESMOKE" GridPane.rowIndex="3" />
+         <JFXCheckBox fx:id="checkCheck" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+         <Label text="Journal:" textFill="WHITESMOKE" GridPane.rowIndex="4" />
+         <ChoiceBox fx:id="journalBox" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+         <Label text="Journal size:" textFill="WHITESMOKE" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+         <Spinner fx:id="journalSize" GridPane.columnIndex="3" GridPane.rowIndex="4" />
+         <Label text="Schema version:" textFill="WHITESMOKE" GridPane.columnIndex="2" />
+         <TextField fx:id="schemaField" GridPane.columnIndex="3" />
+         <Label text="Writable:" textFill="WHITESMOKE" GridPane.rowIndex="5" />
+         <JFXCheckBox fx:id="writableCheck" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+         <Label text="User version:" textFill="WHITESMOKE" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+         <TextField fx:id="userField" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                </children>
+      <stylesheets>
+         <URL value="@../../../../css/CheckBox.css" />
+         <URL value="@../../../../css/TextFieldModernStyle.css" />
+         <URL value="@../../../../css/SpinnerStyle.css" />
+         <URL value="@../../../../css/ChoiceBoxModern.css" />
+      </stylesheets>
+            </GridPane>
+</ScrollPane>

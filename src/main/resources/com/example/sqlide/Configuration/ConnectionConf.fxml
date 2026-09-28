@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane stylesheets="@../../../../css/ScrollContainerStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.Configuration.ConnectionConf">
+
+    <GridPane fx:id="Container" hgap="5.0" vgap="5.0">
+      <children>
+         <Label text="Timeout:" textFill="#f8f8f8" />
+         <Spinner fx:id="timeOutSpinner" stylesheets="@../../../../css/SpinnerStyle.css" GridPane.columnIndex="1" />
+      </children>
+      <columnConstraints>
+         <ColumnConstraints />
+         <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
+      </columnConstraints>
+      <rowConstraints>
+         <RowConstraints />
+      </rowConstraints></GridPane>
+
+</ScrollPane>

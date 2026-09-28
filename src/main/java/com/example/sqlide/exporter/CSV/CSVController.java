@@ -121,6 +121,7 @@ public class CSVController implements NotificationInterface, loadingInterface {
             subStage.setTitle("Send email");
             subStage.setScene(new Scene(root));
             secondaryController.setStage(subStage);
+            if (db != null) secondaryController.setDialect(db.getSQLType());
             secondaryController.setTables(TablesAndColumnsNames);
 
             subStage.showingProperty().addListener(_->{

@@ -46,6 +46,23 @@ public class TableAdvancedSearchController {
         return queryList;
     }
 
+    /** Rotinas do esquema, repassadas a cada construtor de consulta criado por tabela. */
+    private final ArrayList<com.example.sqlide.Metadata.RoutineMetadata> routines = new ArrayList<>();
+
+    public void setRoutines(final java.util.List<com.example.sqlide.Metadata.RoutineMetadata> routines) {
+        this.routines.clear();
+        if (routines != null) this.routines.addAll(routines);
+    }
+
+    /** Dialeto da base de dados, para as aspas e os literais das consultas de cada tabela. */
+    private com.example.sqlide.drivers.model.SQLTypes dialect = com.example.sqlide.drivers.model.SQLTypes.SQLITE;
+
+    public void setDialect(final com.example.sqlide.drivers.model.SQLTypes dialect) {
+        this.dialect = dialect;
+        for (final AdvancedSearchController controller : controllers.values()) controller.setDialect(dialect);
+        queryList.replaceAll((table, query) -> controllers.containsKey(table) ? controllers.get(table).getQuery() : query);
+    }
+
     public void setTables(final HashMap<String, ArrayList<String>> data) {
         for (final String table : data.keySet()) {
             createTab(table, data);
@@ -84,9 +101,11 @@ public class TableAdvancedSearchController {
 
 
 
+            secondaryController.setDialect(dialect);
             secondaryController.setTable(table);
             secondaryController.setCode("SELECT");
             secondaryController.setColumns((HashMap<String, ArrayList<String>>) data.clone());
+            secondaryController.setRoutines(routines);
             secondaryController.removeBottomContainer();
 
             System.out.println("2");
@@ -97,7 +116,7 @@ public class TableAdvancedSearchController {
             TabContainer.getTabs().add(TableTab);
             controllers.put(table, secondaryController);
             System.out.println("4");
-            queryList.put(table, "SELECT * FROM " + table + ";");
+            queryList.put(table, secondaryController.getQuery());
             System.out.println("5");
 
         } catch (Exception e) {

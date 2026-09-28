@@ -395,6 +395,7 @@ public class ReportController implements NotificationInterface {
             secondaryController = loader.getController();
 
             // Criar um novo Stage para a subjanela
+            if (db != null) secondaryController.setDialect(db.getSQLType());
             secondaryController.setCode("SELECT");
             secondaryController.setTable(table);
             secondaryController.setColumns(ColumnsNames);
@@ -611,7 +612,8 @@ public class ReportController implements NotificationInterface {
        final Thread fetcher = new Thread(() -> {
             long offset = 0;
             while (true) {
-                ArrayList<DataForDB> dataCopy = db.Fetcher().fetchData(secondaryController.getQuery().replace(";", "")+" OFFSET " + offset + " LIMIT " + db.buffer + ";", secondaryController.getSelected(), null);
+                // Era "... OFFSET x LIMIT y": o SQLite e o MySQL só aceitam LIMIT antes de OFFSET.
+                ArrayList<DataForDB> dataCopy = db.Fetcher().fetchData(db.builder().paginate(secondaryController.getQuery(), db.buffer, offset), secondaryController.getSelected(), null);
                 if (dataCopy == null || dataCopy.isEmpty()) {
                     break;
                 }

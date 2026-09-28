@@ -18,10 +18,22 @@ public class ColumnMetadata {
     public ArrayList<String> items;
     public String indexType = "";
     public String aliasType = "";
-    public Foreign foreign;
+    // Começava a null no construtor vazio e havia código a ler foreign.isForeign sem testar.
+    public Foreign foreign = new Foreign();
     public String check = "";
+    /**
+     * -1: a coluna não é preenchida pelo motor. 0: é preenchida sem o pedir (a INTEGER
+     * PRIMARY KEY do SQLite, que é o rowid). 1: autoincremento declarado (AUTOINCREMENT,
+     * AUTO_INCREMENT, IDENTITY/SERIAL) — este tem de ser repetido quando a coluna é redefinida.
+     */
     public long autoincrement = -1;
     public String comment = "";
+    /**
+     * Cláusulas próprias do motor que não têm campo aqui e não se podem perder quando a
+     * coluna é redefinida: o {@code COLLATE NOCASE} do SQLite, o
+     * {@code ON UPDATE CURRENT_TIMESTAMP} do MySQL. Vão no fim da definição tal como estão.
+     */
+    public String extra = "";
 
     public ColumnMetadata(final boolean NOT_NULL, final boolean IsPrimaryKey, Foreign foreign, final String defaultValue, final int size, final String Type, final String Name, boolean isUnique, int integerDigits, int decimalDigits, final String index) {
         this.NOT_NULL = NOT_NULL;
@@ -30,7 +42,7 @@ public class ColumnMetadata {
         this.size = size;
         this.index = index;
         this.Type = Type;
-        this.foreign = foreign;
+        this.foreign = foreign == null ? new Foreign() : foreign;
         this.Name = Name;
         this.isUnique = isUnique;
         this.integerDigits = integerDigits;
@@ -41,9 +53,53 @@ public class ColumnMetadata {
 
     }
 
+    /** Cópia independente, para editar sem mexer no original enquanto a alteração não é gravada. */
+    public ColumnMetadata copy() {
+        final ColumnMetadata copy = new ColumnMetadata();
+        copy.copyFrom(this);
+        return copy;
+    }
+
+    /**
+     * Passa para este objeto todos os campos de {@code other}.
+     *
+     * <p>As colunas da grelha guardam o seu {@code ColumnMetadata} num campo final, por isso
+     * uma alteração tem de ser copiada para dentro do objeto que lá está.</p>
+     */
+    public void copyFrom(final ColumnMetadata other) {
+        NOT_NULL = other.NOT_NULL;
+        IsPrimaryKey = other.IsPrimaryKey;
+        defaultValue = other.defaultValue;
+        Type = other.Type;
+        Name = other.Name;
+        size = other.size;
+        isUnique = other.isUnique;
+        index = other.index;
+        integerDigits = other.integerDigits;
+        decimalDigits = other.decimalDigits;
+        items = other.items == null ? null : new ArrayList<>(other.items);
+        indexType = other.indexType;
+        aliasType = other.aliasType;
+        foreign = other.foreign == null ? new Foreign() : other.foreign.copy();
+        check = other.check;
+        autoincrement = other.autoincrement;
+        comment = other.comment;
+        extra = other.extra;
+    }
+
     public static class Foreign {
         public boolean isForeign = false;
         public String onUpdate = "", onEliminate = "", tableRef, columnRef;
+
+        public Foreign copy() {
+            final Foreign copy = new Foreign();
+            copy.isForeign = isForeign;
+            copy.onUpdate = onUpdate;
+            copy.onEliminate = onEliminate;
+            copy.tableRef = tableRef;
+            copy.columnRef = columnRef;
+            return copy;
+        }
     }
 
     public static LinkedHashMap<String, String> MetadataToMap(final ColumnMetadata meta) {

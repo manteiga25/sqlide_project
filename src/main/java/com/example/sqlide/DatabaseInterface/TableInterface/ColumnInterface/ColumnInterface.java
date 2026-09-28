@@ -101,7 +101,7 @@ public class ColumnInterface {
 
             // Criar um novo Stage para a subjanela
             Stage subStage = new Stage();
-            subStage.setTitle("Remove Column");
+            subStage.setTitle("Rename Column");
             subStage.setScene(new Scene(root));
             secondaryController.createController(Database, table.get(), this.Metadata);
 
@@ -152,10 +152,13 @@ public class ColumnInterface {
 
             // Criar um novo Stage para a subjanela
             Stage subStage = new Stage();
-            subStage.setTitle("Remove Column");
+            subStage.setTitle("Edit Column - " + Metadata.Name);
             subStage.setScene(new Scene(root));
             secondaryController.NewColumnWin(Database.getDatabaseName(), context.getTableName().get(), context, subStage, context.getAllPrimaryKeys(), Database.types, Database.getDatabaseInfo());
-            secondaryController.insertMetadata(Metadata);
+            secondaryController.setReferencedColumns(context.getReferenceableColumns());
+            secondaryController.setExistingColumns(context.getColumnsMetadataName());
+            // Uma cópia: o formulário não pode mexer nos metadados antes de o ALTER correr bem.
+            secondaryController.insertMetadata(Metadata.copy());
 
             // Opcional: definir a modalidade da subjanela
             subStage.initModality(Modality.APPLICATION_MODAL);
@@ -197,25 +200,28 @@ public class ColumnInterface {
         } else {
             ColumnContainer.setText(Metadata.Name);
         }
-        if (Metadata.items != null && Metadata.Type.equals("ENUM")) {
+        // Pelo tipo base: DATETIME(3) ou TIMESTAMP(6) também são datas.
+        final String baseType = Metadata.Type == null ? "" : (Metadata.Type.contains("(")
+                ? Metadata.Type.substring(0, Metadata.Type.indexOf('(')) : Metadata.Type).trim().toUpperCase(java.util.Locale.ROOT);
+        if (Metadata.items != null && baseType.equals("ENUM")) {
             EnumFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
-        else if (Metadata.items != null && Metadata.Type.equals("SET")) {
+        else if (Metadata.items != null && baseType.equals("SET")) {
             SetFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
-        else if (Metadata.Type.equals("DATE")) {
+        else if (baseType.equals("DATE")) {
             DateFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
-        else if (Metadata.Type.equals("DATETIME") || Metadata.Type.equals("TIMESTAMP")) {
+        else if (baseType.equals("DATETIME") || baseType.equals("TIMESTAMP")) {
             DateTimeFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
-        else if (Metadata.Type.equals("CIRCLE")) {
+        else if (baseType.equals("CIRCLE")) {
             CircleFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
-        else if (Metadata.Type.equals("BOX")) {
+        else if (baseType.equals("BOX")) {
             BoxFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
-        else if (Metadata.Type.equals("POINT")) {
+        else if (baseType.equals("POINT")) {
             PointFieldCell.createColumn(ColumnContainer, Database.Updater(), Database.getRowId(), Metadata, tablePrimeKey, TableName, format);
         }
         else {

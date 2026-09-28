@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.controlsfx.control.*?>
+
+<VBox minHeight="420.0" minWidth="640.0" prefHeight="680.0" prefWidth="1040.0" style="-fx-background-color: #2C2C2C;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sqlide.DatabaseInterface.GeoMapController">
+
+    <stylesheets>
+        <URL value="@../../../../css/ContextMenuStyle.css" />
+        <URL value="@../../../../css/newRow.css" />
+        <URL value="@../../../../css/ChoiceBoxModern.css" />
+    </stylesheets>
+
+    <children>
+
+        <VBox spacing="2.0" styleClass="row-header">
+            <padding>
+                <Insets bottom="10.0" left="16.0" right="16.0" top="12.0" />
+            </padding>
+            <children>
+                <Label fx:id="TitleLabel" styleClass="row-title" text="Map" />
+                <Label styleClass="row-hint" text="Plots geometric columns on the world map. Shapes are drawn as markers: the control positions by latitude and longitude, so polygons are not to scale." wrapText="true" />
+            </children>
+        </VBox>
+
+        <HBox alignment="CENTER_LEFT" spacing="10.0">
+            <padding>
+                <Insets bottom="8.0" left="16.0" right="16.0" top="10.0" />
+            </padding>
+            <children>
+                <Label styleClass="column-label" text="Source" />
+                <ChoiceBox fx:id="SourceBox" prefWidth="140.0" />
+
+                <Label fx:id="GeometryLabel" styleClass="column-label" text="Column" />
+                <ChoiceBox fx:id="GeometryColumnBox" prefWidth="170.0" />
+
+                <Label fx:id="LonLabel" styleClass="column-label" text="Longitude" />
+                <ChoiceBox fx:id="LonColumnBox" prefWidth="140.0" />
+                <Label fx:id="LatLabel" styleClass="column-label" text="Latitude" />
+                <ChoiceBox fx:id="LatColumnBox" prefWidth="140.0" />
+
+                <Label styleClass="column-label" text="Label" />
+                <ChoiceBox fx:id="LabelColumnBox" prefWidth="140.0" />
+
+                <Region HBox.hgrow="ALWAYS" />
+
+                <CheckBox fx:id="SwapCheck" text="Swap X/Y" textFill="#E0E0E0" />
+                <Label styleClass="column-label" text="Rows" />
+                <Spinner fx:id="LimitSpinner" editable="true" prefWidth="100.0" />
+                <Button mnemonicParsing="false" onAction="#loadPoints" styleClass="row-primary" text="Draw" />
+                <Button mnemonicParsing="false" onAction="#clearMap" text="Clear" />
+            </children>
+        </HBox>
+
+        <SplitPane dividerPositions="0.75" VBox.vgrow="ALWAYS">
+            <items>
+                <StackPane fx:id="MapHolder" style="-fx-background-color: #1E1E1E;">
+                    <children>
+                        <WorldMapView fx:id="Map" />
+                    </children>
+                </StackPane>
+
+                <VBox spacing="6.0">
+                    <padding>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    </padding>
+                    <children>
+                        <Label styleClass="column-label" text="Plotted shapes" />
+                        <ListView fx:id="ShapeList" VBox.vgrow="ALWAYS" />
+                        <Label styleClass="column-label" text="Zoom" />
+                        <Slider fx:id="ZoomSlider" blockIncrement="0.5" majorTickUnit="2.0" max="10.0" min="1.0" showTickMarks="true" value="1.0" />
+                    </children>
+                </VBox>
+            </items>
+        </SplitPane>
+
+        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="row-footer">
+            <padding>
+                <Insets bottom="10.0" left="16.0" right="16.0" top="10.0" />
+            </padding>
+            <children>
+                <Label fx:id="StatusLabel" styleClass="row-hint" wrapText="true" HBox.hgrow="ALWAYS" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button mnemonicParsing="false" onAction="#close" text="Close" />
+            </children>
+        </HBox>
+    </children>
+</VBox>

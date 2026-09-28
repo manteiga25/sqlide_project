@@ -36,8 +36,9 @@ public class OrderingController {
                     checkBox.setText("State");
                     checkBox.setTextFill(Color.WHITE);
                     checkBox.selectedProperty().addListener((obs, oldValue, newValue) -> {
-                        //  final Rule item = getTableRow().getItem();
-                        getTableRow().getItem().setStatus(newValue);
+                        // Enquanto a célula é reaproveitada pode não ter linha.
+                        final Rule item = getTableRow() == null ? null : getTableRow().getItem();
+                        if (item != null) item.setStatus(newValue);
                     });
                 }
 
@@ -61,8 +62,8 @@ public class OrderingController {
                 {
                     choiceBox.setStyle("-fx-background-color: #2C2C2C;");
                     choiceBox.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
-                          final Rule item = getTableRow().getItem();
-                        item.setRule(newValue);
+                        final Rule item = getTableRow() == null ? null : getTableRow().getItem();
+                        if (item != null && newValue != null) item.setRule(newValue);
                     });
                 }
 
@@ -92,8 +93,10 @@ public class OrderingController {
 
     public void InflateOrderingResultController(final ObservableList<String> columns) {
         this.columns = columns;
+        // Um clear() seguido de novas colunas chega como várias mudanças: o if (change.next())
+        // de antes só tratava a primeira e as regras antigas ficavam na tabela.
         this.columns.addListener((ListChangeListener<? super String>) change -> {
-            if (change.next()) {
+            while (change.next()) {
                 if (change.wasRemoved()) {
                     change.getRemoved().forEach(this::removeItem);
                 }
@@ -114,13 +117,19 @@ public class OrderingController {
     }
 
     public void addItem(final String column) {
-        System.out.println(column);
-        data.add(new Rule(column, "", false));
+        if (data.stream().anyMatch(rule -> rule.getColumn().equals(column))) return;
+        // ASC por omissão: com a regra vazia a coluna entrava no ORDER BY sem sentido escrito.
+        data.add(new Rule(column, "ASC", false));
     }
 
     public void removeItem(final String column) {
         data.removeIf(col->col.getColumn().equals(column));
         TableOrdering.refresh();
+    }
+
+    /** As regras ligadas, pela ordem da tabela. */
+    public java.util.List<Rule> getActiveRules() {
+        return data.stream().filter(Rule::getStatus).toList();
     }
 
     public String getRules() {

@@ -136,8 +136,10 @@ public class AssistantBoxCode extends Pane {
     }
 
     public void addCode(final String code) {
-        final String language = code.substring(0, code.indexOf("\n"));
-        final String codeContent = code.replaceFirst(language + "\n", "");
+        // Um bloco de uma só linha não tem "\n" e o indexOf devolvia -1, rebentando o substring.
+        final int firstBreak = code.indexOf("\n");
+        final String language = firstBreak > 0 ? code.substring(0, firstBreak) : "";
+        final String codeContent = firstBreak > 0 ? code.replaceFirst(language + "\n", "") : code;
 
         VBox boxAi = new VBox();
 

@@ -9,6 +9,7 @@ import com.jfoenix.controls.JFXToggleButton;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -17,7 +18,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.Separator;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.Priority;
@@ -53,7 +56,11 @@ public class EmailController {
     @FXML
     private JFXToggleButton FetchEmailTool;
     @FXML
-    private JFXTextField EmailField, SenderField, PasswordField, NameField, SubjectField;
+    private JFXTextField EmailField, SenderField, NameField, SubjectField, HostField, PortField;
+    @FXML
+    private PasswordField PasswordField;
+    @FXML
+    private ChoiceBox<String> SecurityBox;
     @FXML
     private ComboBox<String> ColumnEmailBox;
     @FXML
@@ -81,6 +88,14 @@ public class EmailController {
         this.db = db;
     }
 
+    /** Rotinas do esquema, repassadas ao construtor de consultas da janela de fetch. */
+    private final ArrayList<com.example.sqlide.Metadata.RoutineMetadata> routines = new ArrayList<>();
+
+    public void setRoutines(final List<com.example.sqlide.Metadata.RoutineMetadata> routines) {
+        this.routines.clear();
+        if (routines != null) this.routines.addAll(routines);
+    }
+
     public void setTablesAndColumns(final HashMap<String, ArrayList<String>> TablesAndColumns) {
         this.TablesAndColumns = TablesAndColumns;
         for (final String table : TablesAndColumns.keySet()) {
@@ -93,6 +108,15 @@ public class EmailController {
 
     @FXML
     private void initialize() {
+        // STARTTLS na 587 é o que a maioria dos servidores espera; SSL na 465 é o legado.
+        SecurityBox.getItems().addAll("STARTTLS", "SSL/TLS", "None");
+        SecurityBox.getSelectionModel().selectFirst();
+        SecurityBox.getSelectionModel().selectedItemProperty().addListener((_, _, mode) -> {
+            if (PortField.getText() == null || PortField.getText().isBlank()) return;
+            if ("SSL/TLS".equals(mode)) PortField.setText("465");
+            else if ("STARTTLS".equals(mode)) PortField.setText("587");
+        });
+
         EmailWeb = (WebView) EmailEditor.lookup(".web-view");
         EmailWeb.setPageFill(Color.valueOf("#1E1F22"));
         ToolBar toolbar = (ToolBar) EmailEditor.lookup(".tool-bar");
@@ -170,6 +194,8 @@ public class EmailController {
             subStage.setTitle("Send email");
             subStage.setScene(new Scene(root));
             secondaryController.setStage(subStage);
+            secondaryController.setRoutines(routines);
+            if (db != null) secondaryController.setDialect(db.getSQLType());
             secondaryController.setTables(TablesAndColumns);
 
             subStage.showingProperty().addListener(_->{
@@ -254,25 +280,43 @@ public class EmailController {
             ShowInformation("No data", "No email sender.");
             return;
         }
+        // Sem servidor SMTP não há envio nenhum: antes o host estava fixo em
+        // "smtp.example.com" no código e não havia forma de o mudar.
+        if (HostField.getText() == null || HostField.getText().isBlank()) {
+            HostField.requestFocus();
+            ShowInformation("No server", "Fill in the SMTP host of your mail provider.");
+            return;
+        }
         if (!FetchEmailTool.isSelected() && emails.isEmpty()) {
             SenderField.requestFocus();
             ShowInformation("No data", "No emails to send.");
             return;
-        } else if (FetchEmailTool.isSelected() && ColumnEmailBox.getValue().isEmpty()) {
+        } else if (FetchEmailTool.isSelected()
+                && (ColumnEmailBox.getValue() == null || ColumnEmailBox.getValue().isEmpty())) {
             ColumnEmailBox.requestFocus();
             ShowInformation("No data", "No emails to send.");
             return;
         }
         optimize();
 
+        // Lidos aqui porque os controlos da UI não podem ser tocados na thread de envio.
+        final String template = EmailEditor.getHtmlText();
+        final String from = EmailField.getText();
+        final String subject = SubjectField.getText();
+        final String user = NameField.getText();
+        final String password = PasswordField.getText();
+        final String emailColumn = FetchEmailTool.isSelected() ? ColumnEmailBox.getValue() : null;
+        final Session session = createSession(user, password);
+
         Thread.ofVirtual().start(()->{
             final int buffer = db.buffer;
             int offset = 0;
+            int sent = 0;
             boolean end = false;
             while (!end) {
                 HashMap<String, ArrayList<HashMap<String, String>>> dataCopy = new HashMap<>();
                 cards.clear();
-                cards.addAll(Collections.nCopies(buffer, EmailEditor.getHtmlText()));
+                cards.addAll(Collections.nCopies(buffer, template));
                 for (final String table : QueryList.keySet()) {
                     final String query = QueryList.get(table);
                     if (!query.isEmpty()) {
@@ -281,17 +325,15 @@ public class EmailController {
                             end = true;
                             break;
                         }
-                        offset += buffer;
                     }
                 }
 
                 final ArrayList<String> emailsSend = new ArrayList<>();
 
-                if (FetchEmailTool.isSelected()) {
-                    final String email = ColumnEmailBox.getValue();
+                if (emailColumn != null) {
                     for (final String table : dataCopy.keySet()) {
                         for (final String column : dataCopy.get(table).getFirst().keySet()) {
-                            if (email.equals(table + ":" + column)) {
+                            if (emailColumn.equals(table + ":" + column)) {
                                 for (final HashMap<String, String> row : dataCopy.get(table)) {
                                     emailsSend.add(row.get(column));
                                 }
@@ -299,9 +341,10 @@ public class EmailController {
                         }
                     }
                 } else {
-                    int endIndex = Math.min(offset + buffer, emails.size());
-
-                    emailsSend.addAll(emails.subList(offset-buffer, endIndex));
+                    // A página vem do offset corrente, que só avança no fim do ciclo.
+                    final int startIndex = Math.min(offset, emails.size());
+                    final int endIndex = Math.min(offset + buffer, emails.size());
+                    emailsSend.addAll(emails.subList(startIndex, endIndex));
                 }
 
                 if (emailsSend.size() < buffer) {
@@ -309,56 +352,100 @@ public class EmailController {
                 }
 
                 for (int cardIndex = 0; cardIndex < emailsSend.size(); cardIndex++) {
-                    final String card = cards.get(cardIndex);
-                    String copyCard = card;
+                    // Encadeia as substituições em copyCard: partindo sempre de card só a
+                    // última coluna sobrevivia, e as restantes tags ficavam por preencher.
+                    String copyCard = cards.get(cardIndex);
                     for (final String table : dataCopy.keySet()) {
-                        for (final String column : dataCopy.get(table).getFirst().keySet()) {
-                            copyCard = card.replaceAll("&lt;DataSrc="+table+":"+column+"/&gt;", dataCopy.get(table).get(cardIndex).get(column));
+                        final ArrayList<HashMap<String, String>> rows = dataCopy.get(table);
+                        if (cardIndex >= rows.size()) continue;
+                        for (final String column : rows.getFirst().keySet()) {
+                            final String value = rows.get(cardIndex).get(column);
+                            // replace literal em vez de replaceAll: os dados podem trazer
+                            // $ ou \, que num replacement de regex corrompem o resultado.
+                            copyCard = copyCard.replace("&lt;DataSrc=" + table + ":" + column + "/&gt;",
+                                    value == null ? "" : value);
                         }
                     }
                     cards.set(cardIndex, copyCard);
                 }
 
                 if (emailsSend.isEmpty()) {
-                    ShowInformation("No Recipients", "No recipients specified for the email.");
+                    final int total = sent;
+                    Platform.runLater(() -> ShowInformation("No Recipients",
+                            total == 0 ? "No recipients specified for the email."
+                                    : total + " email(s) sent."));
                     return;
                 }
-
-                Properties props = new Properties();
-                props.put("mail.smtp.host", "smtp.example.com");
-                props.put("mail.smtp.port", 587);
-                props.put("mail.smtp.auth", "true");
-                props.put("mail.smtp.starttls.enable", "true");
-
-
-                Session session = Session.getInstance(props, new Authenticator() {
-                    @Override
-                    protected PasswordAuthentication getPasswordAuthentication() {
-                        return new PasswordAuthentication(NameField.getText(), PasswordField.getText());
-                    }
-                });
 
                 try {
                     for (int index = 0; index < emailsSend.size(); index++) {
                         final String card = cards.get(index);
                         final String emailToSend = emailsSend.get(index);
+                        if (emailToSend == null || emailToSend.isBlank()) continue;
                         MimeMessage message = new MimeMessage(session);
-                        message.setFrom(new InternetAddress(EmailField.getText()));
-                        message.setSubject(SubjectField.getText());
+                        message.setFrom(new InternetAddress(from));
+                        message.setSubject(subject, "UTF-8");
+                        message.setSentDate(new java.util.Date());
                         // Set the modified HTML content (with placeholders replaced)
                         message.setContent(card, "text/html; charset=utf-8");
                         message.addRecipient(Message.RecipientType.TO, new InternetAddress(emailToSend));
                         Transport.send(message); // Enabled sending
+                        sent++;
                     }
                 } catch (Exception e) {
-                    ShowError("Error to send", "Error to send email.\n" + e.getMessage());
+                    // Os diálogos são JavaFX: chamados desta thread rebentavam com
+                    // IllegalStateException em vez de mostrarem o erro.
+                    Platform.runLater(() -> ShowError("Error to send", "Error to send email.\n" + e.getMessage()));
                     return;
                 }
 
+                // O avanço da página é um por ciclo, não um por tabela: dentro do loop das
+                // tabelas saltava buffer vezes o número de tabelas e perdiam-se linhas.
+                offset += buffer;
             }
+
+            final int total = sent;
+            Platform.runLater(() -> ShowInformation("Finished", total + " email(s) sent."));
         });
 
 
+    }
+
+    /** Sessão SMTP a partir dos campos do formulário. */
+    private Session createSession(final String user, final String password) {
+        final String port = PortField.getText() == null || PortField.getText().isBlank()
+                ? "587" : PortField.getText().trim();
+        final String security = SecurityBox.getValue() == null ? "STARTTLS" : SecurityBox.getValue();
+        final boolean authenticate = user != null && !user.isBlank();
+
+        Properties props = new Properties();
+        // Os valores têm de ser String: o jakarta.mail lê-os por getProperty(), que devolve
+        // null para um Integer, e a porta acabava ignorada.
+        props.put("mail.smtp.host", HostField.getText().trim());
+        props.put("mail.smtp.port", port);
+        props.put("mail.smtp.auth", String.valueOf(authenticate));
+
+        switch (security) {
+            case "SSL/TLS" -> {
+                props.put("mail.smtp.ssl.enable", "true");
+                props.put("mail.smtp.socketFactory.port", port);
+                props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            }
+            case "None" -> props.put("mail.smtp.starttls.enable", "false");
+            default -> {
+                props.put("mail.smtp.starttls.enable", "true");
+                props.put("mail.smtp.starttls.required", "true");
+            }
+        }
+
+        if (!authenticate) return Session.getInstance(props);
+
+        return Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(user, password);
+            }
+        });
     }
 
     private void optimize() {

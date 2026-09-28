@@ -1,0 +1,155 @@
+/* ---------- base ---------- */
+.pane {
+    -fx-background-color: #0b0d0f; /* quase preto, com subtom frio */
+    -fx-font-family: "Inter", "Segoe UI", "Roboto", sans-serif;
+    -fx-font-size: 12px;
+    -fx-padding: 12;
+}
+
+/* ---------- tabela (card) ---------- */
+.erd-table {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 16, 0.25, 0, 6);
+}
+
+/* Border-left accent: top right bottom left */
+.erd-table.erd-accent-orange {
+    -fx-border-color: rgba(255,255,255,0.03) rgba(255,255,255,0.03) rgba(255,255,255,0.03) #f2994a;
+    -fx-border-width: 1 1 1 4;
+}
+.erd-table.erd-accent-blue {
+    -fx-border-color: rgba(255,255,255,0.03) rgba(255,255,255,0.03) rgba(255,255,255,0.03) #3aa0ff;
+    -fx-border-width: 1 1 1 4;
+}
+
+/* ---------- header ---------- */
+.erd-table > .title {
+    /* Antes o fundo era quase transparente (3% de branco) sobre o pane preto, e o nome
+       da tabela ficava indistinguível. Um tom sólido separa o cabeçalho do corpo. */
+    -fx-background-color: #2b3440;
+    -fx-padding: 8 14;
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-color: rgba(255,255,255,0.06);
+    -fx-border-width: 0 0 1 0;
+}
+
+/* O texto de um TitledPane vive num nó .text: o -fx-text-fill posto no .title não lhe
+   chegava, e o nome da tabela era desenhado com a cor por omissão, escura sobre escuro. */
+.erd-table > .title > .text {
+    -fx-fill: #eef6ff;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+/* Sem seta: os cartões não colapsam. */
+.erd-table > .title > .arrow-button {
+    -fx-padding: 0;
+}
+
+.erd-table > .title > .arrow-button > .arrow {
+    -fx-shape: null;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+/* subtle hover on header to indicate draggable area */
+.erd-table > .title:hover {
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    -fx-cursor: hand;
+}
+
+/* ---------- content (columns wrapper) ---------- */
+.erd-table > .content {
+    -fx-background-color: #181a1c;
+    -fx-padding: 6 8;
+    -fx-background-radius: 0 0 6 6;
+    -fx-border-color: transparent;
+}
+
+/* O VBox interior traz 10 px de espaçamento do código; aqui aperta-se o conjunto para
+   os cartões não crescerem mais do que precisam. */
+.erd-table > .content > .v-box {
+    -fx-spacing: 2;
+}
+
+/* ---------- column row ---------- */
+.column-row {
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 6 4;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-style: solid;
+    -fx-border-color: rgba(255,255,255,0.03);
+}
+
+/* last row remove border (if supported) */
+.column-row:last-child {
+    -fx-border-width: 0;
+}
+
+/* ---------- texts ---------- */
+.col-name {
+    -fx-text-fill: #e6eef8;
+    -fx-font-size: 12px;
+}
+
+.col-type {
+    -fx-text-fill: rgba(255,255,255,0.45);
+    -fx-font-family: "Consolas", monospace;
+    -fx-font-size: 11px;
+}
+
+/* primary / foreign key badges */
+.key-badge {
+    -fx-font-weight: 700;
+    -fx-padding: 0 4 0 0;
+    -fx-font-size: 12px;
+}
+
+.key-pk { -fx-text-fill: #f7c34a; }    /* ouro */
+.key-fk { -fx-text-fill: #79d1ff; }    /* azul claro */
+
+/* ---------- connector point (circle) ---------- */
+.erd-connector {
+    -fx-fill: #16181a;
+    -fx-stroke: rgba(255,255,255,0.06);
+    -fx-stroke-width: 1;
+    -fx-cursor: crosshair;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 4, 0.2, 0, 1);
+    -fx-padding: 0;
+    -fx-scale-x: 1;
+    -fx-scale-y: 1;
+}
+
+.erd-connector:hover {
+    -fx-fill: #79d1ff;
+    -fx-scale-x: 1.25;
+    -fx-scale-y: 1.25;
+}
+
+/* ---------- connection lines ---------- */
+/* single solid color; for gradient use code (LinearGradient) */
+.erd-connection {
+    -fx-stroke: #3aa0ff;
+    -fx-stroke-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(58,160,255,0.18), 8, 0.2, 0, 0);
+}
+
+/* when connection is active/highlighted */
+.erd-connection.active {
+    -fx-stroke: linear-gradient(to right, #79d1ff, #2f80ed); /* may not be supported on all JavaFX versions */
+    -fx-stroke-width: 2.5;
+}
+
+/* dragging state for the column row */
+.column-row.dragging {
+    -fx-background-color: rgba(122, 196, 255, 0.06);
+    -fx-border-color: rgba(122, 196, 255, 0.18);
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+}
+
